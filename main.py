@@ -24,35 +24,35 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
 server = app.server
 
 default_input_stats = {
-        "agility": 771,
-        "armor": 4323,
-        "armorPen": 21.68,
+        "agility": 791,
+        "armor": 4363,
+        "armorPen": 10.43,
         "armorPenRating": 146,
-        "attackPower": 4252,
-        "crit": 41.28,
+        "attackPower": 4350,
+        "crit": 33.67,
         "critRating": 78,
         "critReduction": 6,
-        "defense": 350,
-        "dodge": 44.13,
-        "expertise": 16,
+        "defense": 400,
+        "dodge": 27.12,
+        "expertise": 13,
         "expertiseRating": 27,
         "feralAttackPower": 1195,
-        "haste": 7.42,
+        "haste": 3.57,
         "hasteRating": 90,
-        "health": 10264,
-        "hit": 5.14,
+        "health": 14297,
+        "hit": 2.47,
         "hitRating": 81,
-        "intellect": 314,
+        "intellect": 346,
         "mainHandSpeed": 3,
-        "mana": 6800,
+        "mana": 8406,
         "natureResist": 10,
         "parry": 5,
-        "spellCrit": 9.31,
-        "spellHaste": 7.42,
-        "spellHit": 6.42,
-        "spirit": 157,
-        "stamina": 683,
-        "strength": 413
+        "spellCrit": 5.63,
+        "spellHaste": 3.57,
+        "spellHit": 3.09,
+        "spirit": 186,
+        "stamina": 706,
+        "strength": 430
 }
 
 stat_input = dbc.Col([
@@ -111,8 +111,6 @@ stat_input = dbc.Col([
             {'label': 'Idol of Terror', 'value': 'idol_of_terror'},
             {'label': 'Idol of the White Stag', 'value': 'stag_idol'},
             {'label': 'Idol of Feral Shadows', 'value': 'rip_idol'},
-            {'label': '2-piece Tier 4 bonus', 'value': 't4_bonus'},
-            {'label': '4-piece Tier 5 bonus', 'value': 't5_bonus'},
             {'label': '2-piece Tier 6 bonus', 'value': 't6_2p'},
             {'label': '4-piece Tier 6 bonus', 'value': 't6_4p'},
             {'label': 'Wolfshead Helm', 'value': 'wolfshead'},
@@ -120,7 +118,7 @@ stat_input = dbc.Col([
             {'label': 'Band of the Eternal Champion', 'value': 'exalted_ring'},
             {'label': 'Enchant Weapon: Mongoose', 'value': 'mongoose'},
         ],
-        value=['t4_bonus', 't6_2p', 't6_4p', 'meta', 'mongoose'],
+        value=['t6_2p', 't6_4p', 'meta', 'mongoose'],
         id='bonuses'
     ),
     ], width='auto', style={'marginBottom': '2.5%', 'marginLeft': '2.5%'})
@@ -1308,7 +1306,7 @@ def create_player(
         (1 + 0.02 * int(naturalist))
         * (1 + 0.03 * ('sanc_aura' in other_buffs))
     )
-    shred_bonus = 88 * ('everbloom' in bonuses) + 75 * ('t5_bonus' in bonuses)
+    shred_bonus = 88 * ('everbloom' in bonuses)
     rip_bonus = 7 * ('rip_idol' in bonuses) 
 
     # Create and return a corresponding Player object
@@ -1326,11 +1324,11 @@ def create_player(
         intensity=int(intensity), weapon_speed=weapon_speed,
         bonus_damage=encounter_weapon_damage, multiplier=damage_multiplier,
         jow='jow' in stat_debuffs, armor_pen_rating=armor_pen_rating,
-        t4_bonus='t4_bonus' in bonuses, t6_2p='t6_2p' in bonuses,
-        t6_4p='t6_4p' in bonuses, wolfshead='wolfshead' in bonuses,
-        meta='meta' in bonuses, rune='rune' in cooldowns,
-        pot=potion in ['super', 'fel'], cheap_pot=(potion == 'super'),
-        shred_bonus=shred_bonus, rip_bonus=rip_bonus, debuff_ap=debuff_ap
+        t6_2p='t6_2p' in bonuses, t6_4p='t6_4p' in bonuses,
+        wolfshead='wolfshead' in bonuses, meta='meta' in bonuses,
+        rune='rune' in cooldowns, pot=potion in ['super', 'fel'],
+        cheap_pot=(potion == 'super'), shred_bonus=shred_bonus,
+        rip_bonus=rip_bonus, debuff_ap=debuff_ap
     )
     stat_mod = (1 + 0.1 * kings) * 1.06 * (1 + 0.01 * imp_motw)
     return player, ap_mod, stat_mod, haste_multiplier
