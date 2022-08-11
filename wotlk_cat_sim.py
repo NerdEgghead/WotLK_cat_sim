@@ -115,7 +115,7 @@ def calc_swing_timer(haste_rating, multiplier=1.0, cat_form=True):
         swing_timer (float): Hasted swing timer in seconds.
     """
     base_timer = 1.0 if cat_form else 2.5
-    return base_timer / (multiplier * (1 + haste_rating / 1577))
+    return base_timer / (multiplier * (1 + haste_rating / 2521))
 
 
 def calc_haste_rating(swing_timer, multiplier=1.0, cat_form=True):
@@ -132,7 +132,7 @@ def calc_haste_rating(swing_timer, multiplier=1.0, cat_form=True):
         haste_rating (float): Unrounded haste rating.
     """
     base_timer = 1.0 if cat_form else 2.5
-    return 1577 * (base_timer / (swing_timer * multiplier) - 1)
+    return 2521 * (base_timer / (swing_timer * multiplier) - 1)
 
 
 def gen_import_link(
@@ -169,14 +169,14 @@ def gen_import_link(
     link += '&0=%.2f' % agi_weight
 
     # Hit Rating and Expertise Rating
-    hit_weight = stat_weights['1% hit'] / 15.77
+    hit_weight = stat_weights['1% hit'] / 32.79
     link += '&35=%.2f&46=%.2f' % (hit_weight, hit_weight)
 
     # Critical Strike Rating
-    link += '&41=%.2f' % (stat_weights['1% crit'] / 22.1)
+    link += '&41=%.2f' % (stat_weights['1% crit'] / 45.91)
 
     # Haste Rating
-    link += '&43=%.2f' % (stat_weights['1% haste'] / 15.77)
+    link += '&43=%.2f' % (stat_weights['1% haste'] / 25.21)
 
     # Armor Penetration
     link += '&87=%.2f' % stat_weights['1 Armor Pen Rating']
@@ -185,7 +185,7 @@ def gen_import_link(
     link += '&51=%.2f' % stat_weights['1 Weapon Damage']
 
     # Gems
-    gem_agi = 10 if epic_gems else 8
+    gem_agi = 34 if epic_gems else 16
     gem_weight = agi_weight * gem_agi
     link += '&74=%.2f&75=%.2f&76=%.2f' % (gem_weight, gem_weight, gem_weight)
 
@@ -221,13 +221,12 @@ class Player():
     def __init__(
             self, attack_power, ap_mod, agility, hit_chance, expertise_rating,
             crit_chance, armor_pen_rating, swing_timer, mana, intellect,
-            spirit, mp5, jow=False, pot=True, cheap_pot=False, rune=True,
-            t4_bonus=False, t6_2p=False, t6_4p=False, wolfshead=True,
-            meta=False, bonus_damage=0, shred_bonus=0, rip_bonus=0,
-            debuff_ap=0, multiplier=1.1, omen=True, primal_gore=True,
-            feral_aggression=0, savage_fury=2, furor=3, natural_shapeshifter=3,
-            intensity=3, potp=2, improved_mangle=0, weapon_speed=3.0,
-            proc_trinkets=[], log=False
+            spirit, mp5, jow=False, rune=True, t6_2p=False, t6_4p=False,
+            wolfshead=True, meta=False, bonus_damage=0, shred_bonus=0,
+            rip_bonus=0, debuff_ap=0, multiplier=1.1, omen=True,
+            primal_gore=True, feral_aggression=0, savage_fury=2, furor=3,
+            natural_shapeshifter=3, intensity=3, potp=2, improved_mangle=0,
+            weapon_speed=3.0, proc_trinkets=[], log=False
     ):
         """Initialize player with key damage parameters.
 
@@ -249,12 +248,7 @@ class Player():
             mp5 (int): Bonus mp5 from gear or buffs.
             jow (bool): Whether the player is receiving Judgment of Wisdom
                 procs. Defaults False.
-            pot (bool): Whether mana potions are used. Defaults True.
-            cheap_pot (bool): Whether the budget Super Mana Potion is used
-                instead of the optimal Fel Mana Potion. Defaults False.
             rune (bool): Whether Dark/Demonic Runes are used. Defaults True.
-            t4_bonus (bool): Whether the 2-piece T4 set bonus is used. Defaults
-                False.
             t6_2p (bool): Whether the 2-piece T6 set bonus is used. Defaults
                 False.
             t6_4p (bool): Whether the 4-piece T6 set bonus is used. Defaults
@@ -315,11 +309,7 @@ class Player():
         self.spirit = spirit
         self.mp5 = mp5
         self.jow = jow
-        self.pot = pot
-        self.cheap_pot = cheap_pot
-        self.mana_pot_multi = 1.0
         self.rune = rune
-        self.t4_bonus = t4_bonus
         self.bonus_damage = bonus_damage
         self.shred_bonus = shred_bonus
         self.rip_bonus = rip_bonus
@@ -351,7 +341,7 @@ class Player():
         or Expertise Rating occurs."""
         miss_reduction = min(self._hit_chance * 100, 8.)
         dodge_reduction = min(
-            6.5, (10 + np.floor(self._expertise_rating / 3.9425)) * 0.25
+            6.5, (10 + np.floor(self._expertise_rating / 8.1974973675)) * 0.25
         )
         self.miss_chance = 0.01 * (
             (8. - miss_reduction) + (6.5 - dodge_reduction)
@@ -368,7 +358,7 @@ class Player():
         # shapeshifted, based on the average of three measurements by Rokpaus.
         # Neither number fits the caster/cat data exactly, so the formula is
         # likely not exact.
-        self.regen_factor = 0.0085 * np.sqrt(self.intellect)
+        self.regen_factor = 0.016725 / 5 * np.sqrt(self.intellect)
         base_regen = self.spirit * self.regen_factor
         bonus_regen = self.mp5 / 5
 
@@ -380,24 +370,6 @@ class Player():
         }
         self.shift_cost = 1224 * 0.4 * (1 - 0.1 * self.natural_shapeshifter)
 
-        # Since Fel Mana pots regen over time rather than instantaneously, we
-        # need to use a more sophisticated heuristic for when to pop it.
-        # We pop the potion when our mana has decreased by 1.5x the value at
-        # which we would be exactly topped off on average after the 24 second
-        # pot duration, factoring in other regen sources and mana spent on
-        # shifting. This provides buffer against rng with respect to JoW procs
-        # or the number of shift cycles completed in that time.
-
-        if self.cheap_pot:
-            self.pot_threshold = self.mana_pool - 3000*self.mana_pot_multi
-            return
-
-        self.pot_threshold = self.mana_pool - 36 * (
-            400./3 * self.mana_pot_multi
-            + self.regen_rates['five_second_rule'] / 2
-            + 35. * (1./self.swing_timer + 1./4.2)
-        )
-
     def calc_damage_params(
             self, gift_of_arthas, boss_armor, sunder, faerie_fire,
             blood_frenzy, tigers_fury=False
@@ -406,7 +378,7 @@ class Player():
         specified boss debuffs."""
         bonus_damage = (
             (self.attack_power + self.debuff_ap) / 14 + self.bonus_damage
-            + 40 * tigers_fury
+            + 80 * tigers_fury
         )
 
         # Legacy compatibility with older Sunder code in case it is needed
@@ -416,10 +388,10 @@ class Player():
         debuffed_armor = (
             boss_armor * (1 - 0.04 * sunder) * (1 - 0.05 * faerie_fire)
         )
-        armor_constant = 467.5 * 70 - 22167.5
+        armor_constant = 467.5 * 80 - 22167.5
         arp_cap = (debuffed_armor + armor_constant) / 3.
         armor_pen = (
-            self.armor_pen_rating / 6.73 / 100 * min(arp_cap, debuffed_armor)
+            self.armor_pen_rating / 13.99 / 100 * min(arp_cap, debuffed_armor)
         )
         residual_armor = debuffed_armor - armor_pen
         armor_multiplier = (
@@ -430,10 +402,10 @@ class Player():
         self.white_low = (43.0 + bonus_damage) * self.multiplier
         self.white_high = (66.0 + bonus_damage) * self.multiplier
         self.shred_low = 1.2 * (
-            self.white_low * 2.25 + (405 + self.shred_bonus) * self.multiplier
+            self.white_low * 2.25 + (666 + self.shred_bonus) * self.multiplier
         )
         self.shred_high = 1.2 * (
-            self.white_high * 2.25 + (405 + self.shred_bonus) * self.multiplier
+            self.white_high * 2.25 + (666 + self.shred_bonus) * self.multiplier
         )
         self.bite_multiplier = (
             self.multiplier * (1 + 0.03 * self.feral_aggression)
@@ -444,46 +416,48 @@ class Player():
         # incorrect according to the DB.
         ap, bm = self.attack_power, self.bite_multiplier
         self.bite_low = {
-            i: (169*i + 57 + 0.07 * i * ap) * bm for i in range(1, 6)
+            i: (290*i + 120 + 0.07 * i * ap) * bm for i in range(1, 6)
         }
         self.bite_high = {
-            i: (169*i + 123 + 0.07 * i * ap) * bm for i in range(1, 6)
+            i: (290*i + 260 + 0.07 * i * ap) * bm for i in range(1, 6)
         }
         mangle_fac = 1 + 0.1 * self.savage_fury
         self.mangle_low = mangle_fac * (
-            self.white_low * 2 + 330 * self.multiplier
+            self.white_low * 2 + 566 * self.multiplier
         )
         self.mangle_high = mangle_fac * (
-            self.white_high * 2 + 330 * self.multiplier
+            self.white_high * 2 + 566 * self.multiplier
         )
         rake_multi = mangle_fac * damage_multiplier
-        self.rake_hit = rake_multi * (90 + 0.01 * self.attack_power)
-        self.rake_tick = rake_multi * (138 + 0.06 * self.attack_power)
+        self.rake_hit = rake_multi * (176 + 0.01 * self.attack_power)
+        self.rake_tick = rake_multi * (358 + 0.06 * self.attack_power)
         rip_multiplier = damage_multiplier * (1 + 0.15 * self.t6_bonus)
         self.rip_tick = {
-            i: (24 + 47*i + 0.01*i*ap + self.rip_bonus*i) * rip_multiplier
+            i: (36 + 93*i + 0.01*i*ap + self.rip_bonus*i) * rip_multiplier
             for i in range(1,6)
         }
 
         # Bearweave damage calculations
         bear_ap = self.bear_ap_mod * (
-            self.attack_power / self.ap_mod - self.agility + 70
+            self.attack_power / self.ap_mod - self.agility + 80
         )
         bear_bonus_damage = (
             (bear_ap + self.debuff_ap) / 14 * 2.5 + self.bonus_damage
         )
-        self.white_bear_low = (109.0 + bear_bonus_damage) * self.multiplier
-        self.white_bear_high = (165.0 + bear_bonus_damage) * self.multiplier
-        self.maul_low = (self.white_bear_low + 290 * self.multiplier) * 1.872
-        self.maul_high = (self.white_bear_high + 290 * self.multiplier) * 1.872
-        self.mangle_bear_low = 1.2 * (
-            self.white_bear_low * 1.15 + 155 * self.multiplier
+        bear_multi = self.multiplier * 1.04 # Master Shapeshifter
+        self.white_bear_low = (109.0 + bear_bonus_damage) * bear_multi
+        self.white_bear_high = (165.0 + bear_bonus_damage) * bear_multi
+        maul_multi = mangle_fac * 1.56
+        self.maul_low = (self.white_bear_low + 578 * bear_multi) * maul_multi
+        self.maul_high = (self.white_bear_high + 578 * bear_multi) * maul_multi
+        self.mangle_bear_low = mangle_fac * (
+            self.white_bear_low * 1.15 + 299 * bear_multi
         )
-        self.mangle_bear_high = 1.2 * (
-            self.white_bear_high * 1.15 + 155 * self.multiplier
+        self.mangle_bear_high = mangle_fac * (
+            self.white_bear_high * 1.15 + 299 * bear_multi
         )
-        self.lacerate_hit = (31 + 0.01 * bear_ap) * self.multiplier
-        self.lacerate_tick = self.lacerate_hit / armor_multiplier # for 1 stack
+        self.lacerate_hit = (88 + 0.01 * bear_ap) * bear_multi
+        self.lacerate_tick = (64 + 0.01 * bear_ap) * damage_multiplier * 1.04
 
         # Adjust damage values for Gift of Arthas
         if not gift_of_arthas:
@@ -513,13 +487,8 @@ class Player():
         self.mana = self.mana_pool
         self.rage = 0
         self.rune_cd = 0.0
-        self.pot_cd = 0.0
-        self.pot_active = False
-        self.innervated = False
-        self.innervate_cd = 0.0
         self.five_second_rule = False
         self.cat_form = True
-        self.t4_proc = False
         self.ready_to_shift = False
         self.berserk = False
         self.berserk_cd = 0.0
@@ -585,23 +554,6 @@ class Player():
         if proc_roll < 0.25:
             self.mana = min(self.mana + 70, self.mana_pool)
 
-    def check_t4_proc(self):
-        """Check for a 2p-T4 energy proc on a successful melee attack."""
-        self.t4_proc = False
-
-        if not self.t4_bonus:
-            return
-
-        proc_roll = np.random.rand()
-
-        if proc_roll < 0.04:
-            if self.cat_form:
-                self.energy = min(self.energy + 20, 100)
-            else:
-                self.rage = min(self.rage + 10, 100)
-
-            self.t4_proc = True
-
     def check_procs(self, yellow=False, crit=False):
         """Check all relevant procs that trigger on a successful attack.
 
@@ -613,7 +565,6 @@ class Player():
         """
         self.check_omen_proc(yellow=yellow)
         self.check_jow_proc()
-        self.check_t4_proc()
 
         # Now check for all trinket procs that may occur. Only trinkets that
         # can trigger on all possible abilities will be checked here. The
@@ -653,33 +604,7 @@ class Player():
             return False
 
         self.mana += (900 + np.random.rand() * 600)
-        self.rune_cd = 120.0
-        return True
-
-    def use_pot(self, time):
-        """Pop a Mana Potion to restore mana when appropriate.
-
-        Arguments:
-            time (float): Time at which the potion is consumed. Used to
-                generate a list of tick times for Fel Mana regen.
-
-        Returns:
-            pot_used (bool): Wheter the potion was used.
-        """
-        if ((not self.pot) or (self.pot_cd > 1e-9)
-                or (self.mana > self.pot_threshold)):
-            return False
-
-        self.pot_cd = 120.0
-
-        # If we're using cheap potions, we ignore the Fel Mana tick logic
-        if self.cheap_pot:
-            self.mana += (1800 + np.random.rand() * 1200)*self.mana_pot_multi
-        else:
-            self.pot_active = True
-            self.pot_ticks = list(np.arange(time + 3, time + 24.01, 3))
-            self.pot_end = time + 24
-
+        self.rune_cd = 15. * 60.
         return True
 
     def swing(self):
@@ -691,7 +616,8 @@ class Player():
         low = self.white_low if self.cat_form else self.white_bear_low
         high = self.white_high if self.cat_form else self.white_bear_high
         damage_done, miss, crit = calc_white_damage(
-            low, high, self.miss_chance, self.crit_chance, meta=self.meta,
+            low, high, self.miss_chance,
+            self.crit_chance - 0.04 * (not self.cat_form), meta=self.meta,
             predatory_instincts=self.cat_form
         )
 
@@ -721,7 +647,7 @@ class Player():
 
             if (not miss) or dodge:
                 rage_gen = (
-                    15./4./274.7 * proxy_damage + 2.5/2*3.5 * (1 + crit)
+                    15./4./453.3 * proxy_damage + 2.5/2*3.5 * (1 + crit)
                     + 5 * crit
                 )
                 self.rage = min(self.rage + rage_gen, 100)
@@ -754,7 +680,7 @@ class Player():
         """
         # Perform Monte Carlo
         damage_done, miss, crit = calc_yellow_damage(
-            min_dmg, max_dmg, self.miss_chance, self.crit_chance,
+            min_dmg, max_dmg, self.miss_chance, self.crit_chance - 0.04,
             meta=self.meta, predatory_instincts=False
         )
 
@@ -824,12 +750,6 @@ class Player():
                 damage_str += ' (crit)'
             elif clearcast:
                 damage_str += ' (clearcast)'
-
-            if self.t4_proc:
-                if ')' in damage_str:
-                    damage_str = damage_str[:-1] + ', T4 proc)'
-                else:
-                    damage_str += ' (T4 proc)'
 
         self.combat_log = [
             ability_name, damage_str, '%.1f' % self.energy,
@@ -971,7 +891,7 @@ class Player():
 
         # Update Bite damage based on excess energy available
         bonus_damage = (
-            min(self.energy, 30) * (3.4 + self.attack_power / 410.)
+            min(self.energy, 30) * (9.4 + self.attack_power / 410.)
             * self.bite_multiplier
         )
 
@@ -1089,37 +1009,12 @@ class Player():
         if self.use_rune():
             log_str = 'use Dark Rune'
 
-        # Pop a Mana Potion if we can get full value from it
-        if self.use_pot(time):
-            log_str = 'use Mana Potion'
-
         if self.log:
             if powershift:
                 cast_name = 'Powers' + cast_name[1:]
 
             self.combat_log = [
                 cast_name, log_str, '%.1f' % self.energy,
-                '%d' % self.combo_points, '%d' % self.mana, '%d' % self.rage
-            ]
-
-    def innervate(self, time):
-        """Cast Innervate.
-
-        Arguments:
-            time (float): Time of Innervate cast, in seconds. Used for
-                determining when the Innervate buff falls off.
-        """
-        self.mana -= 95  # Innervate mana cost
-        self.innervate_end = time + 20
-        self.innervated = True
-        self.cat_form = False
-        self.energy = 0
-        self.gcd = 1.5
-        self.innervate_cd = 360.0
-
-        if self.log:
-            self.combat_log = [
-                'Innervate', '', '%d' % self.energy,
                 '%d' % self.combo_points, '%d' % self.mana, '%d' % self.rage
             ]
 
@@ -1394,6 +1289,7 @@ class Simulation():
                 self.player.lacerate_tick * self.lacerate_stacks
                 * (1 + 0.15 * self.player.enrage)
             )
+            self.lacerate_crit_chance = self.player.crit_chance - 0.04
 
         return damage_done * (1 + 0.3 * self.mangle_debuff)
 
@@ -1411,6 +1307,7 @@ class Simulation():
             self.rip_end = time + 16.0
             self.rip_ticks = list(np.arange(time + 2, time + 16.01, 2))
             self.rip_damage = damage_per_tick
+            self.rip_crit_chance = self.player.crit_chance
 
         return 0.0
 
@@ -1588,7 +1485,7 @@ class Simulation():
         )
         bite_bonus_dmg = (
             (bite_cost - self.player.bite_cost)
-            * (3.4 + self.player.attack_power / 410.)
+            * (9.4 + self.player.attack_power / 410.)
             * self.player.bite_multiplier
         )
         bite_dpc = (bite_base_dmg + bite_bonus_dmg) * (
@@ -2009,7 +1906,6 @@ class Simulation():
         """
         # Reset player to fresh fight
         self.player.reset()
-        self.innervate_threshold = self.player.shift_cost + 2237 #GotW cost
         self.mangle_debuff = False
         self.rip_debuff = False
         self.rake_debuff = False
@@ -2086,10 +1982,6 @@ class Simulation():
             self.player.gcd = max(0.0, self.player.gcd - delta_t)
             self.player.omen_icd = max(0.0, self.player.omen_icd - delta_t)
             self.player.rune_cd = max(0.0, self.player.rune_cd - delta_t)
-            self.player.pot_cd = max(0.0, self.player.pot_cd - delta_t)
-            self.player.innervate_cd = max(
-                0.0, self.player.innervate_cd - delta_t
-            )
             self.player.tf_cd = max(0.0, self.player.tf_cd - delta_t)
             self.player.berserk_cd = max(0.0, self.player.berserk_cd - delta_t)
             self.player.enrage_cd = max(0.0, self.player.enrage_cd - delta_t)
@@ -2098,17 +1990,6 @@ class Simulation():
             if (self.player.five_second_rule
                     and (time - self.player.last_shift >= 5)):
                 self.player.five_second_rule = False
-
-            # Check if Innervate fell off
-            if self.player.innervated and (time >= self.player.innervate_end):
-                self.player.innervated = False
-                self.player.regen_rates['base'] -= 2.25*3496/10
-                self.player.regen_rates['five_second_rule'] -= 2.25*3496/10
-
-                if self.log:
-                    self.combat_log.append(self.gen_log(
-                        self.player.innervate_end, 'Innervate', 'falls off'
-                    ))
 
             # Check if Tiger's Fury fell off
             if self.params['tigers_fury'] and (time >= self.tf_end):
@@ -2133,7 +2014,7 @@ class Simulation():
 
                 if self.player.primal_gore:
                     tick_damage, _, _ = calc_yellow_damage(
-                        tick_damage, tick_damage, 0.0, self.player.crit_chance,
+                        tick_damage, tick_damage, 0.0, self.rip_crit_chance,
                         meta=self.player.meta,
                         predatory_instincts=self.player.cat_form
                     )
@@ -2185,8 +2066,8 @@ class Simulation():
 
                 if self.player.primal_gore:
                     tick_damage, _, _ = calc_yellow_damage(
-                        tick_damage, tick_damage, 0.0, self.player.crit_chance,
-                        meta=self.player.meta,
+                        tick_damage, tick_damage, 0.0,
+                        self.lacerate_crit_chance, meta=self.player.meta,
                         predatory_instincts=self.player.cat_form
                     )
 
@@ -2315,28 +2196,6 @@ class Simulation():
                         ['%.3f' % time] + self.player.combat_log
                     )
 
-            # Check if a Fel Mana Potion tick happens at this time
-            if self.player.pot_active and (time == self.player.pot_ticks[0]):
-                mana_regen = 400 * self.player.mana_pot_multi
-                self.player.mana = min(
-                    self.player.mana + mana_regen, self.player.mana_pool
-                )
-                self.player.pot_ticks.pop(0)
-
-                if self.log:
-                    self.combat_log.append(
-                        self.gen_log(time, 'Fel Mana tick', '')
-                    )
-
-            # Check if Fel Mana Potion expired
-            if self.player.pot_active and (time > self.player.pot_end - 1e-9):
-                self.player.pot_active = False
-
-                if self.log:
-                    self.combat_log.append(self.gen_log(
-                        self.player.pot_end, 'Fel Mana', 'falls off'
-                    ))
-
             # Check if we're able to act, and if so execute the optimal cast.
             self.player.combat_log = None
 
@@ -2349,7 +2208,7 @@ class Simulation():
                     ['%.3f' % time] + self.player.combat_log
                 )
 
-            # If we entered caster form, Tiger's Fury fell off
+            # If we entered Dire Bear Form, Tiger's Fury fell off
             if self.params['tigers_fury'] and (self.player.gcd == 1.5):
                 self.drop_tigers_fury(time)
 
@@ -2403,8 +2262,6 @@ class Simulation():
                 time = min(time, self.rake_ticks[0])
             if self.lacerate_debuff and self.lacerate_ticks:
                 time = min(time, self.lacerate_ticks[0])
-            if self.player.pot_active:
-                time = min(time, self.player.pot_ticks[0])
             if self.proc_end_times:
                 time = min(time, self.proc_end_times[0])
 
@@ -2574,7 +2431,7 @@ class Simulation():
         # For Agility increments, also augment Attack Power and Crit
         if param == 'agility':
             self.player.attack_power += self.player.ap_mod * increment
-            self.player.crit_chance += increment / 40. / 100.
+            self.player.crit_chance += increment / 83.33 / 100.
 
         # Calculate DPS
         dps_vals = self.run_replicates(num_replicates)
@@ -2585,7 +2442,7 @@ class Simulation():
 
         if param == 'agility':
             self.player.attack_power -= self.player.ap_mod * increment
-            self.player.crit_chance -= increment / 40. / 100.
+            self.player.crit_chance -= increment / 83.33 / 100.
 
         return avg_dps - base_dps
 
@@ -2653,7 +2510,7 @@ class Simulation():
             self.player.swing_timer, multiplier=self.haste_multiplier
         )
         swing_delta = self.player.swing_timer - calc_swing_timer(
-            base_haste_rating + 63.08, multiplier=self.haste_multiplier
+            base_haste_rating + 100.84, multiplier=self.haste_multiplier
         )
         dps_deltas['1% haste'] = 0.25 * self.calc_deriv(
             num_replicates, 'swing_timer', -swing_delta, base_dps
@@ -2675,62 +2532,5 @@ class Simulation():
         for stat in dps_deltas:
             if stat != '1 AP':
                 stat_weights[stat] = dps_deltas[stat] / dps_deltas['1 AP']
-
-        return dps_deltas, stat_weights
-
-    def calc_mana_weights(self, num_replicates, base_dps, dps_per_AP):
-        """Calculate weights for mana stats in situations where the player goes
-        oom before the end of the fight. It is assumed that the regular stat
-        weights have already been calculated prior to calling this method.
-
-        Arguments:
-            num_replicates (int): Number of replicates to run.
-            base_dps (float): Average base DPS before stat increments.
-            dps_per_AP (float): DPS added by 1 AP. This is output by the
-                calc_stat_weights() method, and is used to normalize the mana
-                weights.
-
-        Returns:
-            dps_deltas (dict): Dictionary containing DPS increase from 1 Int,
-                1 Spirit, and 1 mp5. Int and Spirit contributions are not
-                boosted by ZG buff or Blessing of Kings, and should be adjusted
-                accordingly.
-            stat_weights (dict): Dictionary containing normalized stat weights
-                for 1 Int, 1 Spirit, and 1 mp5 relative to 1 AP.
-        """
-        dps_deltas = {}
-
-        # For mana weight, increment player mana pool by one shift's worth
-        dps_deltas['1 mana'] = 1.0 / self.player.shift_cost * self.calc_deriv(
-            num_replicates, 'mana_pool', self.player.shift_cost, base_dps
-        )
-
-        # For spirit weight, calculate how much spirit regens an additional
-        # full shift's worth of mana over the course of Innervate.
-        base_regen_delta = self.player.shift_cost / 10 / 5
-        spirit_delta = base_regen_delta / self.player.regen_factor
-        dps_deltas['1 Spirit'] = 1.0 / spirit_delta * self.calc_deriv(
-            num_replicates, 'spirit', spirit_delta, base_dps
-        )
-
-        # Combine mana and regen contributions of Int
-        mana_contribution = 15 * dps_deltas['1 mana']
-        spirit_contribution = (
-            self.player.spirit / (2 * self.player.intellect)
-            * dps_deltas['1 Spirit']
-        )
-        dps_deltas['1 Int'] = mana_contribution + spirit_contribution
-
-        # Same thing for mp5, except we integrate over the full fight length
-        delta_mp5 = np.ceil(self.player.shift_cost / (self.fight_length / 5))
-        dps_deltas['1 mp5'] = 1.0 / delta_mp5 * self.calc_deriv(
-            num_replicates, 'mp5', delta_mp5, base_dps
-        )
-
-        # Calculate normalized stat weights
-        stat_weights = {}
-
-        for stat in ['1 mana', '1 Spirit', '1 Int', '1 mp5']:
-            stat_weights[stat] = dps_deltas[stat] / dps_per_AP
 
         return dps_deltas, stat_weights

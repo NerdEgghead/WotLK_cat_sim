@@ -279,7 +279,7 @@ class HastePotion(ActivatedTrinket):
                 armor debuffs going up, etc. Defaults to 0.0
         """
         ActivatedTrinket.__init__(
-            self, 'haste_rating', 400, 'Haste Potion', 15, 60, delay=delay
+            self, 'haste_rating', 500, 'Speed', 15, 60, delay=delay
         )
         self.max_procs = 1 if delay > 1e-9 else 2 # 1 pot per combat in WotLK
 

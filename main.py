@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Run this app with `python main.py` and
@@ -126,12 +125,11 @@ stat_input = dbc.Col([
 buffs_1 = dbc.Col(
     [dbc.Collapse([html.H5('Consumables'),
      dbc.Checklist(
-         options=[{'label': 'Elixir of Major Agility', 'value': 'agi_elixir'},
-                  {'label': 'Elixir of Draenic Wisdom', 'value': 'draenic'},
-                  {'label': 'Warp Burger / Grilled Mudfish', 'value': 'food'},
+         options=[{'label': 'Flask of Endless Rage', 'value': 'flask'},
+                  {'label': 'Snapper Extreme / Worg Tartare', 'value': 'food'},
                   {'label': 'Adamantite Weightstone', 'value': 'weightstone'}],
          value=[
-             'agi_elixir', 'food', 'weightstone',
+             'flask', 'food', 'weightstone',
          ],
          id='consumables'
      ),
@@ -218,7 +216,7 @@ encounter_details = dbc.Col(
      dbc.InputGroup(
          [
              dbc.InputGroupAddon('Boss Armor:', addon_type='prepend'),
-             dbc.Input(value=6193, type='number', id='boss_armor')
+             dbc.Input(value=10643, type='number', id='boss_armor')
          ],
          style={'width': '50%'}
      ),
@@ -255,19 +253,16 @@ encounter_details = dbc.Col(
      dbc.Checklist(
          options=[
              {'label': 'Bloodlust', 'value': 'lust'},
-             {'label': 'Drums of Battle', 'value': 'drums'},
              {'label': 'Dark / Demonic Rune', 'value': 'rune'},
          ],
-         value=['lust', 'drums'], id='cooldowns',
+         value=['lust'], id='cooldowns',
      ),
      dbc.InputGroup(
          [
              dbc.InputGroupAddon('Potion CD:', addon_type='prepend'),
              dbc.Select(
                  options=[
-                     {'label': 'Super Mana Potion', 'value': 'super'},
-                     {'label': 'Fel Mana Potion', 'value': 'fel'},
-                     {'label': 'Haste Potion', 'value': 'haste'},
+                     {'label': 'Potion of Speed', 'value': 'haste'},
                      {'label': 'None', 'value': 'none'},
                  ],
                  value='haste', id='potion',
@@ -283,7 +278,7 @@ encounter_details = dbc.Col(
              {'label': 'Berserk', 'value': 'berserk'},
              {'label': 'Primal Gore', 'value': 'primal_gore'},
          ],
-         value=['berserk', 'primal_gore'], id='binary_talents'
+         value=['omen', 'berserk', 'primal_gore'], id='binary_talents'
      ),
      html.Br(),
      html.Div([
@@ -385,7 +380,7 @@ encounter_details = dbc.Col(
                  {'label': '1', 'value': 1},
                  {'label': '2', 'value': 2},
              ],
-             value=1, id='imp_motw',
+             value=2, id='imp_motw',
              style={
                  'width': '20%', 'display': 'inline-block',
                  'marginBottom': '2.5%', 'marginRight': '5%'
@@ -431,7 +426,7 @@ encounter_details = dbc.Col(
                  {'label': '4', 'value': 4},
                  {'label': '5', 'value': 5},
              ],
-             value=4, id='naturalist',
+             value=5, id='naturalist',
              style={
                  'width': '20%', 'display': 'inline-block',
                  'marginBottom': '2.5%', 'marginRight': '5%'
@@ -452,7 +447,7 @@ encounter_details = dbc.Col(
                  {'label': '2', 'value': 2},
                  {'label': '3', 'value': 3},
              ],
-             value='0', id='natural_shapeshifter',
+             value=3, id='natural_shapeshifter',
              style={
                  'width': '20%', 'display': 'inline-block',
                  'marginBottom': '2.5%', 'marginRight': '5%'
@@ -1024,22 +1019,8 @@ weights_section = dbc.Col([
                         dbc.FormGroup(
                             [
                                 dbc.Checkbox(
-                                    id='calc_mana_weights',
-                                    className='form-check-input', checked=False
-                                ),
-                                dbc.Label(
-                                    'Include mana weights',
-                                    html_for='calc_mana_weights',
-                                    className='form-check-label'
-                                )
-                            ],
-                            check=True
-                        ),
-                        dbc.FormGroup(
-                            [
-                                dbc.Checkbox(
                                     id='epic_gems',
-                                    className='form-check-input', checked=True
+                                    className='form-check-input', checked=False
                                 ),
                                 dbc.Label(
                                     'Assume Epic gems',
@@ -1179,7 +1160,7 @@ def process_trinkets(
                 # additionally modify crit here
                 setattr(
                     player, 'crit_chance',
-                    getattr(player, 'crit_chance') + increment / 40. / 100.
+                    getattr(player, 'crit_chance') + increment / 83.33 / 100.
                 )
                 player.agility += increment
             if stat == 'attack_power':
@@ -1211,7 +1192,7 @@ def process_trinkets(
             active_stats['stat_increment'] = np.array([
                 stat_mod * agi_increment,
                 stat_mod * agi_increment * ap_mod,
-                stat_mod * agi_increment/40./100.
+                stat_mod * agi_increment/83.33/100.
             ])
         if active_stats['stat_name'] == 'Strength':
             active_stats['stat_name'] = 'attack_power'
@@ -1293,7 +1274,7 @@ def create_player(
     debuff_ap = 0
     encounter_crit = (
         buffed_crit + 3 * ('jotc' in stat_debuffs)
-        + (28 * ('be_chain' in other_buffs) + 40 * bool(raven_idol)) / 22.1
+        + (28 * ('be_chain' in other_buffs) + 40 * bool(raven_idol)) / 45.91
     )
     encounter_hit = buffed_hit
     encounter_mp5 = (
@@ -1326,9 +1307,8 @@ def create_player(
         jow='jow' in stat_debuffs, armor_pen_rating=armor_pen_rating,
         t6_2p='t6_2p' in bonuses, t6_4p='t6_4p' in bonuses,
         wolfshead='wolfshead' in bonuses, meta='meta' in bonuses,
-        rune='rune' in cooldowns, pot=potion in ['super', 'fel'],
-        cheap_pot=(potion == 'super'), shred_bonus=shred_bonus,
-        rip_bonus=rip_bonus, debuff_ap=debuff_ap
+        rune='rune' in cooldowns, shred_bonus=shred_bonus, rip_bonus=rip_bonus,
+        debuff_ap=debuff_ap
     )
     stat_mod = (1 + 0.1 * kings) * 1.06 * (1 + 0.01 * imp_motw)
     return player, ap_mod, stat_mod, haste_multiplier
@@ -1346,48 +1326,43 @@ def apply_buffs(
 
     # Determine "raw" AP, crit, and mana not from Str/Agi/Int
     raw_ap_unbuffed = unbuffed_ap / 1.1 - 2 * unbuffed_strength - unbuffed_agi
-    raw_crit_unbuffed = unbuffed_crit - unbuffed_agi / 40
+    raw_crit_unbuffed = unbuffed_crit - unbuffed_agi / 83.33
     raw_mana_unbuffed = unbuffed_mana - 15 * unbuffed_int
 
     # Augment all base stats based on specified buffs
     gear_multi = 1.06 * (1 + 0.01 * imp_motw)
     stat_multiplier = 1 + 0.1 * ('kings' in raid_buffs)
-    added_stats = 19.6 * ('motw' in raid_buffs)
+    added_stats = 51 * ('motw' in raid_buffs)
 
     buffed_strength = stat_multiplier * (unbuffed_strength + gear_multi * (
-        added_stats + 86 * ('str_totem' in raid_buffs)
+        added_stats + 155 * ('str_totem' in raid_buffs)
     ))
     buffed_agi = stat_multiplier * (unbuffed_agi + gear_multi * (
-        added_stats + 86 * ('str_totem' in raid_buffs)
-        + 30 * ('agi_elixir' in consumables) + 20 * ('food' in consumables)
+        added_stats + 155 * ('str_totem' in raid_buffs)
     ))
     buffed_int = stat_multiplier * (unbuffed_int + 1.2 * gear_multi * (
-        added_stats + 40 * ('ai' in raid_buffs)
-        + 30 * ('draenic' in consumables)
+        added_stats + 60 * ('ai' in raid_buffs)
     ))
     buffed_spirit = stat_multiplier * (unbuffed_spirit + gear_multi * (
-        added_stats + 50 * ('spirit' in raid_buffs)
-        + 20 * ('food' in consumables) + 30 * ('draenic' in consumables)
+        added_stats + 80 * ('spirit' in raid_buffs)
     ))
 
     # Now augment secondary stats
     ap_mod = 1.1 * (1 + 0.1 * ('unleashed_rage' in raid_buffs))
     buffed_attack_power = ap_mod * (
         raw_ap_unbuffed + 2 * buffed_strength + buffed_agi
-        + 306 * 1.25 * ('might' in raid_buffs)
+        + 550 * 1.25 * ('might' in raid_buffs) + 180 * ('flask' in consumables)
     )
-    added_crit_rating = (
-        12 * ('agi_elixir' in consumables)
-        + 14 * ('weightstone' in consumables)
-    )
+    added_crit_rating = 14 * ('weightstone' in consumables)
     buffed_crit = (
-        raw_crit_unbuffed + buffed_agi / 40 + added_crit_rating / 22.1
+        raw_crit_unbuffed + buffed_agi / 83.33 + added_crit_rating / 45.91
     )
     buffed_hit = (
         unbuffed_hit + 1 * ('heroic_presence' in raid_buffs)
+        + 40 / 32.79 * ('food' in consumables)
     )
     buffed_mana_pool = raw_mana_unbuffed + buffed_int * 15
-    buffed_mp5 = unbuffed_mp5 + 49 * ('wisdom' in raid_buffs)
+    buffed_mp5 = unbuffed_mp5 + 110 * ('wisdom' in raid_buffs)
     buffed_weapon_damage = (
         12 * ('weightstone' in consumables) + weapon_damage
     )
@@ -1461,35 +1436,9 @@ def run_sim(sim, num_replicates):
     )
 
 
-def append_mana_weights(
-        weights_table, sim, num_replicates, time_to_oom, avg_dps, dps_per_AP,
-        stat_multiplier
-):
-    # Just set all mana weights to 0 if we didn't even go oom
-    if time_to_oom == 'none':
-        weights_table.append(html.Tr([
-            html.Td('mana stats'), html.Td('0.0'), html.Td('0.0'),
-        ]))
-        return
-
-    # Calculate DPS increases and weights
-    dps_deltas, stat_weights = sim.calc_mana_weights(
-        num_replicates, avg_dps, dps_per_AP
-    )
-
-    # Parse results
-    for stat in dps_deltas:
-        multiplier = 1.0 if stat in ['1 mana', '1 mp5'] else stat_multiplier
-        weights_table.append(html.Tr([
-            html.Td(stat),
-            html.Td('%.3f' % (dps_deltas[stat] * multiplier)),
-            html.Td('%.3f' % (stat_weights[stat] * multiplier)),
-        ]))
-
-
 def calc_weights(
-        sim, num_replicates, avg_dps, calc_mana_weights, time_to_oom,
-        kings, unleashed_rage, epic_gems, imp_motw
+        sim, num_replicates, avg_dps, time_to_oom, kings, unleashed_rage,
+        epic_gems, imp_motw
 ):
     # Check that sufficient iterations are used for convergence.
     if num_replicates < 20000:
@@ -1522,18 +1471,11 @@ def calc_weights(
             html.Td('%.2f' % weight),
         ]))
 
-    # Generate 70upgrades import link for raw stats
+    # Generate 80upgrades import link for raw stats
     url = ccs.gen_import_link(
         stat_weights, multiplier=stat_multiplier, epic_gems=epic_gems
     )
     link = html.A('Eighty Upgrades Import Link', href=url, target='_blank')
-
-    # Only calculate mana stats if requested
-    if calc_mana_weights:
-        append_mana_weights(
-            weights_table, sim, num_replicates, time_to_oom, avg_dps,
-            dps_per_AP, stat_multiplier
-        )
 
     return 'Stat Breakdown', '', weights_table, link
 
@@ -1650,7 +1592,6 @@ def plot_new_trajectory(sim, show_whites):
     State('powerbear', 'value'),
     State('num_replicates', 'value'),
     State('latency', 'value'),
-    State('calc_mana_weights', 'checked'),
     State('epic_gems', 'checked'),
     State('show_whites', 'checked'))
 def compute(
@@ -1663,7 +1604,7 @@ def compute(
         use_rake, mangle_spam, use_biteweave, bite_model, bite_time,
         bear_mangle, prepop_berserk, preproc_omen, bearweave,
         berserk_bite_thresh, lacerate_prio, lacerate_time, powerbear,
-        num_replicates, latency, calc_mana_weights, epic_gems, show_whites
+        num_replicates, latency, epic_gems, show_whites
 ):
     ctx = dash.callback_context
 
@@ -1804,11 +1745,6 @@ def compute(
 
     if 'lust' in cooldowns:
         trinket_list.append(trinkets.Bloodlust(delay=cd_delay))
-    if 'drums' in cooldowns:
-        trinket_list.append(trinkets.ActivatedTrinket(
-            'haste_rating', 80, 'Drums of Battle', 30, 120, delay=cd_delay
-        ))
-
     if 'exalted_ring' in bonuses:
         ring_ppm = 1.0
         ring = trinkets.ProcTrinket(
@@ -1827,7 +1763,7 @@ def compute(
             stat_increment=np.array([
                 65. * stat_mod,
                 65. * stat_mod * ap_mod,
-                65. * stat_mod / 40. / 100.,
+                65. * stat_mod / 83.33 / 100.,
             ]),
             proc_duration=10, cooldown=10, proc_name='Primal Instinct',
             mangle_only=True
@@ -1851,7 +1787,7 @@ def compute(
             stat_increment=np.array([
                 120. * stat_mod,
                 120. * stat_mod * ap_mod,
-                120. * stat_mod / 40. / 100.,
+                120. * stat_mod / 83.33 / 100.,
                 30
             ]),
             proc_name='Lightning Speed', chance_on_hit=mongoose_ppm / 60.,
@@ -1892,8 +1828,8 @@ def compute(
     if (ctx.triggered and
             (ctx.triggered[0]['prop_id'] == 'weight_button.n_clicks')):
         weights_output = calc_weights(
-            sim, num_replicates, avg_dps, calc_mana_weights, dps_output[2],
-            kings, unleashed_rage, epic_gems, imp_motw
+            sim, num_replicates, avg_dps, dps_output[2], kings, unleashed_rage,
+            epic_gems, imp_motw
         )
     else:
         weights_output = ('Stat Breakdown', '', [], '')
