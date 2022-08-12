@@ -1725,10 +1725,13 @@ class Simulation():
             and (not self.player.omen_proc) and
             # ((not pending_actions) or (pending_actions[0][0] >= weave_end))
             ((not rip_refresh_pending) or (self.rip_end >= weave_end))
-            and (not self.tf_expected_before(time, weave_end))
+            # and (not self.tf_expected_before(time, weave_end))
             # and (not self.params['tigers_fury'])
             and (not self.player.berserk)
         )
+
+        if bearweave_now and (not self.strategy['lacerate_prio']):
+            bearweave_now = not self.tf_expected_before(time, weave_end)
 
         # If we're maintaining Lacerate, then allow for emergency bearweaves
         # if Lacerate is about to fall off even if the above conditions do not
