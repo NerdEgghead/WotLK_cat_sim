@@ -216,7 +216,7 @@ class Player():
         self._expertise_rating = value
         self.calc_miss_chance()
 
-    # Implement all ability costs as read-only properties here.
+    roar_durations = {1: 14.0, 2: 19.0, 3: 24.0, 4: 29.0, 5: 34.0}
 
     def __init__(
             self, attack_power, ap_mod, agility, hit_chance, expertise_rating,
@@ -495,14 +495,16 @@ class Player():
         self.enrage = False
         self.enrage_cd = 0.0
         self.mangle_cd = 0.0
+        self.savage_roar = False
         self.set_ability_costs()
 
         # Create dictionary to hold breakdown of total casts and damage
         self.dmg_breakdown = collections.OrderedDict()
 
         for cast_type in [
-            'Melee', 'Mangle (Cat)', 'Shred', 'Rip', 'Rake', 'Ferocious Bite',
-            'Shift (Bear)', 'Maul', 'Mangle (Bear)', 'Lacerate', 'Shift (Cat)'
+            'Melee', 'Mangle (Cat)', 'Rake', 'Shred', 'Savage Roar', 'Rip',
+            'Ferocious Bite', 'Shift (Bear)', 'Maul', 'Mangle (Bear)',
+            'Lacerate', 'Shift (Cat)'
         ]:
             self.dmg_breakdown[cast_type] = {'casts': 0, 'damage': 0.0}
 
@@ -514,6 +516,7 @@ class Player():
         self.mangle_cost = self._mangle_cost / (1 + self.berserk)
         self.bite_cost = 35. / (1 + self.berserk)
         self.rip_cost = 30. / (1 + self.berserk)
+        self.roar_cost = 25. / (1 + self.berserk)
 
     def check_omen_proc(self, yellow=False, spell=False):
         """Check for Omen of Clarity proc on a successful swing.
@@ -625,6 +628,12 @@ class Player():
         if self.enrage:
             damage_done *= 1.15
 
+        # Apply Savage Roar for cat form swings
+        if self.cat_form and self.savage_roar:
+            roar_damage = 0.3 * damage_done
+        else:
+            roar_damage = 0.0
+
         if not miss:
             # Check for Omen and JoW procs
             self.check_procs(crit=crit)
@@ -655,11 +664,12 @@ class Player():
         # Log the swing
         self.dmg_breakdown['Melee']['casts'] += 1
         self.dmg_breakdown['Melee']['damage'] += damage_done
+        self.dmg_breakdown['Savage Roar']['damage'] += roar_damage
 
         if self.log:
-            self.gen_log('melee', damage_done, miss, crit, False)
+            self.gen_log('melee', damage_done + roar_damage, miss, crit, False)
 
-        return damage_done
+        return damage_done + roar_damage
 
     def execute_bear_special(
         self, ability_name, min_dmg, max_dmg, rage_cost, yellow=True
@@ -781,6 +791,9 @@ class Player():
         if mangle_mod:
             damage_done *= 1.3
 
+        # Apply Savage Roar
+        roar_damage = 0.3 * damage_done if self.savage_roar else 0.0
+
         # Set GCD
         self.gcd = 1.0
 
@@ -803,11 +816,14 @@ class Player():
         # Log the cast
         self.dmg_breakdown[ability_name]['casts'] += 1
         self.dmg_breakdown[ability_name]['damage'] += damage_done
+        self.dmg_breakdown['Savage Roar']['damage'] += roar_damage
 
         if self.log:
-            self.gen_log(ability_name, damage_done, miss, crit, clearcast)
+            self.gen_log(
+                ability_name, damage_done + roar_damage, miss, crit, clearcast
+            )
 
-        return damage_done, not miss
+        return damage_done + roar_damage, not miss
 
     def shred(self):
         """Execute a Shred.
@@ -902,6 +918,9 @@ class Player():
             self.crit_chance + 0.25, self.meta
         )
 
+        # Apply Savage Roar
+        roar_damage = 0.3 * damage_done if self.savage_roar else 0.0
+
         # Consume energy pool and combo points on successful Bite
         if miss:
             self.energy += 0.8 * self.bite_cost * (not clearcast)
@@ -919,11 +938,15 @@ class Player():
         # Log the cast
         self.dmg_breakdown['Ferocious Bite']['casts'] += 1
         self.dmg_breakdown['Ferocious Bite']['damage'] += damage_done
+        self.dmg_breakdown['Savage Roar']['damage'] += roar_damage
 
         if self.log:
-            self.gen_log('Ferocious Bite', damage_done, miss, crit, clearcast)
+            self.gen_log(
+                'Ferocious Bite', damage_done + roar_damage, miss, crit,
+                clearcast
+            )
 
-        return damage_done
+        return damage_done + roar_damage
 
     def rip(self):
         """Cast Rip as a finishing move.
@@ -956,12 +979,44 @@ class Player():
 
         # Log the cast and total damage that will be done
         self.dmg_breakdown['Rip']['casts'] += 1
-        self.dmg_breakdown['Rip']['damage'] += damage_per_tick * 8
 
         if self.log:
             self.gen_log('Rip', 'applied', miss, False, clearcast)
 
         return damage_per_tick, not miss
+
+    def roar(self, time):
+        """Cast Savage Roar as a finishing move.
+
+        Arguments:
+            time (float): Time at which the Roar cast is executed, in seconds.
+
+        Returns:
+            roar_end (float): Time at which the Savage Roar buff will expire.
+        """
+        # Set GCD
+        self.gcd = 1.0
+
+        # Update Energy
+        clearcast = self.omen_proc
+
+        if clearcast:
+            self.omen_proc = False
+        else:
+            self.energy -= self.roar_cost
+
+        # Apply buff
+        self.savage_roar = True
+        roar_end = time + self.roar_durations[self.combo_points]
+        self.combo_points = 0
+
+        # Log the cast
+        self.dmg_breakdown['Savage Roar']['casts'] += 1
+
+        if self.log:
+            self.gen_log('Savage Roar', 'applied', False, False, clearcast)
+
+        return roar_end
 
     def shift(self, time, powershift=False):
         """Execute a shift between Cat Form and Dire Bear Form.
@@ -1248,6 +1303,7 @@ class Simulation():
             self.rake_end = time + 9.0
             self.rake_ticks = list(np.arange(time + 3, time + 9.01, 3))
             self.rake_damage = self.player.rake_tick
+            self.rake_sr_snapshot = self.player.savage_roar
 
         return damage_done
 
@@ -1308,6 +1364,7 @@ class Simulation():
             self.rip_ticks = list(np.arange(time + 2, time + 16.01, 2))
             self.rip_damage = damage_per_tick
             self.rip_crit_chance = self.player.crit_chance
+            self.rip_sr_snapshot = self.player.savage_roar
 
         return 0.0
 
@@ -1591,6 +1648,8 @@ class Simulation():
             and (energy < berserk_energy_thresh + 1e-9)
         )
 
+        roar_now = (not self.player.savage_roar) and (cp >= 1)
+
         # First figure out how much Energy we must float in order to be able
         # to refresh our buffs/debuffs as soon as they fall off
         pending_actions = []
@@ -1623,6 +1682,11 @@ class Simulation():
                 pending_actions.append((self.mangle_end, 0.5 * base_cost))
             else:
                 pending_actions.append((self.mangle_end, base_cost))
+        if self.player.savage_roar:
+            if self.berserk_expected_at(time, self.roar_end):
+                pending_actions.append((self.roar_end, 12.5))
+            else:
+                pending_actions.append((self.roar_end, 25))
 
         pending_actions.sort()
 
@@ -1723,6 +1787,11 @@ class Simulation():
         elif berserk_now:
             self.apply_berserk(time)
             return 0.0
+        elif roar_now:
+            if energy >= self.player.roar_cost:
+                self.roar_end = self.player.roar(time)
+                return 0.0
+            time_to_next_action = (self.player.roar_cost - energy) / 10.
         elif rip_now:
             if (energy >= self.player.rip_cost) or self.player.omen_proc:
                 return self.rip(time)
@@ -1959,12 +2028,6 @@ class Simulation():
         energy = []
         combos = []
 
-        # The "damage_done" for Rip that is logged by the Player object is not
-        # accurate to a given run, as it does not incorporate the Mangle
-        # debuff or partial Rip ticks at the end. So we'll keep track of it
-        # ourselves.
-        rip_damage = 0.0
-
         # Run simulation
         time = 0.0
         previous_time = 0.0
@@ -2008,6 +2071,15 @@ class Simulation():
                         self.gen_log(self.mangle_end, 'Mangle', 'falls off')
                     )
 
+            # Check if Savage Roar fell off
+            if self.player.savage_roar and (time >= self.roar_end):
+                self.player.savage_roar = False
+
+                if log:
+                    self.combat_log.append(
+                        self.gen_log(self.roar_end, 'Savage Roar', 'falls off')
+                    )
+
             # Check if a Rip tick happens at this time
             if self.rip_debuff and (time >= self.rip_ticks[0]):
                 tick_damage = self.rip_damage * (1 + 0.3 * self.mangle_debuff)
@@ -2019,8 +2091,15 @@ class Simulation():
                         predatory_instincts=self.player.cat_form
                     )
 
+                self.player.dmg_breakdown['Rip']['damage'] += tick_damage
+
+                if self.rip_sr_snapshot:
+                    self.player.dmg_breakdown['Savage Roar']['damage'] += (
+                        0.3 * tick_damage
+                    )
+                    tick_damage *= 1.3
+
                 dmg_done += tick_damage
-                rip_damage += tick_damage
                 self.rip_ticks.pop(0)
 
                 if self.log:
@@ -2040,8 +2119,15 @@ class Simulation():
             # Check if a Rake tick happens at this time
             if self.rake_debuff and (time >= self.rake_ticks[0]):
                 tick_damage = self.rake_damage * (1 + 0.3 * self.mangle_debuff)
-                dmg_done += tick_damage
                 self.player.dmg_breakdown['Rake']['damage'] += tick_damage
+
+                if self.rake_sr_snapshot:
+                    self.player.dmg_breakdown['Savage Roar']['damage'] += (
+                        0.3 * tick_damage
+                    )
+                    tick_damage *= 1.3
+
+                dmg_done += tick_damage
                 self.rake_ticks.pop(0)
 
                 if self.log:
@@ -2264,9 +2350,6 @@ class Simulation():
                 time = min(time, self.lacerate_ticks[0])
             if self.proc_end_times:
                 time = min(time, self.proc_end_times[0])
-
-        # Replace logged Rip damgae with the actual value realized in the run
-        self.player.dmg_breakdown['Rip']['damage'] = rip_damage
 
         # Perform a final update on trinkets at the exact fight end for
         # accurate uptime calculations. Manually deactivate any trinkets that

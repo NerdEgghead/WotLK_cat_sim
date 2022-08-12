@@ -207,7 +207,7 @@ encounter_details = dbc.Col(
          [
              dbc.InputGroupAddon('Fight Length:', addon_type='prepend'),
              dbc.Input(
-                 value=120.0, type='number', id='fight_length',
+                 value=180.0, type='number', id='fight_length',
              ),
              dbc.InputGroupAddon('seconds', addon_type='append')
          ],
