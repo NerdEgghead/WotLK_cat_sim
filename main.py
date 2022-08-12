@@ -552,7 +552,19 @@ iteration_input = dbc.Col([
                 'seconds before using cooldowns', addon_type='append'
             ),
         ],
-        style={'width': '63%'},
+        style={'width': '63%', 'marginBottom': '1.5%'},
+    ),
+    dbc.InputGroup(
+        [
+            dbc.InputGroupAddon(
+                'Clip Savage Roar by at most', addon_type='prepend'
+            ),
+            dbc.Input(
+                value=7, min=0, step=1, type='number', id='max_roar_clip'
+            ),
+            dbc.InputGroupAddon('seconds', addon_type='append')
+        ],
+        style={'width': '63%'}
     ),
     html.Br(),
     dbc.Checklist(
@@ -1585,6 +1597,7 @@ def plot_new_trajectory(sim, show_whites):
     State('rip_cp', 'value'),
     State('bite_cp', 'value'),
     State('cd_delay', 'value'),
+    State('max_roar_clip', 'value'),
     State('use_rake', 'value'),
     State('mangle_spam', 'value'),
     State('use_biteweave', 'value'),
@@ -1609,8 +1622,8 @@ def compute(
         binary_talents, feral_aggression, savage_fury, potp, improved_mangle,
         furor, naturalist, natural_shapeshifter, intensity, fight_length,
         boss_armor, boss_debuffs, cooldowns, rip_cp, bite_cp, cd_delay,
-        use_rake, mangle_spam, use_biteweave, bite_model, bite_time,
-        bear_mangle, prepop_berserk, preproc_omen, bearweave,
+        max_roar_clip, use_rake, mangle_spam, use_biteweave, bite_model,
+        bite_time, bear_mangle, prepop_berserk, preproc_omen, bearweave,
         berserk_bite_thresh, lacerate_prio, lacerate_time, powerbear,
         num_replicates, latency, epic_gems, show_whites
 ):
@@ -1826,8 +1839,9 @@ def compute(
         prepop_berserk=bool(prepop_berserk), preproc_omen=bool(preproc_omen),
         bearweave=bool(bearweave), berserk_bite_thresh=berserk_bite_thresh,
         lacerate_prio=bool(lacerate_prio), lacerate_time=lacerate_time,
-        powerbear=bool(powerbear), trinkets=trinket_list,
-        haste_multiplier=haste_multiplier, hot_uptime=hot_uptime / 100.
+        powerbear=bool(powerbear), max_roar_clip=max_roar_clip,
+        trinkets=trinket_list, haste_multiplier=haste_multiplier,
+        hot_uptime=hot_uptime / 100.
     )
     sim.set_active_debuffs(boss_debuffs)
     player.calc_damage_params(**sim.params)

@@ -1174,6 +1174,7 @@ class Simulation():
         'lacerate_prio': False,
         'lacerate_time': 10.0,
         'powerbear': False,
+        'max_roar_clip': 10.0,
     }
 
     def __init__(
@@ -1578,6 +1579,58 @@ class Simulation():
         )
         return allowed_rip_downtime
 
+    def clip_roar(self, time):
+        """Determine whether to clip a currently active Savage Roar in order to
+        de-sync the Rip and Roar timers.
+
+        Arguments:
+            time (float): Current simulation time in seconds.
+
+        Returns:
+            can_roar (bool): Whether or not to clip Roar now.
+        """
+        # For now, consider only the case where Rip will expire after Roar
+        if (not self.rip_debuff) or (self.rip_end <= self.roar_end):
+            return False
+
+        # Calculate how much Energy we expect to accumulate after Roar expires
+        # but before Rip expires.
+        ripdur = self.rip_start + 22 - time
+        roardur = self.roar_end - time
+        available_time = ripdur - roardur
+        expected_energy_gain = 10 * available_time
+
+        if self.tf_expected_before(time, self.rip_end):
+            expected_energy_gain += 60
+        if self.player.omen:
+            expected_energy_gain += available_time / self.swing_timer * (
+                3.5 / 60. * (1 - self.player.miss_chance) * 42
+            )
+        if self.player.omen_proc:
+            expected_energy_gain += 42
+
+        expected_energy_gain += (
+            available_time / self.revitalize_frequency * 0.15 * 8
+        )
+
+        # Now calculate the effective Energy cost for building back 5 CPs once
+        # Roar expires and casting Rip
+        ripcost = 15 if self.berserk_expected_at(time, self.rip_end) else 30
+        cp_per_builder = 1 + self.player.crit_chance
+        cost_per_builder = (
+            (42. + 42. + 35.) / 3. * (1 + 0.2 * self.player.miss_chance)
+        )
+        rip_refresh_cost = 5. / cp_per_builder * cost_per_builder + ripcost
+
+        # If the cost is less than the expected Energy gain in the available
+        # time, then there's no reason to clip Roar.
+        if expected_energy_gain >= rip_refresh_cost:
+            return False
+
+        # On the other hand, if there is a time conflict, then use the
+        # empirical parameter for how much we're willing to clip Roar.
+        return roardur <= self.strategy['max_roar_clip']
+
     def execute_rotation(self, time):
         """Execute the next player action in the DPS rotation according to the
         specified player strategy in the simulation.
@@ -1664,7 +1717,10 @@ class Simulation():
             # and (energy < berserk_energy_thresh + 1e-9)
         )
 
-        roar_now = (not self.player.savage_roar) and (cp >= 1)
+        #roar_now = (not self.player.savage_roar) and (cp >= 1)
+        roar_now = (cp >= 1) and (
+            (not self.player.savage_roar) or self.clip_roar(time)
+        )
 
         # First figure out how much Energy we must float in order to be able
         # to refresh our buffs/debuffs as soon as they fall off
