@@ -640,7 +640,7 @@ iteration_input = dbc.Col([
                 options=[{
                     'label': ' pre-pop Berserk 1 second before combat starts',
                     'value': 'prepop_berserk'
-                }], value=['prepop_berserk'], id='prepop_berserk'
+                }], value=[], id='prepop_berserk'
             ),
         ],
         id='berserk_options', is_open=True
@@ -651,7 +651,7 @@ iteration_input = dbc.Col([
                 options=[{
                     'label': ' pre-proc Clearcasting before combat starts',
                     'value': 'preproc_omen'
-                }], value=['preproc_omen'], id='preproc_omen'
+                }], value=[], id='preproc_omen'
             ),
         ],
         id='omen_options', is_open=True

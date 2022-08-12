@@ -1014,13 +1014,8 @@ class Player():
         # Set GCD
         self.gcd = 1.0
 
-        # Update Energy
-        clearcast = self.omen_proc
-
-        if clearcast:
-            self.omen_proc = False
-        else:
-            self.energy -= self.roar_cost
+        # Update Energy - SR ignores Clearcasting
+        self.energy -= self.roar_cost
 
         # Apply buff
         self.savage_roar = True
@@ -1031,7 +1026,7 @@ class Player():
         self.dmg_breakdown['Savage Roar']['casts'] += 1
 
         if self.log:
-            self.gen_log('Savage Roar', 'applied', False, False, clearcast)
+            self.gen_log('Savage Roar', 'applied', False, False, False)
 
         return roar_end
 
@@ -1666,7 +1661,7 @@ class Simulation():
         berserk_now = (
             self.strategy['use_berserk'] and (self.player.berserk_cd < 1e-9)
             and (self.player.tf_cd > 15)
-            and (energy < berserk_energy_thresh + 1e-9)
+            # and (energy < berserk_energy_thresh + 1e-9)
         )
 
         roar_now = (not self.player.savage_roar) and (cp >= 1)
@@ -1824,14 +1819,14 @@ class Simulation():
             if energy >= self.player.bite_cost:
                 return self.player.bite()
             time_to_next_action = (self.player.bite_cost - energy) / 10.
-        elif mangle_now:
-            if (energy >= mangle_cost) or self.player.omen_proc:
-                return self.mangle(time)
-            time_to_next_action = (mangle_cost - energy) / 10.
         elif rake_now:
             if (energy >= self.player.rake_cost) or self.player.omen_proc:
                 return self.rake(time)
             time_to_next_action = (self.player.rake_cost - energy) / 10.
+        elif mangle_now:
+            if (energy >= mangle_cost) or self.player.omen_proc:
+                return self.mangle(time)
+            time_to_next_action = (mangle_cost - energy) / 10.
         elif bearweave_now:
             self.player.ready_to_shift = True
         elif self.strategy['mangle_spam'] and (not self.player.omen_proc):
