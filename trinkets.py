@@ -335,6 +335,66 @@ class Bloodlust(ActivatedTrinket):
         sim.haste_multiplier = new_multi
 
 
+class UnholyFrenzy(ActivatedTrinket):
+    """Models the external damage buff provided by Blood Death Knights."""
+
+    def __init__(self, delay=0.0):
+        """Initialize controller for Unholy Frenzy buff.
+
+        Arguments:
+            delay (float): Time delay, in seconds, before first buff
+                application. Defaults to 0.
+        """
+        ActivatedTrinket.__init__(
+            self, None, 0.0, 'Unholy Frenzy', 30, 180, delay=delay
+        )
+
+    def modify_stat(self, time, player, sim, *args):
+        """Change global damage modifier when Unholy Frenzy is applied or falls
+        off.
+
+        Arguments:
+            time (float): Simulation time, in seconds, of buff activation or
+                deactivation.
+            player (wotlk_cat_sim.Player): Player object whose attributes will
+                be modified.
+            sim (wotlk_cat_sim.Simulation): Simulation object controlling the
+                fight execution.
+        """
+        damage_mod = 1./1.2 if self.active else 1.2
+        player.damage_multiplier *= damage_mod
+        player.calc_damage_params(**sim.params)
+
+
+class ShatteringThrow(ActivatedTrinket):
+    """Models the external armor penetration cooldown provided by Warriors."""
+
+    def __init__(self, delay=0.0):
+        """Inititalize controller for Shattering Throw debuff.
+
+        Arguments:
+            delay (float): Time delay, in seconds, before first usage. Defaults
+                to 0.
+        """
+        ActivatedTrinket.__init__(
+            self, None, 0.0, 'Shattering Throw', 10, 300, delay=delay
+        )
+
+    def modify_stat(self, time, player, sim, *args):
+        """Change residual boss armor when Shattering Throw is applied or falls
+        off.
+
+        Arguments:
+            time (float): Simulation time, in seconds.
+            player (wotlk_cat_sim.Player): Player object whose damage values
+                will be modified.
+            sim (wotlk_cat_sim.Simulation): Simulation object controlling the
+                fight execution.
+        """
+        sim.params['shattering_throw'] = not self.active
+        player.calc_damage_params(**sim.params)
+
+
 class ProcTrinket(Trinket):
     """Models a passive trinket with a specified proc chance on hit or crit."""
 

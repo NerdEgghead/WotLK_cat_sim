@@ -185,7 +185,7 @@ def gen_import_link(
     link += '&51=%.2f' % stat_weights['1 Weapon Damage']
 
     # Gems
-    gem_agi = 34 if epic_gems else 16
+    gem_agi = 20 if epic_gems else 16
     gem_weight = agi_weight * gem_agi
     link += '&74=%.2f&75=%.2f&76=%.2f' % (gem_weight, gem_weight, gem_weight)
 
@@ -372,7 +372,7 @@ class Player():
 
     def calc_damage_params(
             self, gift_of_arthas, boss_armor, sunder, faerie_fire,
-            blood_frenzy, tigers_fury=False
+            blood_frenzy, shattering_throw, tigers_fury=False
     ):
         """Calculate high and low end damage of all abilities as a function of
         specified boss debuffs."""
@@ -387,6 +387,7 @@ class Player():
 
         debuffed_armor = (
             boss_armor * (1 - 0.04 * sunder) * (1 - 0.05 * faerie_fire)
+            * (1 - 0.2 * shattering_throw)
         )
         armor_constant = 467.5 * 80 - 22167.5
         arp_cap = (debuffed_armor + armor_constant) / 3.
@@ -447,7 +448,7 @@ class Player():
         bear_multi = self.multiplier * 1.04 # Master Shapeshifter
         self.white_bear_low = (109.0 + bear_bonus_damage) * bear_multi
         self.white_bear_high = (165.0 + bear_bonus_damage) * bear_multi
-        maul_multi = mangle_fac * 1.56
+        maul_multi = mangle_fac * 1.2
         self.maul_low = (self.white_bear_low + 578 * bear_multi) * maul_multi
         self.maul_high = (self.white_bear_high + 578 * bear_multi) * maul_multi
         self.mangle_bear_low = mangle_fac * (
@@ -672,7 +673,8 @@ class Player():
         return damage_done + roar_damage
 
     def execute_bear_special(
-        self, ability_name, min_dmg, max_dmg, rage_cost, yellow=True
+        self, ability_name, min_dmg, max_dmg, rage_cost, yellow=True,
+        mangle_mod=False
     ):
         """Execute a special ability cast in Dire Bear form.
 
@@ -683,6 +685,8 @@ class Player():
             rage_cost (int): Rage cost of the ability.
             yellow (bool): Whether the ability should be treated as "yellow
                 damage" for the purposes of proc calculations. Defaults True.
+            mangle_mod (bool): Whether to apply the Mangle damage modifier to
+                the ability. Default False.
 
         Returns:
             damage_done (float): Damage done by the ability.
@@ -693,6 +697,9 @@ class Player():
             min_dmg, max_dmg, self.miss_chance, self.crit_chance - 0.04,
             meta=self.meta, predatory_instincts=False
         )
+
+        if mangle_mod:
+            damage_done *= 1.3
 
         # Apply King of the Jungle
         if self.enrage:
@@ -725,14 +732,19 @@ class Player():
 
         return damage_done, not miss
 
-    def maul(self):
+    def maul(self, mangle_debuff):
         """Execute a Maul when in Dire Bear Form.
+
+        Arguments:
+            mangle_debuff (bool): Whether the Mangle debuff is applied when
+                Maul is cast.
 
         Returns:
             damage_done (float): Damage done by the Maul cast.
         """
         damage_done, success = self.execute_bear_special(
-            'Maul', self.maul_low, self.maul_high, 10, yellow=False
+            'Maul', self.maul_low, self.maul_high, 10, yellow=False,
+            mangle_mod=mangle_debuff
         )
         return damage_done
 
@@ -851,8 +863,12 @@ class Player():
         )
         return damage_done, success
 
-    def lacerate(self):
+    def lacerate(self, mangle_debuff):
         """Execute a Lacerate.
+
+        Arguments:
+            mangle_debuff (bool): Whether the Mangle debuff is applied when
+                Lacerate is cast.
 
         Returns:
             damage_done (float): Damage done just by the Lacerate cast itself.
@@ -860,7 +876,8 @@ class Player():
                 applied or refreshed.
         """
         return self.execute_bear_special(
-            'Lacerate', self.lacerate_hit, self.lacerate_hit, 13
+            'Lacerate', self.lacerate_hit, self.lacerate_hit, 13,
+            mangle_mod=mangle_debuff
         )
 
     def mangle(self):
@@ -1141,7 +1158,8 @@ class Simulation():
         'boss_armor': 3731,
         'sunder': False,
         'faerie_fire': True,
-        'blood_frenzy': False
+        'blood_frenzy': False,
+        'shattering_throw': False,
     }
 
     # Default parameters specifying the player execution strategy
@@ -1316,7 +1334,7 @@ class Simulation():
         Returns:
             damage_done (float): Damage done by the Lacerate initial hit.
         """
-        damage_done, success = self.player.lacerate()
+        damage_done, success = self.player.lacerate(self.mangle_debuff)
 
         if success:
             self.lacerate_end = time + 15.0
@@ -1347,7 +1365,7 @@ class Simulation():
             )
             self.lacerate_crit_chance = self.player.crit_chance - 0.04
 
-        return damage_done * (1 + 0.3 * self.mangle_debuff)
+        return damage_done
 
     def rip(self, time):
         """Instruct Player to apply Rip, and perform related bookkeeping.
@@ -2271,7 +2289,7 @@ class Simulation():
                         maul_rage_thresh = 10
 
                     if self.player.rage >= maul_rage_thresh:
-                        dmg_done += self.player.maul()
+                        dmg_done += self.player.maul(self.mangle_debuff)
                     else:
                         dmg_done += self.player.swing()
 

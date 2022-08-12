@@ -116,8 +116,9 @@ stat_input = dbc.Col([
             {'label': 'Relentless Earthstorm Diamond', 'value': 'meta'},
             {'label': 'Band of the Eternal Champion', 'value': 'exalted_ring'},
             {'label': 'Enchant Weapon: Mongoose', 'value': 'mongoose'},
+            {'label': 'Hyperspeed Accelerators', 'value': 'engi_gloves'},
         ],
-        value=['t6_2p', 't6_4p', 'meta', 'mongoose'],
+        value=['t6_2p', 't6_4p', 'meta', 'mongoose', 'engi_gloves'],
         id='bonuses'
     ),
     ], width='auto', style={'marginBottom': '2.5%', 'marginLeft': '2.5%'})
@@ -126,10 +127,14 @@ buffs_1 = dbc.Col(
     [dbc.Collapse([html.H5('Consumables'),
      dbc.Checklist(
          options=[{'label': 'Flask of Endless Rage', 'value': 'flask'},
-                  {'label': 'Snapper Extreme / Worg Tartare', 'value': 'food'},
+                  {
+                      'label': 'Snapper Extreme / Worg Tartare',
+                      'value': 'hit_food'
+                  },
+                  {'label': 'Blackened Dragonfin', 'value': 'agi_food'},
                   {'label': 'Adamantite Weightstone', 'value': 'weightstone'}],
          value=[
-             'flask', 'food', 'weightstone',
+             'flask', 'hit_food', 'weightstone',
          ],
          id='consumables'
      ),
@@ -254,8 +259,10 @@ encounter_details = dbc.Col(
          options=[
              {'label': 'Bloodlust', 'value': 'lust'},
              {'label': 'Dark / Demonic Rune', 'value': 'rune'},
+             {'label': 'Unholy Frenzy', 'value': 'unholy_frenzy'},
+             {'label': 'Shattering Throw', 'value': 'shattering_throw'},
          ],
-         value=['lust'], id='cooldowns',
+         value=['lust', 'shattering_throw'], id='cooldowns',
      ),
      dbc.InputGroup(
          [
@@ -1339,6 +1346,7 @@ def apply_buffs(
     ))
     buffed_agi = stat_multiplier * (unbuffed_agi + gear_multi * (
         added_stats + 155 * ('str_totem' in raid_buffs)
+        + 40 * ('agi_food' in consumables)
     ))
     buffed_int = stat_multiplier * (unbuffed_int + 1.2 * gear_multi * (
         added_stats + 60 * ('ai' in raid_buffs)
@@ -1359,7 +1367,7 @@ def apply_buffs(
     )
     buffed_hit = (
         unbuffed_hit + 1 * ('heroic_presence' in raid_buffs)
-        + 40 / 32.79 * ('food' in consumables)
+        + 40 / 32.79 * ('hit_food' in consumables)
     )
     buffed_mana_pool = raw_mana_unbuffed + buffed_int * 15
     buffed_mp5 = unbuffed_mp5 + 110 * ('wisdom' in raid_buffs)
@@ -1745,6 +1753,10 @@ def compute(
 
     if 'lust' in cooldowns:
         trinket_list.append(trinkets.Bloodlust(delay=cd_delay))
+    if 'unholy_frenzy' in cooldowns:
+        trinket_list.append(trinkets.UnholyFrenzy(delay=cd_delay))
+    if 'shattering_throw' in cooldowns:
+        trinket_list.append(trinkets.ShatteringThrow(delay=cd_delay))
     if 'exalted_ring' in bonuses:
         ring_ppm = 1.0
         ring = trinkets.ProcTrinket(
@@ -1796,6 +1808,11 @@ def compute(
         )
         trinket_list.append(mongoose_enchant)
         player.proc_trinkets.append(mongoose_enchant)
+    if 'engi_gloves' in bonuses:
+        trinket_list.append(trinkets.ActivatedTrinket(
+            'haste_rating', 340, 'Hyperspeed Acceleration', 12, 60,
+            delay=cd_delay
+        ))
 
     if potion == 'haste':
         trinket_list.append(trinkets.HastePotion(delay=cd_delay))
