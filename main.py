@@ -586,7 +586,7 @@ iteration_input = dbc.Col([
                             {'label': 'analytical', 'value': 'analytical'},
                             {'label': 'empirical', 'value': 'empirical'}
                         ],
-                        value='analytical', id='bite_model'
+                        value='empirical', id='bite_model'
                     ),
                 ],
                 style={
@@ -602,11 +602,11 @@ iteration_input = dbc.Col([
                                 addon_type='prepend'
                             ),
                             dbc.Input(
-                                type='number', value=10, id='bite_time',
+                                type='number', value=9, id='bite_time',
                                 min=0, step=1
                             ),
                             dbc.InputGroupAddon(
-                                'seconds left on Rip', addon_type='append'
+                                'seconds left on Rip/Roar', addon_type='append'
                             )
                         ],
                         style={

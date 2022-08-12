@@ -1458,7 +1458,10 @@ class Simulation():
             can_bite (bool): True if Biting now is optimal.
         """
         if self.strategy['bite_time'] is not None:
-            return (self.rip_end - time >= self.strategy['bite_time'])
+            return (
+                (self.rip_end - time >= self.strategy['bite_time'])
+                and (self.roar_end - time >= self.strategy['bite_time'])
+            )
         return self.can_bite_analytical(time)
 
     def can_bite_analytical(self, time):
@@ -1640,8 +1643,8 @@ class Simulation():
         mangle_cost = self.player.mangle_cost
 
         bite_before_rip = (
-            (cp >= bite_cp) and self.rip_debuff and self.strategy['use_bite']
-            and self.can_bite(time)
+            (cp >= bite_cp) and self.rip_debuff and self.player.savage_roar
+            and self.strategy['use_bite'] and self.can_bite(time)
         )
         bite_now = (
             (bite_before_rip or bite_at_end)
