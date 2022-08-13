@@ -9,8 +9,8 @@ import psutil
 
 
 def calc_white_damage(
-    low_end, high_end, miss_chance, crit_chance, meta=False,
-    predatory_instincts=True
+    low_end, high_end, miss_chance, crit_chance,
+    crit_multiplier=2.0
 ):
     """Execute single roll table for a melee white attack.
 
@@ -19,10 +19,8 @@ def calc_white_damage(
         high_end (float): High end base damage of the swing.
         miss_chance (float): Probability that the swing is avoided.
         crit_chance (float): Probability of a critical strike.
-        meta (bool): Whether the Relentless Earthstorm Diamond meta-gem is
-            used. Defaults False.
-        predatory_instincts (bool): Whether to apply the critical damage
-            modifier from the Predatory Instincts talent. Defaults True.
+        crit_multiplier (float): Damage multiplier on crits.
+            Defaults to 2.0.
 
     Returns:
         damage_done (float): Damage done by the swing.
@@ -40,14 +38,13 @@ def calc_white_damage(
         glance_reduction = 0.15 + np.random.rand() * 0.2
         return (1.0 - glance_reduction) * base_dmg, False, False
     if outcome_roll < miss_chance + 0.24 + crit_chance:
-        crit_multi = 2.2 if predatory_instincts else 2.0
-        return crit_multi * (1 + meta * 0.03) * base_dmg, False, True
+        return crit_multiplier * base_dmg, False, True
     return base_dmg, False, False
 
 
 def calc_yellow_damage(
-    low_end, high_end, miss_chance, crit_chance, meta=False,
-    predatory_instincts=True
+    low_end, high_end, miss_chance, crit_chance,
+    crit_multiplier=2.0
 ):
     """Execute 2-roll table for a melee spell.
 
@@ -56,10 +53,8 @@ def calc_yellow_damage(
         high_end (float): High end base damage of the ability.
         miss_chance (float): Probability that the ability is avoided.
         crit_chance (float): Probability of a critical strike.
-        meta (bool): Whether the Relentless Earthstorm Diamond meta-gem is
-            used. Defaults False.
-        predatory_instincts (bool): Whether to apply the critical damage
-            modifier from the Predatory Instincts talent. Defaults True.
+        crit_multiplier (float): Damage multiplier on crits.
+            Defaults to 2.0.
 
     Returns:
         damage_done (float): Damage done by the ability.
@@ -75,8 +70,7 @@ def calc_yellow_damage(
     crit_roll = np.random.rand()
 
     if crit_roll < crit_chance:
-        crit_multi = 2.2 if predatory_instincts else 2.0
-        return crit_multi * (1 + meta * 0.03) * base_dmg, False, True
+        return crit_multiplier * base_dmg, False, True
     return base_dmg, False, False
 
 
@@ -136,7 +130,7 @@ def calc_haste_rating(swing_timer, multiplier=1.0, cat_form=True):
 
 
 def gen_import_link(
-    stat_weights, EP_name='Simmed Weights', multiplier=1.133, epic_gems=False
+    stat_weights, EP_name='Simmed Weights', multiplier=1.166, epic_gems=False
 ):
     """Generate 80upgrades stat weight import link from calculated weights.
 
@@ -147,7 +141,8 @@ def gen_import_link(
         EP_name (str): Name for the EP set for auto-populating the 70upgrades
             import interface. Defaults to "Simmed Weights".
         multiplier (float): Scaling factor for raw primary stats. Defaults to
-            1.133 assuming Blessing of Kings and Predatory Instincts.
+            1.166 assuming Blessing of Kings, 3/3 Survival of the Fittest and
+            0/2 Improved Mark of the Wild.
         epic_gems (bool): Whether Epic quality gems (10 Agility) should be
             assumed for socket weight calculations. Defaults to False (Rare
             quality 8 Agi gems).
@@ -224,9 +219,10 @@ class Player():
             spirit, mp5, jow=False, rune=True, t6_2p=False, t6_4p=False,
             wolfshead=True, meta=False, bonus_damage=0, shred_bonus=0,
             rip_bonus=0, debuff_ap=0, multiplier=1.1, omen=True,
-            primal_gore=True, feral_aggression=0, savage_fury=2, furor=3,
-            natural_shapeshifter=3, intensity=3, potp=2, improved_mangle=0,
-            weapon_speed=3.0, proc_trinkets=[], log=False
+            primal_gore=True, feral_aggression=0, predatory_instincts=3,
+            savage_fury=2, furor=3, natural_shapeshifter=3, intensity=3,
+            potp=2, improved_mangle=0, weapon_speed=3.0, proc_trinkets=[],
+            log=False
     ):
         """Initialize player with key damage parameters.
 
@@ -272,6 +268,8 @@ class Player():
             primal_gore (bool): Whether Primal Gore is talented. Defaults True.
             feral_aggression (int): Points taken in Feral Aggression talent.
                 Defaults to 2.
+            predatory_instincts (int): Points taken in Predatory Instincts
+                talent. Defaults to 3.
             savage_fury (int): Points taken in Savage Fury talent. Defaults
                 to 0.
             furor (int): Points taken in Furor talent. Default to 3.
@@ -321,6 +319,7 @@ class Player():
         self.omen = omen
         self.primal_gore = primal_gore
         self.feral_aggression = feral_aggression
+        self.predatory_instincts = predatory_instincts
         self.savage_fury = savage_fury
         self.furor = furor
         self.natural_shapeshifter = natural_shapeshifter
@@ -347,6 +346,12 @@ class Player():
             (8. - miss_reduction) + (6.5 - dodge_reduction)
         )
         self.dodge_chance = 0.01 * (6.5 - dodge_reduction)
+
+    def calc_crit_multiplier(self):
+        crit_multiplier = 2.0 * (1.0 + self.meta * 0.03)
+        if self.cat_form:
+            crit_multiplier *= (1.0 + round(self.predatory_instincts / 30, 2))
+        return crit_multiplier
 
     def set_mana_regen(self):
         """Calculate and store mana regeneration rates based on specified regen
@@ -621,8 +626,8 @@ class Player():
         high = self.white_high if self.cat_form else self.white_bear_high
         damage_done, miss, crit = calc_white_damage(
             low, high, self.miss_chance,
-            self.crit_chance - 0.04 * (not self.cat_form), meta=self.meta,
-            predatory_instincts=self.cat_form
+            self.crit_chance - 0.04 * (not self.cat_form),
+            crit_multiplier=self.calc_crit_multiplier()
         )
 
         # Apply King of the Jungle for bear form swings
@@ -695,7 +700,7 @@ class Player():
         # Perform Monte Carlo
         damage_done, miss, crit = calc_yellow_damage(
             min_dmg, max_dmg, self.miss_chance, self.crit_chance - 0.04,
-            meta=self.meta, predatory_instincts=False
+            crit_multiplier=self.calc_crit_multiplier()
         )
 
         if mangle_mod:
@@ -797,7 +802,8 @@ class Player():
         """
         # Perform Monte Carlo
         damage_done, miss, crit = calc_yellow_damage(
-            min_dmg, max_dmg, self.miss_chance, self.crit_chance, self.meta
+            min_dmg, max_dmg, self.miss_chance, self.crit_chance,
+            crit_multiplier=self.calc_crit_multiplier()
         )
 
         if mangle_mod:
@@ -932,7 +938,8 @@ class Player():
         damage_done, miss, crit = calc_yellow_damage(
             self.bite_low[self.combo_points] + bonus_damage,
             self.bite_high[self.combo_points] + bonus_damage, self.miss_chance,
-            self.crit_chance + 0.25, self.meta
+            self.crit_chance + 0.25,
+            crit_multiplier=self.calc_crit_multiplier()
         )
 
         # Apply Savage Roar
@@ -2244,8 +2251,7 @@ class Simulation():
                 if self.player.primal_gore:
                     tick_damage, _, _ = calc_yellow_damage(
                         tick_damage, tick_damage, 0.0, self.rip_crit_chance,
-                        meta=self.player.meta,
-                        predatory_instincts=self.player.cat_form
+                        crit_multiplier=self.player.calc_crit_multiplier()
                     )
 
                 self.player.dmg_breakdown['Rip']['damage'] += tick_damage
@@ -2310,8 +2316,8 @@ class Simulation():
                 if self.player.primal_gore:
                     tick_damage, _, _ = calc_yellow_damage(
                         tick_damage, tick_damage, 0.0,
-                        self.lacerate_crit_chance, meta=self.player.meta,
-                        predatory_instincts=self.player.cat_form
+                        self.lacerate_crit_chance,
+                        crit_multiplier=self.player.calc_crit_multiplier()
                     )
 
                 dmg_done += tick_damage
