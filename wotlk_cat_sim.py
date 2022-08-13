@@ -1693,6 +1693,10 @@ class Simulation():
             available_time / self.revitalize_frequency * 0.15 * 8
         )
 
+        # Add current Energy minus cost of Roaring now
+        roarcost = 12.5 if self.player.berserk else 25
+        available_energy = self.player.energy - roarcost + expected_energy_gain
+
         # Now calculate the effective Energy cost for building back 5 CPs once
         # Roar expires and casting Rip
         ripcost = 15 if self.berserk_expected_at(time, self.rip_end) else 30
@@ -1704,7 +1708,7 @@ class Simulation():
 
         # If the cost is less than the expected Energy gain in the available
         # time, then there's no reason to clip Roar.
-        if expected_energy_gain >= rip_refresh_cost:
+        if available_energy >= rip_refresh_cost:
             return False
 
         # On the other hand, if there is a time conflict, then use the
