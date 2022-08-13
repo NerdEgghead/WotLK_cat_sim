@@ -354,6 +354,27 @@ encounter_details = dbc.Col(
          )]),
      html.Div([
          html.Div(
+             'Predatory Instincts:',
+             style={
+                 'width': '35%', 'display': 'inline-block',
+                 'fontWeight': 'bold'
+             }
+         ),
+         dbc.Select(
+             options=[
+                 {'label': '0', 'value': 0},
+                 {'label': '1', 'value': 1},
+                 {'label': '2', 'value': 2},
+                 {'label': '3', 'value': 3},
+             ],
+             value=3, id='predatory_instincts',
+             style={
+                 'width': '20%', 'display': 'inline-block',
+                 'marginBottom': '2.5%', 'marginRight': '5%'
+             }
+         )]),
+     html.Div([
+         html.Div(
              'Improved Mangle:',
              style={
                  'width': '35%', 'display': 'inline-block',
@@ -1270,7 +1291,7 @@ def create_player(
         buffed_mana_pool, buffed_int, buffed_spirit, buffed_mp5, weapon_speed,
         unleashed_rage, kings, raven_idol, other_buffs, stat_debuffs,
         cooldowns, bonuses, binary_talents, naturalist, feral_aggression,
-        savage_fury, potp, improved_mangle, imp_motw, furor,
+        savage_fury, potp, predatory_instincts, improved_mangle, imp_motw, furor,
         natural_shapeshifter, intensity, potion
 ):
     """Takes in raid buffed player stats from Eighty Upgrades, modifies them
@@ -1307,7 +1328,7 @@ def create_player(
         * (1 + 0.03 * ('sanc_aura' in other_buffs))
     )
     shred_bonus = 88 * ('everbloom' in bonuses)
-    rip_bonus = 7 * ('rip_idol' in bonuses) 
+    rip_bonus = 7 * ('rip_idol' in bonuses)
 
     # Create and return a corresponding Player object
     player = ccs.Player(
@@ -1319,7 +1340,8 @@ def create_player(
         omen='omen' in binary_talents,
         primal_gore='primal_gore' in binary_talents,
         feral_aggression=int(feral_aggression), savage_fury=int(savage_fury),
-        potp=int(potp), improved_mangle=int(improved_mangle), furor=int(furor),
+        potp=int(potp), predatory_instincts=int(predatory_instincts),
+        improved_mangle=int(improved_mangle), furor=int(furor),
         natural_shapeshifter=int(natural_shapeshifter),
         intensity=int(intensity), weapon_speed=weapon_speed,
         bonus_damage=encounter_weapon_damage, multiplier=damage_multiplier,
@@ -1585,6 +1607,7 @@ def plot_new_trajectory(sim, show_whites):
     State('feral_aggression', 'value'),
     State('savage_fury', 'value'),
     State('potp', 'value'),
+    State('predatory_instincts', 'value'),
     State('improved_mangle', 'value'),
     State('furor', 'value'),
     State('naturalist', 'value'),
@@ -1619,9 +1642,10 @@ def compute(
         json_file, consumables, raid_buffs, other_buffs, raven_idol,
         stat_debuffs, imp_motw, trinket_1, trinket_2, run_clicks,
         weight_clicks, graph_clicks, hot_uptime, potion, bonuses,
-        binary_talents, feral_aggression, savage_fury, potp, improved_mangle,
-        furor, naturalist, natural_shapeshifter, intensity, fight_length,
-        boss_armor, boss_debuffs, cooldowns, rip_cp, bite_cp, cd_delay,
+        binary_talents, feral_aggression, savage_fury, potp,
+        predatory_instincts, improved_mangle, furor, naturalist,
+        natural_shapeshifter, intensity, fight_length, boss_armor,
+        boss_debuffs, cooldowns, rip_cp, bite_cp, cd_delay,
         max_roar_clip, use_rake, mangle_spam, use_biteweave, bite_model,
         bite_time, bear_mangle, prepop_berserk, preproc_omen, bearweave,
         berserk_bite_thresh, lacerate_prio, lacerate_time, powerbear,
@@ -1739,7 +1763,7 @@ def compute(
         input_stats.get('mp5', 0), float(input_stats['mainHandSpeed']),
         unleashed_rage, kings, raven_idol, other_buffs, stat_debuffs,
         cooldowns, bonuses, binary_talents, naturalist, feral_aggression,
-        savage_fury, potp, improved_mangle, imp_motw, furor,
+        savage_fury, potp, predatory_instincts, improved_mangle, imp_motw, furor,
         natural_shapeshifter, intensity, potion
     )
 
