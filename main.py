@@ -569,7 +569,7 @@ iteration_input = dbc.Col([
     html.Br(),
     dbc.Checklist(
         options=[{'label': ' use Ferocious Bite', 'value': 'bite'}],
-        value=['bite'], id='use_biteweave'
+        value=[], id='use_biteweave'
     ),
     dbc.Collapse(
         [
