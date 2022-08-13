@@ -12,6 +12,7 @@ from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import wotlk_cat_sim as ccs
 import sim_utils
+import player as player_class
 import multiprocessing
 import trinkets
 import copy
@@ -1333,7 +1334,7 @@ def create_player(
     rip_bonus = 7 * ('rip_idol' in bonuses)
 
     # Create and return a corresponding Player object
-    player = ccs.Player(
+    player = player_class.Player(
         attack_power=buffed_attack_power, ap_mod=ap_mod,
         agility=buffed_agility, hit_chance=encounter_hit / 100,
         expertise_rating=expertise_rating, crit_chance=encounter_crit / 100,
