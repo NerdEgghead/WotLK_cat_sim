@@ -11,6 +11,7 @@ import numpy as np
 from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import wotlk_cat_sim as ccs
+import sim_utils
 import multiprocessing
 import trinkets
 import copy
@@ -261,6 +262,7 @@ encounter_details = dbc.Col(
              {'label': 'Dark / Demonic Rune', 'value': 'rune'},
              {'label': 'Unholy Frenzy', 'value': 'unholy_frenzy'},
              {'label': 'Shattering Throw', 'value': 'shattering_throw'},
+             {'label': 'Hyperspeed Accelerators'}
          ],
          value=['lust', 'shattering_throw'], id='cooldowns',
      ),
@@ -1206,10 +1208,10 @@ def process_trinkets(
             if stat == 'attack_power':
                 increment *= ap_mod
             if stat == 'haste_rating':
-                new_haste_rating = increment + ccs.calc_haste_rating(
+                new_haste_rating = increment + sim_utils.calc_haste_rating(
                     player.swing_timer, multiplier=haste_multiplier
                 )
-                new_swing_timer = ccs.calc_swing_timer(
+                new_swing_timer = sim_utils.calc_swing_timer(
                     new_haste_rating, multiplier=haste_multiplier
                 )
                 player.swing_timer = new_swing_timer
@@ -1305,7 +1307,7 @@ def create_player(
         (1 + 0.2 * ('major_haste' in other_buffs))
         * (1 + 0.03 * ('minor_haste' in other_buffs))
     )
-    buffed_swing_timer = ccs.calc_swing_timer(
+    buffed_swing_timer = sim_utils.calc_swing_timer(
         buffed_haste_rating, multiplier=haste_multiplier
     )
 
@@ -1514,7 +1516,7 @@ def calc_weights(
         ]))
 
     # Generate 80upgrades import link for raw stats
-    url = ccs.gen_import_link(
+    url = sim_utils.gen_import_link(
         stat_weights, multiplier=stat_multiplier, epic_gems=epic_gems
     )
     link = html.A('Eighty Upgrades Import Link', href=url, target='_blank')
@@ -1527,11 +1529,11 @@ def plot_new_trajectory(sim, show_whites):
     t_fine = np.linspace(0, sim.fight_length, 10000)
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=t_fine, y=ccs.piecewise_eval(t_fine, t_vals, energy_vals),
+        x=t_fine, y=sim_utils.piecewise_eval(t_fine, t_vals, energy_vals),
         line=dict(color="#d62728")
     ))
     fig.add_trace(go.Scatter(
-        x=t_fine, y=ccs.piecewise_eval(t_fine, t_vals, cp_vals),
+        x=t_fine, y=sim_utils.piecewise_eval(t_fine, t_vals, cp_vals),
         line=dict(color="#9467bd", dash='dash'), yaxis='y2'
     ))
     fig.update_layout(
