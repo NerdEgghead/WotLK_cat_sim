@@ -1559,47 +1559,76 @@ class Simulation():
             can_bite (bool): True if the analytical model indicates that Biting
                 now is optimal, False otherwise.
         """
-        # First calculate how much Energy we expect to accumulate before Rip
-        # expires.
-        # ripdur = self.rip_end - time
+        # First calculate how much Energy we expect to accumulate before our
+        # next finisher expires.
         ripdur = self.rip_start + 22 - time
-        expected_energy_gain = 10 * ripdur
+        srdur = self.roar_end - time
+        mindur = min(ripdur, srdur)
+        maxdur = max(ripdur, srdur)
+        expected_energy_gain_min = 10 * mindur
+        expected_energy_gain_max = 10 * maxdur
 
-        if self.tf_expected_before(time, self.rip_end):
-            expected_energy_gain += 60
+        if self.tf_expected_before(time, time + mindur):
+            expected_energy_gain_min += 60
+        if self.tf_expected_before(time, time + maxdur):
+            expected_energy_gain_max += 60
+
         if self.player.omen:
-            expected_energy_gain += ripdur / self.swing_timer * (
+            expected_energy_gain_min += mindur / self.swing_timer * (
+                3.5 / 60. * (1 - self.player.miss_chance) * 42
+            )
+            expected_energy_gain_max += maxdur / self.swing_timer * (
                 3.5 / 60. * (1 - self.player.miss_chance) * 42
             )
 
-        expected_energy_gain += ripdur / self.revitalize_frequency * 0.15 * 8
-        total_energy_available = self.player.energy + expected_energy_gain
+        expected_energy_gain_min += mindur/self.revitalize_frequency*0.15*8
+        expected_energy_gain_max += maxdur/self.revitalize_frequency*0.15*8
+
+        total_energy_min = self.player.energy + expected_energy_gain_min
+        total_energy_max = self.player.energy + expected_energy_gain_max
 
         # Now calculate the effective Energy cost for Biting now, which
         # includes the cost of the Ferocious Bite itself, the cost of building
-        # 5 CPs for Rip, and the cost of Rip.
-        ripcost, bitecost = self.get_finisher_costs(time)
+        # CPs for Rip and Roar, and the cost of Rip/Roar.
+        ripcost, bitecost, srcost = self.get_finisher_costs(time)
         cp_per_builder = 1 + self.player.crit_chance
-        # cost_per_builder = (42. + 42. + 35.) / 3. # ignore Berserk here
         cost_per_builder = (
             (42. + 42. + 35.) / 3. * (1 + 0.2 * self.player.miss_chance)
         )
-        total_energy_cost = (
-            bitecost + 5. / cp_per_builder * cost_per_builder + ripcost
+
+        if srdur < ripdur:
+            nextcost = srcost
+            secondcps = 5
+        else:
+            nextcost = ripcost
+            secondcps = 1
+
+        total_energy_cost_min = (
+            bitecost + 5. / cp_per_builder * cost_per_builder + nextcost
+        )
+        total_energy_cost_max = (
+            bitecost + (5. + secondcps) / cp_per_builder * cost_per_builder
+            + ripcost + srcost
         )
 
         # Actual Energy cost is a bit lower than this because it is okay to
-        # lose a few seconds of Rip uptime to gain a Bite.
-        allowed_rip_downtime = self.calc_allowed_rip_downtime(time)
+        # lose a few seconds of Rip or SR uptime to gain a Bite.
+        rip_downtime, sr_downtime = self.calc_allowed_rip_downtime(time)
 
         # Adjust downtime estimate to account for end of fight losses
-        allowed_rip_downtime = 22. * (1 - 1. / (1. + allowed_rip_downtime/22.))
+        rip_downtime = 22. * (1 - 1. / (1. + rip_downtime / 22.))
+        sr_downtime = 34. * (1 - 1. / (1. + sr_downtime / 34.))
+        next_downtime = sr_downtime if srdur < ripdur else rip_downtime
 
-        total_energy_cost -= 10 * allowed_rip_downtime
+        total_energy_cost_min -= 10 * next_downtime
+        total_energy_cost_max -= 10 * min(rip_downtime, sr_downtime)
 
         # Then we simply recommend Biting now if the available Energy to do so
         # exceeds the effective cost.
-        return (total_energy_available > total_energy_cost)
+        return (
+            (total_energy_min > total_energy_cost_min)
+            and (total_energy_max > total_energy_cost_max)
+        )
 
     def get_finisher_costs(self, time):
         """Determine the expected Energy cost for Rip when it needs to be
@@ -1612,6 +1641,7 @@ class Simulation():
         Returns:
             ripcost (float): Energy cost of future Rip refresh.
             bitecost (float): Energy cost of a current Ferocious Bite cast.
+            srcost (float): Energy cost of a Savage Roar refresh.
         """
         rip_end = time if (not self.rip_debuff) else self.rip_end
         ripcost = 15 if self.berserk_expected_at(time, rip_end) else 30
@@ -1621,7 +1651,10 @@ class Simulation():
         else:
             bitecost = self.player.bite_cost + 10 * self.latency
 
-        return ripcost, bitecost
+        sr_end = time if (not self.player.savage_roar) else self.roar_end
+        srcost = 12.5 if self.berserk_expected_at(time, sr_end) else 25
+
+        return ripcost, bitecost, srcost
 
     def calc_allowed_rip_downtime(self, time):
         """Determine how many seconds of Rip uptime can be lost in exchange for
@@ -1636,11 +1669,13 @@ class Simulation():
         Returns:
             allowed_rip_downtime (float): Maximum acceptable Rip duration loss,
                 in seconds.
+            allowed_sr_downtime (float): Maximum acceptable Savage Roar
+                downtime, in seconds.
         """
         rip_cp = self.strategy['min_combos_for_rip']
         bite_cp = self.strategy['min_combos_for_bite']
-        rip_cost, bite_cost = self.get_finisher_costs(time)
-        crit_factor = 2.2 * (1 + 0.03 * self.player.meta) - 1
+        rip_cost, bite_cost, roar_cost = self.get_finisher_costs(time)
+        crit_factor = self.player.calc_crit_multiplier() - 1
         bite_base_dmg = 0.5 * (
             self.player.bite_low[bite_cp] + self.player.bite_high[bite_cp]
         )
@@ -1652,19 +1687,33 @@ class Simulation():
         bite_dpc = (bite_base_dmg + bite_bonus_dmg) * (
             1 + crit_factor * (self.player.crit_chance + 0.25)
         )
+        crit_mod = crit_factor * self.player.crit_chance
         avg_rip_tick = self.player.rip_tick[rip_cp] * 1.3 * (
-            1 + crit_factor * self.player.crit_chance * self.player.primal_gore
+            1 + crit_mod * self.player.primal_gore
         )
         shred_dpc = (
             0.5 * (self.player.shred_low + self.player.shred_high) * 1.3
-            * (1 + crit_factor * self.player.crit_chance)
+            * (1 + crit_mod)
         )
-        # allowed_rip_downtime = bite_dpc / avg_rip_tick * 2
         allowed_rip_downtime = (
             (bite_dpc - (bite_cost - rip_cost) * shred_dpc / 42.)
             / avg_rip_tick * 2
         )
-        return allowed_rip_downtime
+        cpe = (42. * bite_dpc / shred_dpc - 35.) / 5.
+        srep = {1: (1 - 5) * (cpe - 125./34.), 2: (2 - 5) * (cpe - 125./34.)}
+        srep_avg = (
+            self.player.crit_chance * srep[2]
+            + (1 - self.player.crit_chance) * srep[1]
+        )
+        rake_dpc = 1.3 * (
+            self.player.rake_hit * (1 + crit_mod)
+            + 3*self.player.rake_tick*(1 + crit_mod*self.player.primal_gore)
+        )
+        allowed_sr_downtime = (
+            (bite_dpc - shred_dpc / 42. * min(srep_avg, srep[1], srep[2]))
+            / (0.33/1.33 * rake_dpc)
+        )
+        return allowed_rip_downtime, allowed_sr_downtime
 
     def clip_roar(self, time):
         """Determine whether to clip a currently active Savage Roar in order to
