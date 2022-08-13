@@ -614,7 +614,7 @@ iteration_input = dbc.Col([
                                 addon_type='prepend'
                             ),
                             dbc.Input(
-                                type='number', value=9, id='bite_time',
+                                type='number', value=10, id='bite_time',
                                 min=0, step=1
                             ),
                             dbc.InputGroupAddon(
