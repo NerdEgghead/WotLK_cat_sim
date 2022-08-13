@@ -263,7 +263,6 @@ encounter_details = dbc.Col(
              {'label': 'Dark / Demonic Rune', 'value': 'rune'},
              {'label': 'Unholy Frenzy', 'value': 'unholy_frenzy'},
              {'label': 'Shattering Throw', 'value': 'shattering_throw'},
-             {'label': 'Hyperspeed Accelerators'}
          ],
          value=['lust', 'shattering_throw'], id='cooldowns',
      ),
