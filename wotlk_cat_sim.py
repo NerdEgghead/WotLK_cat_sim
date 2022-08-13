@@ -1935,10 +1935,16 @@ class Simulation():
             self.apply_berserk(time)
             return 0.0
         elif roar_now:
+            # If we have leeway to do so, don't Roar right away and instead
+            # pool Energy to reduce how much we clip the buff
+            # if (self.player.savage_roar and (not self.player.omen_proc)
+            #         and (energy < 90)):
+            #     time_to_next_action = min(self.roar_end-time, (90.-energy)/10.)
             if energy >= self.player.roar_cost:
                 self.roar_end = self.player.roar(time)
                 return 0.0
-            time_to_next_action = (self.player.roar_cost - energy) / 10.
+            else:
+                time_to_next_action = (self.player.roar_cost - energy) / 10.
         elif rip_now:
             if (energy >= self.player.rip_cost) or self.player.omen_proc:
                 return self.rip(time)
@@ -2428,6 +2434,11 @@ class Simulation():
                     self.combat_log.append(
                         ['%.3f' % time] + self.player.combat_log
                     )
+
+                # If the swing/Maul resulted in an Omen proc, then schedule the
+                # next player decision based on latency.
+                if self.player.omen_proc:
+                    self.next_action = time + self.latency
 
             # Check if we're able to act, and if so execute the optimal cast.
             self.player.combat_log = None
