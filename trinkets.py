@@ -2,6 +2,7 @@
 
 import numpy as np
 import wotlk_cat_sim as ccs
+import sim_utils
 
 
 class Trinket():
@@ -324,11 +325,11 @@ class Bloodlust(ActivatedTrinket):
                 fight execution.
         """
         old_multi = sim.haste_multiplier
-        haste_rating = ccs.calc_haste_rating(
+        haste_rating = sim_utils.calc_haste_rating(
             sim.swing_timer, multiplier=old_multi, cat_form=player.cat_form
         )
         new_multi = old_multi/1.3 if self.active else old_multi*1.3
-        new_swing_timer = ccs.calc_swing_timer(
+        new_swing_timer = sim_utils.calc_swing_timer(
             haste_rating, multiplier=new_multi, cat_form=player.cat_form
         )
         sim.update_swing_times(time, new_swing_timer)
@@ -755,7 +756,7 @@ class RefreshingProcTrinket(ProcTrinket):
         return ProcTrinket.activate(self, time, player, sim)
 
 
-# Library of recognized TBC trinkets and associated parameters
+# Library of recognized trinkets and associated parameters
 trinket_library = {
     'brooch': {
         'type': 'activated',
