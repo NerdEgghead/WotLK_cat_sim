@@ -1215,7 +1215,7 @@ class Simulation():
                 tick_damage = self.rip_damage * (1 + 0.3 * self.mangle_debuff)
 
                 if self.player.primal_gore:
-                    tick_damage, _, _ = sim_utils.calc_white_damage(
+                    tick_damage, _, _ = sim_utils.calc_yellow_damage(
                         tick_damage, tick_damage, 0.0, self.rip_crit_chance,
                         crit_multiplier=self.player.calc_crit_multiplier()
                     )
@@ -1280,7 +1280,7 @@ class Simulation():
                 tick_damage = self.lacerate_damage * (1+0.3*self.mangle_debuff)
 
                 if self.player.primal_gore:
-                    tick_damage, _, _ = sim_utils.calc_white_damage(
+                    tick_damage, _, _ = sim_utils.calc_yellow_damage(
                         tick_damage, tick_damage, 0.0,
                         self.lacerate_crit_chance,
                         crit_multiplier=self.player.calc_crit_multiplier()
