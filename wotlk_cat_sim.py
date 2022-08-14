@@ -887,6 +887,17 @@ class Simulation():
                 (not self.lacerate_debuff) or (self.lacerate_stacks < 5)
                 or (self.lacerate_end - time <= self.strategy['lacerate_time'])
             )
+            # build_lacerate = (
+            #     (not self.lacerate_debuff) or (self.lacerate_stacks < 5)
+            # )
+            # maintain_lacerate = (not build_lacerate) and (
+            #     (self.lacerate_end - time <= self.strategy['lacerate_time'])
+            #     and (self.player.rage < 38)
+            # )
+            # lacerate_now = (
+            #     self.strategy['lacerate_prio']
+            #     and (build_lacerate or maintain_lacerate)
+            # )
             emergency_lacerate = (
                 self.strategy['lacerate_prio'] and self.lacerate_debuff
                 and (self.lacerate_end - time < 3.0 + 2 * self.latency)
