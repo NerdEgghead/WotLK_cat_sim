@@ -35,12 +35,12 @@ class Player():
             self, attack_power, ap_mod, agility, hit_chance, expertise_rating,
             crit_chance, armor_pen_rating, swing_timer, mana, intellect,
             spirit, mp5, jow=False, rune=True, t6_2p=False, t6_4p=False,
-            wolfshead=True, meta=False, bonus_damage=0, shred_bonus=0,
+            meta=False, bonus_damage=0, shred_bonus=0,
             rip_bonus=0, debuff_ap=0, multiplier=1.1, omen=True,
             primal_gore=True, feral_aggression=0, predatory_instincts=3,
-            savage_fury=2, furor=3, natural_shapeshifter=3, intensity=3,
-            potp=2, improved_mangle=0, weapon_speed=3.0, proc_trinkets=[],
-            log=False
+            savage_fury=2, furor=3, natural_shapeshifter=3,
+            master_shapeshifter=2, intensity=3, potp=2, improved_mangle=0,
+            proc_trinkets=[], log=False
     ):
         """Initialize player with key damage parameters.
 
@@ -67,7 +67,6 @@ class Player():
                 False.
             t6_4p (bool): Whether the 4-piece T6 set bonus is used. Defaults
                 False.
-            wolfshead (bool): Whether Wolfshead is worn. Defaults to True.
             meta (bool): Whether a Relentless Earthstorm Diamond meta gem is
                 socketed. Defaults to False.
             bonus_damage (int): Bonus weapon damage from buffs such as Bogling
@@ -93,13 +92,13 @@ class Player():
             furor (int): Points taken in Furor talent. Default to 3.
             natural_shapeshifter (int): Points taken in Natural Shapeshifter
                 talent. Defaults to 3.
+            master_shapeshifter (int): Points taken in Master Shapeshifter
+                talent. Defaults to 2.
             intensity (int): Points taken in Intensity talent. Defaults to 3.
             potp (int): Points taken in Protector of the Pack talent. Defaults
                 to 2.
             improved_mangle (int): Points taken in Improved Mangle talent.
                 Defaults to 0.
-            weapon_speed (float): Equipped weapon speed, used for calculating
-                Omen of Clarity proc rate. Defaults to 3.0.
             proc_trinkets (list of trinkets.ProcTrinket): If applicable, a list
                 of ProcTrinket objects modeling each on-hit or on-crit trinket
                 used by the player.
@@ -131,7 +130,6 @@ class Player():
         self.rip_bonus = rip_bonus
         self._mangle_cost = 40 - 5 * t6_2p - 2 * improved_mangle
         self.t6_bonus = t6_4p
-        self.wolfshead = wolfshead
         self.meta = meta
         self.damage_multiplier = multiplier
         self.omen = omen
@@ -141,8 +139,8 @@ class Player():
         self.savage_fury = savage_fury
         self.furor = furor
         self.natural_shapeshifter = natural_shapeshifter
+        self.master_shapeshifter = master_shapeshifter
         self.intensity = intensity
-        self.weapon_speed = weapon_speed
         self.omen_rates = {
             'white': 3.5/60,
             'yellow': 0.0,
@@ -165,7 +163,15 @@ class Player():
         )
         self.dodge_chance = 0.01 * (6.5 - dodge_reduction)
 
+    def calc_crit_chance(self):
+        """Calculates form-dependant crit chance."""
+        if self.cat_form:
+            return self.crit_chance
+        else:
+            return self.crit_chance - 0.02 * self.master_shapeshifter
+
     def calc_crit_multiplier(self):
+        """Calculates form-dependent crit multiplier."""
         crit_multiplier = 2.0 * (1.0 + self.meta * 0.03)
         if self.cat_form:
             crit_multiplier *= (1.0 + round(self.predatory_instincts / 30, 2))
@@ -268,7 +274,7 @@ class Player():
         bear_bonus_damage = (
             (bear_ap + self.debuff_ap) / 14 * 2.5 + self.bonus_damage
         )
-        bear_multi = self.multiplier * 1.04 # Master Shapeshifter
+        bear_multi = self.multiplier * (1.0 + 0.02 * self.master_shapeshifter)
         self.white_bear_low = (109.0 + bear_bonus_damage) * bear_multi
         self.white_bear_high = (165.0 + bear_bonus_damage) * bear_multi
         maul_multi = mangle_fac * 1.2
@@ -281,7 +287,10 @@ class Player():
             self.white_bear_high * 1.15 + 299 * bear_multi
         )
         self.lacerate_hit = (88 + 0.01 * bear_ap) * bear_multi
-        self.lacerate_tick = (64 + 0.01 * bear_ap) * damage_multiplier * 1.04
+        self.lacerate_tick = (
+            (64 + 0.01 * bear_ap) * damage_multiplier
+            * (1 + 0.02 * self.master_shapeshifter)
+        )
 
         # Adjust damage values for Gift of Arthas
         if not gift_of_arthas:
@@ -440,41 +449,35 @@ class Player():
         Returns:
             damage_done (float): Damage done by the swing.
         """
-        low = self.white_low if self.cat_form else self.white_bear_low
-        high = self.white_high if self.cat_form else self.white_bear_high
-        damage_done, miss, crit = sim_utils.calc_white_damage(
-            low, high, self.miss_chance,
-            self.crit_chance - 0.04 * (not self.cat_form),
-            crit_multiplier=self.calc_crit_multiplier()
-        )
-
-        # Apply King of the Jungle for bear form swings
-        if self.enrage:
-            damage_done *= 1.15
-
-        # Apply Savage Roar for cat form swings
-        if self.cat_form and self.savage_roar:
-            roar_damage = 0.3 * damage_done
+        if self.cat_form:
+            damage_done, miss, crit = sim_utils.calc_white_damage(
+                self.white_low, self.white_high, self.miss_chance,
+                self.calc_crit_chance(),
+                crit_multiplier=self.calc_crit_multiplier())
+            roar_damage = 0.3 * damage_done if self.savage_roar else 0.0
         else:
             roar_damage = 0.0
+            damage_done, miss, crit = sim_utils.calc_white_damage(
+                self.white_bear_low, self.white_bear_high,
+                self.miss_chance,
+                self.calc_crit_chance(),
+                crit_multiplier=self.calc_crit_multiplier())
+            if self.enrage:
+                damage_done *= 1.15
 
-        if not miss:
-            # Check for Omen and JoW procs
-            self.check_procs(crit=crit)
-
-        # If in Dire Bear Form, generate Rage from the swing
-        if not self.cat_form:
-            # If the swing missed, then re-roll to see whether it was an actual
-            # miss or a dodge, since dodges still generate Rage.
+            # Dodged white hits still generate rage, so on misses re-roll to
+            # determine whether it was an actual miss or a dodge.
             dodge = False
-
             if miss:
                 dodge = (np.random.rand() < self.dodge_chance/self.miss_chance)
 
             if dodge:
                 # Determine how much damage a successful non-crit / non-glance
                 # auto would have done.
-                proxy_damage = 0.5 * (low + high) * (1 + 0.15 * self.enrage)
+                proxy_damage = (
+                    0.5 * (self.white_bear_low + self.white_bear_high)
+                    * (1 + 0.15 * self.enrage)
+                )
             else:
                 proxy_damage = damage_done
 
@@ -484,6 +487,11 @@ class Player():
                     + 5 * crit
                 )
                 self.rage = min(self.rage + rage_gen, 100)
+
+
+        if not miss:
+            # Check for Omen, JoW and other procs.
+            self.check_procs(crit=crit)
 
         # Log the swing
         self.dmg_breakdown['Melee']['casts'] += 1
@@ -517,7 +525,7 @@ class Player():
         """
         # Perform Monte Carlo
         damage_done, miss, crit = sim_utils.calc_yellow_damage(
-            min_dmg, max_dmg, self.miss_chance, self.crit_chance - 0.04,
+            min_dmg, max_dmg, self.miss_chance, self.calc_crit_chance(),
             crit_multiplier=self.calc_crit_multiplier()
         )
 
@@ -620,7 +628,7 @@ class Player():
         """
         # Perform Monte Carlo
         damage_done, miss, crit = sim_utils.calc_yellow_damage(
-            min_dmg, max_dmg, self.miss_chance, self.crit_chance,
+            min_dmg, max_dmg, self.miss_chance, self.calc_crit_chance(),
             crit_multiplier=self.calc_crit_multiplier()
         )
 
@@ -885,7 +893,7 @@ class Player():
         else:
             self.cat_form = True
             self.energy = (
-                min(self.energy, 20 * self.furor) + 20 * self.wolfshead
+                min(self.energy, 20 * self.furor)
             )
             self.enrage = False
             cast_name = 'Shift (Cat)'

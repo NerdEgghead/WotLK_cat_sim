@@ -44,7 +44,6 @@ default_input_stats = {
         "hit": 2.47,
         "hitRating": 81,
         "intellect": 346,
-        "mainHandSpeed": 3,
         "mana": 8406,
         "natureResist": 10,
         "parry": 5,
@@ -114,7 +113,6 @@ stat_input = dbc.Col([
             {'label': 'Idol of Feral Shadows', 'value': 'rip_idol'},
             {'label': '2-piece Tier 6 bonus', 'value': 't6_2p'},
             {'label': '4-piece Tier 6 bonus', 'value': 't6_4p'},
-            {'label': 'Wolfshead Helm', 'value': 'wolfshead'},
             {'label': 'Relentless Earthstorm Diamond', 'value': 'meta'},
             {'label': 'Band of the Eternal Champion', 'value': 'exalted_ring'},
             {'label': 'Enchant Weapon: Mongoose', 'value': 'mongoose'},
@@ -478,6 +476,26 @@ encounter_details = dbc.Col(
                  {'label': '3', 'value': 3},
              ],
              value=3, id='natural_shapeshifter',
+             style={
+                 'width': '20%', 'display': 'inline-block',
+                 'marginBottom': '2.5%', 'marginRight': '5%'
+             }
+         )]),
+     html.Div([
+         html.Div(
+             'Master Shapeshifter:',
+             style={
+                 'width': '35%', 'display': 'inline-block',
+                 'fontWeight': 'bold'
+             }
+         ),
+         dbc.Select(
+             options=[
+                 {'label': '0', 'value': 0},
+                 {'label': '1', 'value': 1},
+                 {'label': '2', 'value': 2},
+             ],
+             value=2, id='master_shapeshifter',
              style={
                  'width': '20%', 'display': 'inline-block',
                  'marginBottom': '2.5%', 'marginRight': '5%'
@@ -1290,11 +1308,11 @@ def process_trinkets(
 def create_player(
         buffed_agility, buffed_attack_power, buffed_hit, buffed_crit,
         buffed_weapon_damage, haste_rating, expertise_rating, armor_pen_rating,
-        buffed_mana_pool, buffed_int, buffed_spirit, buffed_mp5, weapon_speed,
+        buffed_mana_pool, buffed_int, buffed_spirit, buffed_mp5,
         unleashed_rage, kings, raven_idol, other_buffs, stat_debuffs,
         cooldowns, bonuses, binary_talents, naturalist, feral_aggression,
-        savage_fury, potp, predatory_instincts, improved_mangle, imp_motw, furor,
-        natural_shapeshifter, intensity, potion
+        savage_fury, potp, predatory_instincts, improved_mangle, imp_motw,
+        furor, natural_shapeshifter, master_shapeshifter, intensity, potion
 ):
     """Takes in raid buffed player stats from Eighty Upgrades, modifies them
     based on boss debuffs and miscellaneous buffs not captured by Eighty
@@ -1345,11 +1363,11 @@ def create_player(
         potp=int(potp), predatory_instincts=int(predatory_instincts),
         improved_mangle=int(improved_mangle), furor=int(furor),
         natural_shapeshifter=int(natural_shapeshifter),
-        intensity=int(intensity), weapon_speed=weapon_speed,
-        bonus_damage=encounter_weapon_damage, multiplier=damage_multiplier,
-        jow='jow' in stat_debuffs, armor_pen_rating=armor_pen_rating,
-        t6_2p='t6_2p' in bonuses, t6_4p='t6_4p' in bonuses,
-        wolfshead='wolfshead' in bonuses, meta='meta' in bonuses,
+        master_shapeshifter=int(master_shapeshifter),
+        intensity=int(intensity), bonus_damage=encounter_weapon_damage,
+        multiplier=damage_multiplier, jow='jow' in stat_debuffs,
+        armor_pen_rating=armor_pen_rating, t6_2p='t6_2p' in bonuses,
+        t6_4p='t6_4p' in bonuses, meta='meta' in bonuses,
         rune='rune' in cooldowns, shred_bonus=shred_bonus, rip_bonus=rip_bonus,
         debuff_ap=debuff_ap
     )
@@ -1614,6 +1632,7 @@ def plot_new_trajectory(sim, show_whites):
     State('furor', 'value'),
     State('naturalist', 'value'),
     State('natural_shapeshifter', 'value'),
+    State('master_shapeshifter', 'value'),
     State('intensity', 'value'),
     State('fight_length', 'value'),
     State('boss_armor', 'value'),
@@ -1646,12 +1665,13 @@ def compute(
         weight_clicks, graph_clicks, hot_uptime, potion, bonuses,
         binary_talents, feral_aggression, savage_fury, potp,
         predatory_instincts, improved_mangle, furor, naturalist,
-        natural_shapeshifter, intensity, fight_length, boss_armor,
-        boss_debuffs, cooldowns, rip_cp, bite_cp, cd_delay,
-        max_roar_clip, use_rake, mangle_spam, use_biteweave, bite_model,
-        bite_time, bear_mangle, prepop_berserk, preproc_omen, bearweave,
-        berserk_bite_thresh, lacerate_prio, lacerate_time, powerbear,
-        num_replicates, latency, epic_gems, show_whites
+        natural_shapeshifter, master_shapeshifter, intensity,
+        fight_length, boss_armor, boss_debuffs, cooldowns, rip_cp,
+        bite_cp, cd_delay, max_roar_clip, use_rake, mangle_spam,
+        use_biteweave, bite_model, bite_time, bear_mangle,
+        prepop_berserk, preproc_omen, bearweave, berserk_bite_thresh,
+        lacerate_prio, lacerate_time, powerbear, num_replicates,
+        latency, epic_gems, show_whites
 ):
     ctx = dash.callback_context
 
@@ -1760,13 +1780,13 @@ def compute(
         input_stats['crit'], input_stats.get('weaponDamage', 0),
         input_stats.get('hasteRating', 0),
         input_stats.get('expertiseRating', 0),
-        input_stats.get('armorPenRating', 0),input_stats['mana'],
+        input_stats.get('armorPenRating', 0), input_stats['mana'],
         input_stats['intellect'], input_stats['spirit'],
-        input_stats.get('mp5', 0), float(input_stats['mainHandSpeed']),
-        unleashed_rage, kings, raven_idol, other_buffs, stat_debuffs,
-        cooldowns, bonuses, binary_talents, naturalist, feral_aggression,
-        savage_fury, potp, predatory_instincts, improved_mangle, imp_motw, furor,
-        natural_shapeshifter, intensity, potion
+        input_stats.get('mp5', 0), unleashed_rage, kings, raven_idol,
+        other_buffs, stat_debuffs, cooldowns, bonuses, binary_talents,
+        naturalist, feral_aggression, savage_fury, potp, predatory_instincts,
+        improved_mangle, imp_motw, furor, natural_shapeshifter,
+        master_shapeshifter, intensity, potion
     )
 
     # Process trinkets
