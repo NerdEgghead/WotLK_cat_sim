@@ -1645,6 +1645,11 @@ class Simulation():
         original_value = getattr(self.player, param)
         setattr(self.player, param, original_value + increment)
 
+        # For Expertise increments, implementation details demand we
+        # update both 'miss_chance' and 'dodge_chance'
+        if param == 'dodge_chance':
+            self.player.miss_chance += increment
+
         # For Agility increments, also augment Attack Power and Crit
         if param == 'agility':
             self.player.attack_power += self.player.ap_mod * increment
@@ -1656,6 +1661,9 @@ class Simulation():
 
         # Reset the stat to original value
         setattr(self.player, param, original_value)
+
+        if param == 'dodge_chance':
+            self.player.miss_chance -= increment
 
         if param == 'agility':
             self.player.attack_power -= self.player.ap_mod * increment
@@ -1678,9 +1686,11 @@ class Simulation():
 
         Returns:
             dps_deltas (dict): Dictionary containing DPS increase from 1 AP,
-                1% hit, 1% crit, and 1% haste.
+                1% hit, 1% expertise, 1% crit, 1% haste, 1 Agility, 1 Armor Pen
+                Rating, and 1 Weapon Damage.
             stat_weights (dict): Dictionary containing normalized stat weights
-                for 1% hit, 1% crit, and 1% haste relative to 1 AP.
+                for 1% hit, 1% expertise, 1% crit, 1% haste, 1 Agility, 1 Armor
+                Pen Rating, and 1 Weapon Damage relative to 1 AP.
         """
         # First store base DPS and deltas after each stat increment
         dps_deltas = {}
@@ -1705,19 +1715,22 @@ class Simulation():
 
         # For hit, we reduce miss chance by 2% if well below hit cap, and
         # increase miss chance by 2% when already capped or close.
-        sign = 1 - 2 * int(self.player.miss_chance > 0.02)
+        sign = 1 - 2 * int(
+            self.player.miss_chance - self.player.dodge_chance > 0.02
+        )
         dps_deltas['1% hit'] = -0.5 * sign * self.calc_deriv(
             num_replicates, 'miss_chance', sign * 0.02, base_dps
+        )
+
+        # For expertise, we mimic hit, except with dodge.
+        sign = 1 - 2 * int(self.player.dodge_chance > 0.02)
+        dps_deltas['1% expertise'] = -0.5 * sign * self.calc_deriv(
+            num_replicates, 'dodge_chance', sign * 0.02, base_dps
         )
 
         # Crit is a simple increment
         dps_deltas['1% crit'] = 0.5 * self.calc_deriv(
             num_replicates, 'crit_chance', 0.02, base_dps
-        )
-
-        # Due to bearweaving, separate Agility weight calculation is needed
-        dps_deltas['1 Agility'] = 1.0/40.0 * self.calc_deriv(
-            num_replicates, 'agility', 40 * agi_mod, base_dps
         )
 
         # For haste we will use an increment of 4%. (Note that this is 4% in
@@ -1733,9 +1746,16 @@ class Simulation():
             num_replicates, 'swing_timer', -swing_delta, base_dps
         )
 
-        # For armor pen, we use an increment of 50 Rating.
-        dps_deltas['1 Armor Pen Rating'] = 1./50. * self.calc_deriv(
-            num_replicates, 'armor_pen_rating', 50, base_dps
+        # Due to bearweaving, separate Agility weight calculation is needed
+        dps_deltas['1 Agility'] = 1.0/40.0 * self.calc_deriv(
+            num_replicates, 'agility', 40 * agi_mod, base_dps
+        )
+
+        # For armor pen, we use an increment of 50 Rating. Similar to hit,
+        # the sign of the delta depends on if we're near the 1400 cap.
+        sign = 1 - 2 * int(self.player.armor_pen_rating > 1350)
+        dps_deltas['1 Armor Pen Rating'] = 1./50. * sign * self.calc_deriv(
+            num_replicates, 'armor_pen_rating', sign * 50, base_dps
         )
 
         # For weapon damage, we use an increment of 12
