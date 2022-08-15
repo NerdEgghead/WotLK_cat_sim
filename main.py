@@ -110,10 +110,13 @@ stat_input = dbc.Col([
             {'label': 'Idol of Terror', 'value': 'idol_of_terror'},
             {'label': 'Idol of the White Stag', 'value': 'stag_idol'},
             {'label': 'Idol of Feral Shadows', 'value': 'rip_idol'},
+            {'label': 'Glyph of Rip', 'value': 'rip_glyph'},
+            {'label': 'Glyph of Shred', 'value': 'shred_glyph'},
             {'label': 'Glyph of Savage Roar', 'value': 'roar_glyph'},
             {'label': 'Glyph of Berserk', 'value': 'berserk_glyph'},
             {'label': '2-piece Tier 6 bonus', 'value': 't6_2p'},
             {'label': '4-piece Tier 6 bonus', 'value': 't6_4p'},
+            {'label': '2-piece Tier 7 bonus', 'value': 't7_2p'},
             {'label': 'Wolfshead Helm', 'value': 'wolfshead'},
             {'label': 'Relentless Earthstorm Diamond', 'value': 'meta'},
             {'label': 'Band of the Eternal Champion', 'value': 'exalted_ring'},
@@ -121,7 +124,8 @@ stat_input = dbc.Col([
             {'label': 'Hyperspeed Accelerators', 'value': 'engi_gloves'},
         ],
         value=[
-            'roar_glyph', 'meta', 'mongoose', 'engi_gloves'
+            'rip_glyph', 'shred_glyph', 'berserk_glyph', 't7_2p', 'meta',
+            'mongoose', 'engi_gloves'
         ],
         id='bonuses'
     ),
@@ -1350,10 +1354,12 @@ def create_player(
         bonus_damage=encounter_weapon_damage, multiplier=damage_multiplier,
         jow='jow' in stat_debuffs, armor_pen_rating=armor_pen_rating,
         t6_2p='t6_2p' in bonuses, t6_4p='t6_4p' in bonuses,
-        wolfshead='wolfshead' in bonuses, meta='meta' in bonuses,
-        rune='rune' in cooldowns, shred_bonus=shred_bonus, rip_bonus=rip_bonus,
-        debuff_ap=debuff_ap, roar_glyph='roar_glyph' in bonuses,
-        berserk_glyph='berserk_glyph' in bonuses
+        t7_2p='t7_2p' in bonuses, wolfshead='wolfshead' in bonuses,
+        meta='meta' in bonuses, rune='rune' in cooldowns,
+        shred_bonus=shred_bonus, rip_bonus=rip_bonus, debuff_ap=debuff_ap,
+        roar_glyph='roar_glyph' in bonuses,
+        berserk_glyph='berserk_glyph' in bonuses,
+        rip_glyph='rip_glyph' in bonuses, shred_glyph='shred_glyph' in bonuses
     )
     stat_mod = (1 + 0.1 * kings) * 1.06 * (1 + 0.01 * imp_motw)
     return player, ap_mod, stat_mod, haste_multiplier
