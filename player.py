@@ -185,13 +185,6 @@ class Player():
             crit_multiplier *= (1.0 + round(self.predatory_instincts / 30, 2))
         return crit_multiplier
 
-    def calc_roar_damage(self, damage):
-        """Calculates additional damage contribution from Savage Roar."""
-        if not self.savage_roar:
-            return 0.0
-        else:
-            return damage * (0.3 + 0.03 * self.roar_glyph)
-
     def set_mana_regen(self):
         """Calculate and store mana regeneration rates based on specified regen
         stats.
