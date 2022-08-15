@@ -25,35 +25,33 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
 server = app.server
 
 default_input_stats = {
-        "agility": 791,
-        "armor": 4363,
-        "armorPen": 10.43,
-        "armorPenRating": 146,
-        "attackPower": 4350,
-        "crit": 33.67,
-        "critRating": 78,
+        "agility": 888,
+        "armor": 5165,
+        "attackPower": 6173,
+        "crit": 41.54,
+        "critRating": 386,
         "critReduction": 6,
         "defense": 400,
-        "dodge": 27.12,
-        "expertise": 13,
-        "expertiseRating": 27,
-        "feralAttackPower": 1195,
-        "haste": 3.57,
-        "hasteRating": 90,
-        "health": 14297,
-        "hit": 2.47,
-        "hitRating": 81,
-        "intellect": 346,
-        "mainHandSpeed": 3,
-        "mana": 8406,
+        "dodge": 29.14,
+        "expertise": 26,
+        "expertiseRating": 134,
+        "feralAttackPower": 1843,
+        "haste": 2.54,
+        "hasteRating": 64,
+        "health": 18117,
+        "hit": 6.13,
+        "hitRating": 201,
+        "intellect": 208,
+        "mainHandSpeed": 3.4,
+        "mana": 6336,
         "natureResist": 10,
         "parry": 5,
-        "spellCrit": 5.63,
-        "spellHaste": 3.57,
-        "spellHit": 3.09,
-        "spirit": 186,
-        "stamina": 706,
-        "strength": 430
+        "spellCrit": 11.51,
+        "spellHaste": 2.54,
+        "spellHit": 7.66,
+        "spirit": 193,
+        "stamina": 1088,
+        "strength": 334
 }
 
 stat_input = dbc.Col([
@@ -123,7 +121,7 @@ stat_input = dbc.Col([
             {'label': 'Hyperspeed Accelerators', 'value': 'engi_gloves'},
         ],
         value=[
-            'roar_glyph', 't6_2p', 't6_4p', 'meta', 'mongoose', 'engi_gloves'
+            'roar_glyph', 'meta', 'mongoose', 'engi_gloves'
         ],
         id='bonuses'
     ),
@@ -138,10 +136,9 @@ buffs_1 = dbc.Col(
                       'value': 'hit_food'
                   },
                   {'label': 'Blackened Dragonfin', 'value': 'agi_food'},
+                  {'label': 'Dragonfin Filet', 'value': 'str_food'},
                   {'label': 'Adamantite Weightstone', 'value': 'weightstone'}],
-         value=[
-             'flask', 'hit_food', 'weightstone',
-         ],
+         value=['flask', 'str_food'],
          id='consumables'
      ),
      html.Br(),
@@ -311,7 +308,7 @@ encounter_details = dbc.Col(
                  {'label': '4', 'value': 4},
                  {'label': '5', 'value': 5},
              ],
-             value=5, id='feral_aggression',
+             value='0', id='feral_aggression',
              style={
                  'width': '20%', 'display': 'inline-block',
                  'marginBottom': '2.5%', 'marginRight': '5%'
@@ -352,7 +349,7 @@ encounter_details = dbc.Col(
                  {'label': '2', 'value': 2},
                  {'label': '3', 'value': 3},
              ],
-             value=2, id='potp',
+             value=3, id='potp',
              style={
                  'width': '20%', 'display': 'inline-block',
                  'marginBottom': '2.5%', 'marginRight': '5%'
@@ -1384,6 +1381,7 @@ def apply_buffs(
 
     buffed_strength = stat_multiplier * (unbuffed_strength + gear_multi * (
         added_stats + 155 * ('str_totem' in raid_buffs)
+        + 40 * ('str_food' in consumables)
     ))
     buffed_agi = stat_multiplier * (unbuffed_agi + gear_multi * (
         added_stats + 155 * ('str_totem' in raid_buffs)
