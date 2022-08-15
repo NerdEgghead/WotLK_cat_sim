@@ -583,7 +583,7 @@ iteration_input = dbc.Col([
                 'Clip Savage Roar by at most', addon_type='prepend'
             ),
             dbc.Input(
-                value=7, min=0, step=1, type='number', id='max_roar_clip'
+                value=8, min=0, step=1, type='number', id='max_roar_clip'
             ),
             dbc.InputGroupAddon('seconds', addon_type='append')
         ],
