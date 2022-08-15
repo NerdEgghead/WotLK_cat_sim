@@ -146,6 +146,8 @@ class Player():
             'yellow': 0.0,
             'bear': 3.5/60*2.5,
         }
+        self.cat_threat_mod = 0.71
+        self.bear_threat_mod = 29.0/14.0
         self.proc_trinkets = proc_trinkets
         self.set_mana_regen()
         self.log = log
@@ -198,6 +200,16 @@ class Player():
             'five_second_rule': 0.5/3*self.intensity*base_regen + bonus_regen,
         }
         self.shift_cost = 1224 * 0.4 * (1 - 0.1 * self.natural_shapeshifter)
+
+    def threat_from_damage(self, damage_done,
+        ability_threat_mod=1.0,
+        additive_threat=0.0):
+        if self.cat_form:
+            return (self.cat_threat_mod
+                * (ability_threat_mod * damage_done + additive_threat))
+        else:
+            return (self.bear_threat_mod
+                * (ability_threat_mod * damage_done + additive_threat))
 
     def calc_damage_params(
             self, gift_of_arthas, boss_armor, sunder, faerie_fire,
@@ -746,7 +758,7 @@ class Player():
         Returns:
             damage_done (float): Damage done by the Bite cast.
         """
-        # Bite always costs at least 35 combo points without Omen of Clarity
+        # Bite always costs at least 35 energy without Omen of Clarity
         clearcast = self.omen_proc
 
         if clearcast:

@@ -1029,6 +1029,38 @@ sim_output = dbc.Col([
     ]), id='loading_2', type='default'),
     dcc.Loading(children=html.Div([
         html.Div(
+            'Average TPS:',
+            style={
+                'width': '50%', 'display': 'inline-block',
+                'fontWeight': 'bold', 'fontSize': 'large'
+            }
+        ),
+        html.Div(
+            '',
+            style={
+                'width': '50%', 'display': 'inline-block', 'fontSize': 'large'
+            },
+            id='mean_std_tps'
+        ),
+    ]), id='loading_avg_tps', type='default'),
+    dcc.Loading(children=html.Div([
+        html.Div(
+            'Median TPS:',
+            style={
+                'width': '50%', 'display': 'inline-block',
+                'fontWeight': 'bold', 'fontSize': 'large'
+            }
+        ),
+        html.Div(
+            '',
+            style={
+                'width': '50%', 'display': 'inline-block', 'fontSize': 'large'
+            },
+            id='median_tps'
+        ),
+    ]), id='loading_median_tps', type='default'),
+    dcc.Loading(children=html.Div([
+        html.Div(
             'Time to oom:',
             style={
                 'width': '50%', 'display': 'inline-block',
@@ -1445,7 +1477,7 @@ def apply_buffs(
 
 def run_sim(sim, num_replicates):
     # Run the sim for the specified number of replicates
-    dps_vals, dmg_breakdown, aura_stats, oom_times = sim.run_replicates(
+    dps_vals, tps, dmg_breakdown, aura_stats, oom_times = sim.run_replicates(
         num_replicates, detailed_output=True
     )
 
@@ -1453,6 +1485,11 @@ def run_sim(sim, num_replicates):
     avg_dps = np.mean(dps_vals)
     mean_dps_str = '%.1f +/- %.1f' % (avg_dps, np.std(dps_vals))
     median_dps_str = '%.1f' % np.median(dps_vals)
+
+    # Consolidate TPS statistics
+    avg_tps = np.mean(tps)
+    mean_tps_str = '%.1f +/- %.1f' % (avg_tps, np.std(tps))
+    median_tps_str = '%.1f' % np.median(tps)
 
     # Consolidate mana statistics
     avg_oom_time = np.mean(oom_times)
@@ -1495,6 +1532,7 @@ def run_sim(sim, num_replicates):
     return (
         avg_dps,
         (mean_dps_str, median_dps_str, oom_time_str, dps_table, aura_table),
+        (mean_tps_str, median_tps_str),
     )
 
 
@@ -1602,6 +1640,8 @@ def plot_new_trajectory(sim, show_whites):
     Output('time_to_oom', 'children'),
     Output('dps_breakdown_table', 'children'),
     Output('aura_breakdown_table', 'children'),
+    Output('mean_std_tps', 'children'),
+    Output('median_tps', 'children'),
     Output('error_str', 'children'),
     Output('error_msg', 'children'),
     Output('stat_weight_table', 'children'),
@@ -1897,9 +1937,10 @@ def compute(
     if (ctx.triggered and
             (ctx.triggered[0]['prop_id'] in
              ['run_button.n_clicks', 'weight_button.n_clicks'])):
-        avg_dps, dps_output = run_sim(sim, num_replicates)
+        avg_dps, dps_output, tps_output = run_sim(sim, num_replicates)
     else:
         dps_output = ('', '', '', [], [])
+        tps_output = ('', '')
 
     # If "Stat Weights" button was pressed, then calculate weights.
     if (ctx.triggered and
@@ -1919,7 +1960,7 @@ def compute(
         example_output = ({}, [])
 
     return (
-        upload_output + stats_output + dps_output + weights_output
+        upload_output + stats_output + dps_output + tps_output + weights_output
         + example_output
     )
 
