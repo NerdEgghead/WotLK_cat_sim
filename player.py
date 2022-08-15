@@ -40,7 +40,7 @@ class Player():
             primal_gore=True, feral_aggression=0, predatory_instincts=3,
             savage_fury=2, furor=3, natural_shapeshifter=3,
             master_shapeshifter=2, intensity=3, potp=2, improved_mangle=0,
-            proc_trinkets=[], log=False
+            roar_glyph=False, berserk_glyph=False, proc_trinkets=[], log=False
     ):
         """Initialize player with key damage parameters.
 
@@ -99,6 +99,10 @@ class Player():
                 to 2.
             improved_mangle (int): Points taken in Improved Mangle talent.
                 Defaults to 0.
+            roar_glyph (bool): Whether Glyph of Savage Roar is used. Defaults
+                False.
+            berserk_glyph (bool): Whether Glyph of Berserk is used. Defaults
+                False.
             proc_trinkets (list of trinkets.ProcTrinket): If applicable, a list
                 of ProcTrinket objects modeling each on-hit or on-crit trinket
                 used by the player.
@@ -111,6 +115,8 @@ class Player():
         self.agility = agility
         self.ap_mod = ap_mod
         self.bear_ap_mod = ap_mod / 1.1 * (1 + 0.02 * potp)
+        self.roar_fac = 0.3 + 0.03 * roar_glyph
+        self.berserk_glyph = berserk_glyph
 
         # Set internal hit and expertise values, and derive total miss chance.
         self._hit_chance = hit_chance
@@ -178,6 +184,13 @@ class Player():
         if self.cat_form:
             crit_multiplier *= (1.0 + round(self.predatory_instincts / 30, 2))
         return crit_multiplier
+
+    def calc_roar_damage(self, damage):
+        """Calculates additional damage contribution from Savage Roar."""
+        if not self.savage_roar:
+            return 0.0
+        else:
+            return damage * (0.3 + 0.03 * self.roar_glyph)
 
     def set_mana_regen(self):
         """Calculate and store mana regeneration rates based on specified regen
@@ -466,7 +479,7 @@ class Player():
                 self.white_low, self.white_high, self.miss_chance,
                 self.calc_crit_chance(),
                 crit_multiplier=self.calc_crit_multiplier())
-            roar_damage = 0.3 * damage_done if self.savage_roar else 0.0
+            roar_damage = self.roar_fac * damage_done if self.savage_roar else 0.0
         else:
             roar_damage = 0.0
             damage_done, miss, crit = sim_utils.calc_white_damage(
@@ -648,7 +661,7 @@ class Player():
             damage_done *= 1.3
 
         # Apply Savage Roar
-        roar_damage = 0.3 * damage_done if self.savage_roar else 0.0
+        roar_damage = self.roar_fac * damage_done if self.savage_roar else 0.0
 
         # Set GCD
         self.gcd = 1.0
@@ -781,7 +794,7 @@ class Player():
         )
 
         # Apply Savage Roar
-        roar_damage = 0.3 * damage_done if self.savage_roar else 0.0
+        roar_damage = self.roar_fac * damage_done if self.savage_roar else 0.0
 
         # Consume energy pool and combo points on successful Bite
         if miss:

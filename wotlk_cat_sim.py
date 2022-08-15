@@ -713,6 +713,7 @@ class Simulation():
         # On the other hand, if there is a time conflict, then use the
         # empirical parameter for how much we're willing to clip Roar.
         return roardur <= self.strategy['max_roar_clip']
+        # return True
 
     def execute_rotation(self, time):
         """Execute the next player action in the DPS rotation according to the
@@ -797,11 +798,12 @@ class Simulation():
         berserk_energy_thresh = 90 - 10 * self.player.omen_proc
         berserk_now = (
             self.strategy['use_berserk'] and (self.player.berserk_cd < 1e-9)
-            and (self.player.tf_cd > 15)
+            and (self.player.tf_cd > 15 + 5 * self.player.berserk_glyph)
             # and (energy < berserk_energy_thresh + 1e-9)
         )
 
-        #roar_now = (not self.player.savage_roar) and (cp >= 1)
+        # roar_now = (not self.player.savage_roar) and (cp >= 1)
+        # pool_for_roar = (not roar_now) and (cp >= 1) and self.clip_roar(time)
         roar_now = (cp >= 1) and (
             (not self.player.savage_roar) or self.clip_roar(time)
         )
@@ -900,6 +902,10 @@ class Simulation():
                 (energy + 15 + 10 * self.latency > furor_cap)
                 or (rip_refresh_pending and (self.rip_end < time + 3.0))
             )
+            shift_next = (
+                (energy + 30 + 10 * self.latency > furor_cap)
+                or (rip_refresh_pending and (self.rip_end < time + 4.5))
+            )
 
             if self.strategy['powerbear']:
                 powerbear_now = (not shift_now) and (self.player.rage < 10)
@@ -907,17 +913,28 @@ class Simulation():
                 powerbear_now = False
                 shift_now = shift_now or (self.player.rage < 10)
 
-            if not self.strategy['lacerate_prio']:
-                shift_now = shift_now or self.player.omen_proc
-
-            lacerate_now = self.strategy['lacerate_prio'] and (
+            # lacerate_now = self.strategy['lacerate_prio'] and (
+            #     (not self.lacerate_debuff) or (self.lacerate_stacks < 5)
+            #     or (self.lacerate_end - time <= self.strategy['lacerate_time'])
+            # )
+            build_lacerate = (
                 (not self.lacerate_debuff) or (self.lacerate_stacks < 5)
-                or (self.lacerate_end - time <= self.strategy['lacerate_time'])
+            )
+            maintain_lacerate = (not build_lacerate) and (
+                (self.lacerate_end - time <= self.strategy['lacerate_time'])
+                and ((self.player.rage < 38) or shift_next)
+            )
+            lacerate_now = (
+                self.strategy['lacerate_prio']
+                and (build_lacerate or maintain_lacerate)
             )
             emergency_lacerate = (
                 self.strategy['lacerate_prio'] and self.lacerate_debuff
                 and (self.lacerate_end - time < 3.0 + 2 * self.latency)
             )
+
+            if (not self.strategy['lacerate_prio']) or (not lacerate_now):
+                shift_now = shift_now or self.player.omen_proc
 
             if emergency_lacerate and (self.player.rage >= 13):
                 return self.lacerate(time)
@@ -938,12 +955,20 @@ class Simulation():
         elif berserk_now:
             self.apply_berserk(time)
             return 0.0, 0.0
-        elif roar_now:
+        elif roar_now: # or pool_for_roar:
             # If we have leeway to do so, don't Roar right away and instead
             # pool Energy to reduce how much we clip the buff
-            # if (self.player.savage_roar and (not self.player.omen_proc)
-            #         and (energy < 90)):
-            #     time_to_next_action = min(self.roar_end-time, (90.-energy)/10.)
+            # if pool_for_roar:
+            #     roar_now = (
+            #         (self.roar_end - time <= self.strategy['max_roar_clip'])
+            #         or self.player.omen_proc or (energy >= 90)
+            #     )
+
+            # if not roar_now:
+            #     time_to_next_action = min(
+            #         self.roar_end - self.strategy['max_roar_clip'] - time,
+            #         (90. - energy) / 10.
+            #     )
             if energy >= self.player.roar_cost:
                 self.roar_end = self.player.roar(time)
                 return 0.0, 0.0
@@ -1083,7 +1108,7 @@ class Simulation():
         self.player.berserk = True
         self.player.set_ability_costs()
         self.player.gcd = 1.0 * (not prepop)
-        self.berserk_end = time + 15.
+        self.berserk_end = time + 15. + 5 * self.player.berserk_glyph
         self.player.berserk_cd = 180. - prepop
 
         if self.log:
