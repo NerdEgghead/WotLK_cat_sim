@@ -124,7 +124,7 @@ stat_input = dbc.Col([
             {'label': 'Hyperspeed Accelerators', 'value': 'engi_gloves'},
         ],
         value=[
-            'rip_glyph', 'shred_glyph', 'berserk_glyph', 't7_2p', 'meta',
+            'rip_glyph', 'shred_glyph', 'roar_glyph', 't7_2p', 'meta',
             'mongoose', 'engi_gloves'
         ],
         id='bonuses'

@@ -1251,9 +1251,9 @@ class Simulation():
 
                 if self.rip_sr_snapshot:
                     self.player.dmg_breakdown['Savage Roar']['damage'] += (
-                        0.3 * tick_damage
+                        self.player.roar_fac * tick_damage
                     )
-                    tick_damage *= 1.3
+                    tick_damage *= 1 + self.player.roar_fac
 
                 dmg_done += tick_damage
                 self.rip_ticks.pop(0)
@@ -1279,9 +1279,9 @@ class Simulation():
 
                 if self.rake_sr_snapshot:
                     self.player.dmg_breakdown['Savage Roar']['damage'] += (
-                        0.3 * tick_damage
+                        self.player.roar_fac * tick_damage
                     )
-                    tick_damage *= 1.3
+                    tick_damage *= 1 + self.player.roar_fac
 
                 dmg_done += tick_damage
                 self.rake_ticks.pop(0)
