@@ -873,15 +873,16 @@ class Simulation():
                 (energy + 15 + 10 * self.latency > furor_cap)
                 or (rip_refresh_pending and (self.rip_end < time + 3.0))
             )
+            shift_next = (
+                (energy + 30 + 10 * self.latency > furor_cap)
+                or (rip_refresh_pending and (self.rip_end < time + 4.5))
+            )
 
             if self.strategy['powerbear']:
                 powerbear_now = (not shift_now) and (self.player.rage < 10)
             else:
                 powerbear_now = False
                 shift_now = shift_now or (self.player.rage < 10)
-
-            if not self.strategy['lacerate_prio']:
-                shift_now = shift_now or self.player.omen_proc
 
             # lacerate_now = self.strategy['lacerate_prio'] and (
             #     (not self.lacerate_debuff) or (self.lacerate_stacks < 5)
@@ -892,7 +893,7 @@ class Simulation():
             )
             maintain_lacerate = (not build_lacerate) and (
                 (self.lacerate_end - time <= self.strategy['lacerate_time'])
-                and (self.player.rage < 38)
+                and ((self.player.rage < 38) or shift_next)
             )
             lacerate_now = (
                 self.strategy['lacerate_prio']
@@ -902,6 +903,9 @@ class Simulation():
                 self.strategy['lacerate_prio'] and self.lacerate_debuff
                 and (self.lacerate_end - time < 3.0 + 2 * self.latency)
             )
+
+            if (not self.strategy['lacerate_prio']) or (not lacerate_now):
+                shift_now = shift_now or self.player.omen_proc
 
             if emergency_lacerate and (self.player.rage >= 13):
                 return self.lacerate(time)
