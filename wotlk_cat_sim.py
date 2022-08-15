@@ -687,6 +687,7 @@ class Simulation():
         # On the other hand, if there is a time conflict, then use the
         # empirical parameter for how much we're willing to clip Roar.
         return roardur <= self.strategy['max_roar_clip']
+        # return True
 
     def execute_rotation(self, time):
         """Execute the next player action in the DPS rotation according to the
@@ -774,7 +775,8 @@ class Simulation():
             # and (energy < berserk_energy_thresh + 1e-9)
         )
 
-        #roar_now = (not self.player.savage_roar) and (cp >= 1)
+        # roar_now = (not self.player.savage_roar) and (cp >= 1)
+        # pool_for_roar = (not roar_now) and (cp >= 1) and self.clip_roar(time)
         roar_now = (cp >= 1) and (
             (not self.player.savage_roar) or self.clip_roar(time)
         )
@@ -926,12 +928,20 @@ class Simulation():
         elif berserk_now:
             self.apply_berserk(time)
             return 0.0
-        elif roar_now:
+        elif roar_now: # or pool_for_roar:
             # If we have leeway to do so, don't Roar right away and instead
             # pool Energy to reduce how much we clip the buff
-            # if (self.player.savage_roar and (not self.player.omen_proc)
-            #         and (energy < 90)):
-            #     time_to_next_action = min(self.roar_end-time, (90.-energy)/10.)
+            # if pool_for_roar:
+            #     roar_now = (
+            #         (self.roar_end - time <= self.strategy['max_roar_clip'])
+            #         or self.player.omen_proc or (energy >= 90)
+            #     )
+
+            # if not roar_now:
+            #     time_to_next_action = min(
+            #         self.roar_end - self.strategy['max_roar_clip'] - time,
+            #         (90. - energy) / 10.
+            #     )
             if energy >= self.player.roar_cost:
                 self.roar_end = self.player.roar(time)
                 return 0.0
