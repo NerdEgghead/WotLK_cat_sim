@@ -39,8 +39,8 @@ class Player():
             rip_bonus=0, debuff_ap=0, multiplier=1.1, omen=True,
             primal_gore=True, feral_aggression=0, predatory_instincts=3,
             savage_fury=2, furor=3, natural_shapeshifter=3, intensity=3,
-            potp=2, improved_mangle=0, weapon_speed=3.0, proc_trinkets=[],
-            log=False
+            potp=2, improved_mangle=0, roar_glyph=False, berserk_glyph=False,
+            weapon_speed=3.0, proc_trinkets=[], log=False
     ):
         """Initialize player with key damage parameters.
 
@@ -98,6 +98,10 @@ class Player():
                 to 2.
             improved_mangle (int): Points taken in Improved Mangle talent.
                 Defaults to 0.
+            roar_glyph (bool): Whether Glyph of Savage Roar is used. Defaults
+                False.
+            berserk_glyph (bool): Whether Glyph of Berserk is used. Defaults
+                False.
             weapon_speed (float): Equipped weapon speed, used for calculating
                 Omen of Clarity proc rate. Defaults to 3.0.
             proc_trinkets (list of trinkets.ProcTrinket): If applicable, a list
@@ -112,6 +116,8 @@ class Player():
         self.agility = agility
         self.ap_mod = ap_mod
         self.bear_ap_mod = ap_mod / 1.1 * (1 + 0.02 * potp)
+        self.roar_fac = 0.3 + 0.03 * roar_glyph
+        self.berserk_glyph = berserk_glyph
 
         # Set internal hit and expertise values, and derive total miss chance.
         self._hit_chance = hit_chance
@@ -454,7 +460,7 @@ class Player():
 
         # Apply Savage Roar for cat form swings
         if self.cat_form and self.savage_roar:
-            roar_damage = 0.3 * damage_done
+            roar_damage = self.roar_fac * damage_done
         else:
             roar_damage = 0.0
 
@@ -628,7 +634,7 @@ class Player():
             damage_done *= 1.3
 
         # Apply Savage Roar
-        roar_damage = 0.3 * damage_done if self.savage_roar else 0.0
+        roar_damage = self.roar_fac * damage_done if self.savage_roar else 0.0
 
         # Set GCD
         self.gcd = 1.0
@@ -761,7 +767,7 @@ class Player():
         )
 
         # Apply Savage Roar
-        roar_damage = 0.3 * damage_done if self.savage_roar else 0.0
+        roar_damage = self.roar_fac * damage_done if self.savage_roar else 0.0
 
         # Consume energy pool and combo points on successful Bite
         if miss:

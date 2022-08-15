@@ -771,7 +771,7 @@ class Simulation():
         berserk_energy_thresh = 90 - 10 * self.player.omen_proc
         berserk_now = (
             self.strategy['use_berserk'] and (self.player.berserk_cd < 1e-9)
-            and (self.player.tf_cd > 15)
+            and (self.player.tf_cd > 15 + 5 * self.player.berserk_glyph)
             # and (energy < berserk_energy_thresh + 1e-9)
         )
 
@@ -1081,7 +1081,7 @@ class Simulation():
         self.player.berserk = True
         self.player.set_ability_costs()
         self.player.gcd = 1.0 * (not prepop)
-        self.berserk_end = time + 15.
+        self.berserk_end = time + 15. + 5 * self.player.berserk_glyph
         self.player.berserk_cd = 180. - prepop
 
         if self.log:
