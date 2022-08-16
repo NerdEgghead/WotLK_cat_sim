@@ -117,6 +117,7 @@ stat_input = dbc.Col([
             {'label': '2-piece Tier 6 bonus', 'value': 't6_2p'},
             {'label': '4-piece Tier 6 bonus', 'value': 't6_4p'},
             {'label': '2-piece Tier 7 bonus', 'value': 't7_2p'},
+            {'label': 'Wolfshead Helm', 'value': 'wolfshead'},
             {'label': 'Relentless Earthstorm Diamond', 'value': 'meta'},
             {'label': 'Band of the Eternal Champion', 'value': 'exalted_ring'},
             {'label': 'Enchant Weapon: Mongoose', 'value': 'mongoose'},
@@ -482,26 +483,6 @@ encounter_details = dbc.Col(
                  {'label': '3', 'value': 3},
              ],
              value=3, id='natural_shapeshifter',
-             style={
-                 'width': '20%', 'display': 'inline-block',
-                 'marginBottom': '2.5%', 'marginRight': '5%'
-             }
-         )]),
-     html.Div([
-         html.Div(
-             'Master Shapeshifter:',
-             style={
-                 'width': '35%', 'display': 'inline-block',
-                 'fontWeight': 'bold'
-             }
-         ),
-         dbc.Select(
-             options=[
-                 {'label': '0', 'value': 0},
-                 {'label': '1', 'value': 1},
-                 {'label': '2', 'value': 2},
-             ],
-             value=2, id='master_shapeshifter',
              style={
                  'width': '20%', 'display': 'inline-block',
                  'marginBottom': '2.5%', 'marginRight': '5%'
@@ -1035,38 +1016,6 @@ sim_output = dbc.Col([
     ]), id='loading_2', type='default'),
     dcc.Loading(children=html.Div([
         html.Div(
-            'Average TPS:',
-            style={
-                'width': '50%', 'display': 'inline-block',
-                'fontWeight': 'bold', 'fontSize': 'large'
-            }
-        ),
-        html.Div(
-            '',
-            style={
-                'width': '50%', 'display': 'inline-block', 'fontSize': 'large'
-            },
-            id='mean_std_tps'
-        ),
-    ]), id='loading_avg_tps', type='default'),
-    dcc.Loading(children=html.Div([
-        html.Div(
-            'Median TPS:',
-            style={
-                'width': '50%', 'display': 'inline-block',
-                'fontWeight': 'bold', 'fontSize': 'large'
-            }
-        ),
-        html.Div(
-            '',
-            style={
-                'width': '50%', 'display': 'inline-block', 'fontSize': 'large'
-            },
-            id='median_tps'
-        ),
-    ]), id='loading_median_tps', type='default'),
-    dcc.Loading(children=html.Div([
-        html.Div(
             'Time to oom:',
             style={
                 'width': '50%', 'display': 'inline-block',
@@ -1346,11 +1295,11 @@ def process_trinkets(
 def create_player(
         buffed_agility, buffed_attack_power, buffed_hit, buffed_crit,
         buffed_weapon_damage, haste_rating, expertise_rating, armor_pen_rating,
-        buffed_mana_pool, buffed_int, buffed_spirit, buffed_mp5,
+        buffed_mana_pool, buffed_int, buffed_spirit, buffed_mp5, weapon_speed,
         unleashed_rage, kings, raven_idol, other_buffs, stat_debuffs,
         cooldowns, bonuses, binary_talents, naturalist, feral_aggression,
-        savage_fury, potp, predatory_instincts, improved_mangle, imp_motw,
-        furor, natural_shapeshifter, master_shapeshifter, intensity, potion
+        savage_fury, potp, predatory_instincts, improved_mangle, imp_motw, furor,
+        natural_shapeshifter, intensity, potion
 ):
     """Takes in raid buffed player stats from Eighty Upgrades, modifies them
     based on boss debuffs and miscellaneous buffs not captured by Eighty
@@ -1401,13 +1350,14 @@ def create_player(
         potp=int(potp), predatory_instincts=int(predatory_instincts),
         improved_mangle=int(improved_mangle), furor=int(furor),
         natural_shapeshifter=int(natural_shapeshifter),
-        master_shapeshifter=int(master_shapeshifter),
-        intensity=int(intensity), bonus_damage=encounter_weapon_damage,
-        multiplier=damage_multiplier, jow='jow' in stat_debuffs,
-        armor_pen_rating=armor_pen_rating, t6_2p='t6_2p' in bonuses,
-        t6_4p='t6_4p' in bonuses, t7_2p='t7_2p' in bonuses, meta='meta' in bonuses,
-        rune='rune' in cooldowns, shred_bonus=shred_bonus, rip_bonus=rip_bonus,
-        debuff_ap=debuff_ap, roar_glyph='roar_glyph' in bonuses,
+        intensity=int(intensity), weapon_speed=weapon_speed,
+        bonus_damage=encounter_weapon_damage, multiplier=damage_multiplier,
+        jow='jow' in stat_debuffs, armor_pen_rating=armor_pen_rating,
+        t6_2p='t6_2p' in bonuses, t6_4p='t6_4p' in bonuses,
+        t7_2p='t7_2p' in bonuses, wolfshead='wolfshead' in bonuses,
+        meta='meta' in bonuses, rune='rune' in cooldowns,
+        shred_bonus=shred_bonus, rip_bonus=rip_bonus, debuff_ap=debuff_ap,
+        roar_glyph='roar_glyph' in bonuses,
         berserk_glyph='berserk_glyph' in bonuses,
         rip_glyph='rip_glyph' in bonuses, shred_glyph='shred_glyph' in bonuses
     )
@@ -1486,7 +1436,7 @@ def apply_buffs(
 
 def run_sim(sim, num_replicates):
     # Run the sim for the specified number of replicates
-    dps_vals, tps, dmg_breakdown, aura_stats, oom_times = sim.run_replicates(
+    dps_vals, dmg_breakdown, aura_stats, oom_times = sim.run_replicates(
         num_replicates, detailed_output=True
     )
 
@@ -1494,11 +1444,6 @@ def run_sim(sim, num_replicates):
     avg_dps = np.mean(dps_vals)
     mean_dps_str = '%.1f +/- %.1f' % (avg_dps, np.std(dps_vals))
     median_dps_str = '%.1f' % np.median(dps_vals)
-
-    # Consolidate TPS statistics
-    avg_tps = np.mean(tps)
-    mean_tps_str = '%.1f +/- %.1f' % (avg_tps, np.std(tps))
-    median_tps_str = '%.1f' % np.median(tps)
 
     # Consolidate mana statistics
     avg_oom_time = np.mean(oom_times)
@@ -1541,7 +1486,6 @@ def run_sim(sim, num_replicates):
     return (
         avg_dps,
         (mean_dps_str, median_dps_str, oom_time_str, dps_table, aura_table),
-        (mean_tps_str, median_tps_str),
     )
 
 
@@ -1649,8 +1593,6 @@ def plot_new_trajectory(sim, show_whites):
     Output('time_to_oom', 'children'),
     Output('dps_breakdown_table', 'children'),
     Output('aura_breakdown_table', 'children'),
-    Output('mean_std_tps', 'children'),
-    Output('median_tps', 'children'),
     Output('error_str', 'children'),
     Output('error_msg', 'children'),
     Output('stat_weight_table', 'children'),
@@ -1681,7 +1623,6 @@ def plot_new_trajectory(sim, show_whites):
     State('furor', 'value'),
     State('naturalist', 'value'),
     State('natural_shapeshifter', 'value'),
-    State('master_shapeshifter', 'value'),
     State('intensity', 'value'),
     State('fight_length', 'value'),
     State('boss_armor', 'value'),
@@ -1714,13 +1655,12 @@ def compute(
         weight_clicks, graph_clicks, hot_uptime, potion, bonuses,
         binary_talents, feral_aggression, savage_fury, potp,
         predatory_instincts, improved_mangle, furor, naturalist,
-        natural_shapeshifter, master_shapeshifter, intensity,
-        fight_length, boss_armor, boss_debuffs, cooldowns, rip_cp,
-        bite_cp, cd_delay, max_roar_clip, use_rake, mangle_spam,
-        use_biteweave, bite_model, bite_time, bear_mangle,
-        prepop_berserk, preproc_omen, bearweave, berserk_bite_thresh,
-        lacerate_prio, lacerate_time, powerbear, num_replicates,
-        latency, epic_gems, show_whites
+        natural_shapeshifter, intensity, fight_length, boss_armor,
+        boss_debuffs, cooldowns, rip_cp, bite_cp, cd_delay,
+        max_roar_clip, use_rake, mangle_spam, use_biteweave, bite_model,
+        bite_time, bear_mangle, prepop_berserk, preproc_omen, bearweave,
+        berserk_bite_thresh, lacerate_prio, lacerate_time, powerbear,
+        num_replicates, latency, epic_gems, show_whites
 ):
     ctx = dash.callback_context
 
@@ -1829,13 +1769,13 @@ def compute(
         input_stats['crit'], input_stats.get('weaponDamage', 0),
         input_stats.get('hasteRating', 0),
         input_stats.get('expertiseRating', 0),
-        input_stats.get('armorPenRating', 0), input_stats['mana'],
+        input_stats.get('armorPenRating', 0),input_stats['mana'],
         input_stats['intellect'], input_stats['spirit'],
-        input_stats.get('mp5', 0), unleashed_rage, kings, raven_idol,
-        other_buffs, stat_debuffs, cooldowns, bonuses, binary_talents,
-        naturalist, feral_aggression, savage_fury, potp, predatory_instincts,
-        improved_mangle, imp_motw, furor, natural_shapeshifter,
-        master_shapeshifter, intensity, potion
+        input_stats.get('mp5', 0), float(input_stats['mainHandSpeed']),
+        unleashed_rage, kings, raven_idol, other_buffs, stat_debuffs,
+        cooldowns, bonuses, binary_talents, naturalist, feral_aggression,
+        savage_fury, potp, predatory_instincts, improved_mangle, imp_motw, furor,
+        natural_shapeshifter, intensity, potion
     )
 
     # Process trinkets
@@ -1946,10 +1886,9 @@ def compute(
     if (ctx.triggered and
             (ctx.triggered[0]['prop_id'] in
              ['run_button.n_clicks', 'weight_button.n_clicks'])):
-        avg_dps, dps_output, tps_output = run_sim(sim, num_replicates)
+        avg_dps, dps_output = run_sim(sim, num_replicates)
     else:
         dps_output = ('', '', '', [], [])
-        tps_output = ('', '')
 
     # If "Stat Weights" button was pressed, then calculate weights.
     if (ctx.triggered and
@@ -1969,7 +1908,7 @@ def compute(
         example_output = ({}, [])
 
     return (
-        upload_output + stats_output + dps_output + tps_output + weights_output
+        upload_output + stats_output + dps_output + weights_output
         + example_output
     )
 
