@@ -121,11 +121,13 @@ stat_input = dbc.Col([
             {'label': 'Relentless Earthstorm Diamond', 'value': 'meta'},
             {'label': 'Band of the Eternal Champion', 'value': 'exalted_ring'},
             {'label': 'Enchant Weapon: Mongoose', 'value': 'mongoose'},
+            {'label': 'Enchant Weapon: Executioner', 'value': 'executioner'},
+            {'label': 'Enchant Weapon: Berserking', 'value': 'berserking'},
             {'label': 'Hyperspeed Accelerators', 'value': 'engi_gloves'},
         ],
         value=[
             'rip_glyph', 'shred_glyph', 'roar_glyph', 't7_2p', 'meta',
-            'mongoose', 'engi_gloves'
+            'berserking', 'engi_gloves'
         ],
         id='bonuses'
     ),
@@ -1856,6 +1858,22 @@ def compute(
         )
         trinket_list.append(mongoose_enchant)
         player.proc_trinkets.append(mongoose_enchant)
+    if 'executioner' in bonuses:
+        executioner_enchant = trinkets.RefreshingProcTrinket(
+            stat_name='armor_pen_rating', stat_increment=120,
+            proc_name='Executioner', chance_on_hit=1./60.,
+            yellow_chance_on_hit=1./60., proc_duration=15, cooldown=0
+        )
+        trinket_list.append(executioner_enchant)
+        player.proc_trinkets.append(executioner_enchant)
+    if 'berserking' in bonuses:
+        berserking_enchant = trinkets.RefreshingProcTrinket(
+            stat_name='attack_power', stat_increment=400 * ap_mod,
+            proc_name='Berserking', chance_on_hit=1./60.,
+            yellow_chance_on_hit=1./60., proc_duration=15, cooldown=0
+        )
+        trinket_list.append(berserking_enchant)
+        player.proc_trinkets.append(berserking_enchant)
     if 'engi_gloves' in bonuses:
         trinket_list.append(trinkets.ActivatedTrinket(
             'haste_rating', 340, 'Hyperspeed Acceleration', 12, 60,
