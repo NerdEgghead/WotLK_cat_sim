@@ -35,12 +35,13 @@ class Player():
             self, attack_power, ap_mod, agility, hit_chance, expertise_rating,
             crit_chance, armor_pen_rating, swing_timer, mana, intellect,
             spirit, mp5, jow=False, rune=True, t6_2p=False, t6_4p=False,
-            meta=False, bonus_damage=0, shred_bonus=0,
+            t7_2p=False, meta=False, bonus_damage=0, shred_bonus=0,
             rip_bonus=0, debuff_ap=0, multiplier=1.1, omen=True,
             primal_gore=True, feral_aggression=0, predatory_instincts=3,
             savage_fury=2, furor=3, natural_shapeshifter=3,
             master_shapeshifter=2, intensity=3, potp=2, improved_mangle=0,
-            roar_glyph=False, berserk_glyph=False, proc_trinkets=[], log=False
+            rip_glyph=True, shred_glyph=True, roar_glyph=False,
+            berserk_glyph=False, proc_trinkets=[], log=False
     ):
         """Initialize player with key damage parameters.
 
@@ -66,6 +67,8 @@ class Player():
             t6_2p (bool): Whether the 2-piece T6 set bonus is used. Defaults
                 False.
             t6_4p (bool): Whether the 4-piece T6 set bonus is used. Defaults
+                False.
+            t7_2p (bool): Whether the 2-piece T7 set bonus is used. Defaults
                 False.
             meta (bool): Whether a Relentless Earthstorm Diamond meta gem is
                 socketed. Defaults to False.
@@ -99,6 +102,8 @@ class Player():
                 to 2.
             improved_mangle (int): Points taken in Improved Mangle talent.
                 Defaults to 0.
+            rip_glyph (bool): Whether Glyph of Rip is used. Defaults True.
+            shred_glyph (bool): Whether Glyph of Shred is used. Defaults True.
             roar_glyph (bool): Whether Glyph of Savage Roar is used. Defaults
                 False.
             berserk_glyph (bool): Whether Glyph of Berserk is used. Defaults
@@ -117,6 +122,9 @@ class Player():
         self.bear_ap_mod = ap_mod / 1.1 * (1 + 0.02 * potp)
         self.roar_fac = 0.3 + 0.03 * roar_glyph
         self.berserk_glyph = berserk_glyph
+        self.rip_duration = 12 + 4 * rip_glyph + 4 * t7_2p
+        self.shred_glyph = shred_glyph
+        self.lacerate_multi = 1 + 0.05 * t7_2p
 
         # Set internal hit and expertise values, and derive total miss chance.
         self._hit_chance = hit_chance
@@ -304,11 +312,9 @@ class Player():
         self.mangle_bear_high = mangle_fac * (
             self.white_bear_high * 1.15 + 299 * bear_multi
         )
-        self.lacerate_hit = (88 + 0.01 * bear_ap) * bear_multi
-        self.lacerate_tick = (
-            (64 + 0.01 * bear_ap) * damage_multiplier
-            * (1 + 0.02 * self.master_shapeshifter)
-        )
+        lacerate_multi = bear_multi * self.lacerate_multi
+        self.lacerate_hit = (88 + 0.01 * bear_ap) * lacerate_multi
+        self.lacerate_tick = (64+0.01*bear_ap)*lacerate_multi/armor_multiplier
 
         # Adjust damage values for Gift of Arthas
         if not gift_of_arthas:

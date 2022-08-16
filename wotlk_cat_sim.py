@@ -391,8 +391,8 @@ class Simulation():
         if success:
             self.rip_debuff = True
             self.rip_start = time
-            self.rip_end = time + 16.0
-            self.rip_ticks = list(np.arange(time + 2, time + 16.01, 2))
+            self.rip_end = time + self.player.rip_duration
+            self.rip_ticks = list(np.arange(time + 2, self.rip_end + 1e-9, 2))
             self.rip_damage = damage_per_tick
             self.rip_crit_chance = self.player.crit_chance
             self.rip_sr_snapshot = self.player.savage_roar
@@ -409,8 +409,8 @@ class Simulation():
         damage_done, success = self.player.shred()
 
         # If it landed, apply Glyph of Shred
-        if success and self.rip_debuff:
-            if (self.rip_end - self.rip_start) < 22:
+        if success and self.rip_debuff and self.player.shred_glyph:
+            if (self.rip_end - self.rip_start) < self.player.rip_duration + 6:
                 self.rip_end += 2
                 self.rip_ticks.append(self.rip_end)
 
@@ -504,7 +504,8 @@ class Simulation():
         """
         # First calculate how much Energy we expect to accumulate before our
         # next finisher expires.
-        ripdur = self.rip_start + 22 - time
+        maxripdur = self.player.rip_duration + 6 * self.player.shred_glyph
+        ripdur = self.rip_start + maxripdur - time
         srdur = self.roar_end - time
         mindur = min(ripdur, srdur)
         maxdur = max(ripdur, srdur)
@@ -559,7 +560,7 @@ class Simulation():
         rip_downtime, sr_downtime = self.calc_allowed_rip_downtime(time)
 
         # Adjust downtime estimate to account for end of fight losses
-        rip_downtime = 22. * (1 - 1. / (1. + rip_downtime / 22.))
+        rip_downtime = maxripdur * (1 - 1. / (1. + rip_downtime / maxripdur))
         sr_downtime = 34. * (1 - 1. / (1. + sr_downtime / 34.))
         next_downtime = sr_downtime if srdur < ripdur else rip_downtime
 
@@ -674,7 +675,8 @@ class Simulation():
 
         # Calculate how much Energy we expect to accumulate after Roar expires
         # but before Rip expires.
-        ripdur = self.rip_start + 22 - time
+        maxripdur = self.player.rip_duration + 6 * self.player.shred_glyph
+        ripdur = self.rip_start + maxripdur - time
         roardur = self.roar_end - time
         available_time = ripdur - roardur
         expected_energy_gain = 10 * available_time
@@ -1278,9 +1280,9 @@ class Simulation():
 
                 if self.rip_sr_snapshot:
                     self.player.dmg_breakdown['Savage Roar']['damage'] += (
-                        0.3 * tick_damage
+                        self.player.roar_fac * tick_damage
                     )
-                    tick_damage *= 1.3
+                    tick_damage *= 1 + self.player.roar_fac
 
                 dmg_done += tick_damage
                 threat_done += self.player.threat_from_damage(tick_damage)
@@ -1307,9 +1309,9 @@ class Simulation():
 
                 if self.rake_sr_snapshot:
                     self.player.dmg_breakdown['Savage Roar']['damage'] += (
-                        0.3 * tick_damage
+                        self.player.roar_fac * tick_damage
                     )
-                    tick_damage *= 1.3
+                    tick_damage *= 1 + self.player.roar_fac
 
                 dmg_done += tick_damage
                 threat_done += self.player.threat_from_damage(tick_damage)
