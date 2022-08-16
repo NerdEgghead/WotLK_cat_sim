@@ -754,87 +754,71 @@ iteration_input = dbc.Col([
             id='trinket_1',
             options=[
                 {'label': 'Empty', 'value': 'none'},
-                {'label': 'Tsunami Talisman', 'value': 'tsunami'},
-                {'label': 'Bloodlust Brooch', 'value': 'brooch'},
-                {'label': 'Hourglass of the Unraveller', 'value': 'hourglass'},
-                {'label': 'Dragonspine Trophy', 'value': 'dst'},
-                {'label': 'Mark of the Champion', 'value': 'motc'},
-                {'label': "Slayer's Crest", 'value': 'slayers'},
-                {'label': 'Drake Fang Talisman', 'value': 'dft'},
-                {'label': 'Icon of Unyielding Courage', 'value': 'icon'},
-                {'label': 'Abacus of Violent Odds', 'value': 'abacus'},
-                {'label': 'Badge of the Swarmguard', 'value': 'swarmguard'},
-                {'label': 'Kiss of the Spider', 'value': 'kiss'},
-                {'label': 'Badge of Tenacity', 'value': 'tenacity'},
                 {
-                    'label': 'Living Root of the Wildheart',
-                    'value': 'wildheart',
+                    'label': 'Darkmoon Card: Greatness (Strength)',
+                    'value': 'dmcg_str',
                 },
                 {
-                    'label': 'Ashtongue Talisman of Equilibrium',
-                    'value': 'ashtongue',
+                    'label': 'Darkmoon Card: Greatness (Agility)',
+                    'value': 'dmcg_agi',
                 },
-                {'label': 'Crystalforged Trinket', 'value': 'crystalforged'},
-                {'label': 'Madness of the Betrayer', 'value': 'madness'},
-                {'label': "Romulo's Poison Vial", 'value': 'vial'},
-                {
-                    'label': 'Steely Naaru Sliver',
-                    'value': 'steely_naaru_sliver'
-                },
-                {'label': 'Shard of Contempt', 'value': 'shard_of_contempt'},
-                {'label': "Berserker's Call", 'value': 'berserkers_call'},
-                {'label': "Alchemist's Stone", 'value': 'alch'},
-                {
-                    'label': "Assassin's Alchemist Stone",
-                    'value': 'assassin_alch'
-                },
+                {'label': 'Mirror of Truth', 'value': 'mirror'},
+                {'label': "Sphere of Red Dragon's Blood", 'value': 'sphere'},
+                {'label': 'Incisor Fragment', 'value': 'incisor_fragment'},
+                {'label': 'Meteorite Whetstone', 'value': 'whetstone'},
                 {'label': 'Blackened Naaru Sliver', 'value': 'bns'},
-                {'label': 'Darkmoon Card: Crusade', 'value': 'crusade'},
+                {'label': 'Darkmoon Card: Death', 'value': 'dmcd'},
+                {'label': 'Tears of Anguish', 'value': 'tears'},
+                {
+                    'label': 'Gnomish Lightning Generator',
+                    'value': 'lightning_generator'
+                },
+                {
+                    'label': "Mighty Alchemist's Stone",
+                    'value': 'mighty_alch'
+                },
+                {'label': "Fezzik's Pocketwatch", 'value': 'fezzik'},
+                {'label': "Berserker's Call", 'value': 'berserkers_call'},
+                {'label': 'Vestige of Haldor', 'value': 'vestige'},
+                {'label': 'Madness of the Betrayer', 'value': 'madness'},
+                {'label': 'Shard of Contempt', 'value': 'shard_of_contempt'},
             ],
-            value='bns'
+            value='dmcg_str'
         )),
         dbc.Col(dbc.Select(
             id='trinket_2',
             options=[
                 {'label': 'Empty', 'value': 'none'},
-                {'label': 'Tsunami Talisman', 'value': 'tsunami'},
-                {'label': 'Bloodlust Brooch', 'value': 'brooch'},
-                {'label': 'Hourglass of the Unraveller', 'value': 'hourglass'},
-                {'label': 'Dragonspine Trophy', 'value': 'dst'},
-                {'label': 'Mark of the Champion', 'value': 'motc'},
-                {'label': "Slayer's Crest", 'value': 'slayers'},
-                {'label': 'Drake Fang Talisman', 'value': 'dft'},
-                {'label': 'Icon of Unyielding Courage', 'value': 'icon'},
-                {'label': 'Abacus of Violent Odds', 'value': 'abacus'},
-                {'label': 'Badge of the Swarmguard', 'value': 'swarmguard'},
-                {'label': 'Kiss of the Spider', 'value': 'kiss'},
-                {'label': 'Badge of Tenacity', 'value': 'tenacity'},
                 {
-                    'label': 'Living Root of the Wildheart',
-                    'value': 'wildheart',
+                    'label': 'Darkmoon Card: Greatness (Strength)',
+                    'value': 'dmcg_str',
                 },
                 {
-                    'label': 'Ashtongue Talisman of Equilibrium',
-                    'value': 'ashtongue',
+                    'label': 'Darkmoon Card: Greatness (Agility)',
+                    'value': 'dmcg_agi',
                 },
-                {'label': 'Crystalforged Trinket', 'value': 'crystalforged'},
-                {'label': 'Madness of the Betrayer', 'value': 'madness'},
-                {'label': "Romulo's Poison Vial", 'value': 'vial'},
-                {
-                    'label': 'Steely Naaru Sliver',
-                    'value': 'steely_naaru_sliver'
-                },
-                {'label': 'Shard of Contempt', 'value': 'shard_of_contempt'},
-                {'label': "Berserker's Call", 'value': 'berserkers_call'},
-                {'label': "Alchemist's Stone", 'value': 'alch'},
-                {
-                    'label': "Assassin's Alchemist Stone",
-                    'value': 'assassin_alch'
-                },
+                {'label': 'Mirror of Truth', 'value': 'mirror'},
+                {'label': "Sphere of Red Dragon's Blood", 'value': 'sphere'},
+                {'label': 'Incisor Fragment', 'value': 'incisor_fragment'},
+                {'label': 'Meteorite Whetstone', 'value': 'whetstone'},
                 {'label': 'Blackened Naaru Sliver', 'value': 'bns'},
-                {'label': 'Darkmoon Card: Crusade', 'value': 'crusade'},
+                {'label': 'Darkmoon Card: Death', 'value': 'dmcd'},
+                {'label': 'Tears of Anguish', 'value': 'tears'},
+                {
+                    'label': 'Gnomish Lightning Generator',
+                    'value': 'lightning_generator'
+                },
+                {
+                    'label': "Mighty Alchemist's Stone",
+                    'value': 'mighty_alch'
+                },
+                {'label': "Fezzik's Pocketwatch", 'value': 'fezzik'},
+                {'label': "Berserker's Call", 'value': 'berserkers_call'},
+                {'label': 'Vestige of Haldor', 'value': 'vestige'},
+                {'label': 'Madness of the Betrayer', 'value': 'madness'},
+                {'label': 'Shard of Contempt', 'value': 'shard_of_contempt'},
             ],
-            value='tsunami'
+            value='mirror'
         )),
     ]),
     html.Div(
@@ -1275,11 +1259,8 @@ def process_trinkets(
                 active_stats['chance_on_hit'] = ppm/60.
                 active_stats['yellow_chance_on_hit'] = ppm/60.
 
-            if trinket == 'vial':
-                trinket_obj = trinkets.PoisonVial(
-                    active_stats['chance_on_hit'],
-                    active_stats['yellow_chance_on_hit']
-                )
+            if trinket_params['type'] == 'instant_damage':
+                trinket_obj = trinkets.InstantDamageProc(**active_stats)
             elif trinket_params['type'] == 'refreshing_proc':
                 trinket_obj = trinkets.RefreshingProcTrinket(**active_stats)
             elif trinket_params['type'] == 'stacking_proc':

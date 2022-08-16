@@ -638,45 +638,60 @@ class StackingProcTrinket(ProcTrinket):
         return 0.0
 
 
-class PoisonVial(ProcTrinket):
-    """Custom class to handle instant damage procs from the Romulo's Poison
-    Vial trinket."""
+class InstantDamageProc(ProcTrinket):
+    """Custom class to handle instant damage procs."""
 
-    def __init__(self, white_chance_on_hit, yellow_chance_on_hit, *args):
-        """Initialize a Trinket object modeling RPV. Since RPV is a ppm
-        trinket, the user must pre-calculate the proc chances based on the
-        swing timer and equipped weapon speed.
+    def __init__(
+        self, proc_name, min_damage, damage_range, cooldown, chance_on_hit,
+        chance_on_crit, **kwargs
+    ):
+        """Initialize Trinket object.
 
         Arguments:
-            white_chance_on_hit (float): Probability of a proc on a successful
-                normal hit, between 0 and 1.
-            yellow_chance_on_hit (float): Separate proc rate for special
-                abilities.
+            proc_name (str): Name of the spell that is cast when the trinket
+                procs. Used for combat logging.
+            min_damage (float): Low roll damage of the proc, before partial
+                resists.
+            damage_range (float): Damage range of the proc.
+            cooldown (int): Internal cooldown before the trinket can proc
+                again.
+            chance_on_hit (float): Probability of a proc on a successful normal
+                hit, between 0 and 1.
+            chance_on_crit (float): Probability of a proc on a critical strike,
+                between 0 and 1.
         """
         ProcTrinket.__init__(
-            self, stat_name=None, stat_increment=None,
-            proc_name="Romulo's Poison", proc_duration=0,
-            cooldown=0., chance_on_hit=white_chance_on_hit,
-            yellow_chance_on_hit=yellow_chance_on_hit
+            self, stat_name='attack_power', stat_increment=0,
+            proc_name=proc_name, proc_duration=0, cooldown=cooldown,
+            chance_on_hit=chance_on_hit, chance_on_crit=chance_on_crit
         )
+        self.min_damage = min_damage
+        self.damage_range = damage_range
 
-    def activate(self, time, sim):
+    def activate(self, time, player, sim):
         """Deal damage when the trinket procs.
 
         Arguments:
             time (float): Simulation time, in seconds, of activation.
-            sim (tbc_cat_sim.Simulation): Simulation object controlling the
+            player (player.Player): Player object whose stats will be used for
+                determining the proc damage.
+            sim (wotlk_cat_sim.Simulation): Simulation object controlling the
                 fight execution.
 
         Returns:
             damage_done (float): Damage dealt by the proc.
         """
-        self.num_procs += 1
+        ProcTrinket.activate(self, time, player, sim)
 
-        # First roll for miss. Assume 0 spell hit, so miss chance is 17%.
+        # First roll for miss. Infer spell miss chance from player's melee miss
+        # chance. Assume Improved Faerie Fire / Misery debuffs.
+        miss_chance = 0.14 - (
+            (8. - (player.miss_chance - player.dodge_chance) * 100)
+            * 32.79 / 26.23 / 100
+        )
         miss_roll = np.random.rand()
 
-        if miss_roll < 0.17:
+        if miss_roll < miss_chance:
             if sim.log:
                 sim.combat_log.append(
                     sim.gen_log(time, self.proc_name, 'miss')
@@ -685,7 +700,7 @@ class PoisonVial(ProcTrinket):
             return 0.0
 
         # Now roll the base damage done by the proc
-        base_damage = 222 + np.random.rand() * 110
+        base_damage = self.min_damage + np.random.rand() * self.damage_range
 
         # Now roll for partial resists. Assume that the boss has no nature
         # resistance, so the only source of partials is the level based
@@ -709,27 +724,6 @@ class PoisonVial(ProcTrinket):
             )
 
         return dmg_done
-
-    def update(self, time, player, sim):
-        """Check if a trinket proc occurred on the player's last attack, and
-        perform associated bookkeeping.
-
-        Arguments:
-            time (float): Simulation time, in seconds.
-            player (tbc_cat_sim.Player): Player object whose attributes can be
-                modified by trinket procs. Unused for RPV calculations, but
-                required by the Trinket API.
-            sim (tbc_cat_sim.Simulation): Simulation object controlling the
-                fight execution.
-
-        Returns:
-            damage_done (float): Damage dealt by the trinket since the last
-                check.
-        """
-        if self.apply_proc():
-            return self.activate(time, sim)
-
-        return 0.0
 
 
 class RefreshingProcTrinket(ProcTrinket):
@@ -758,19 +752,6 @@ class RefreshingProcTrinket(ProcTrinket):
 
 # Library of recognized trinkets and associated parameters
 trinket_library = {
-    'brooch': {
-        'type': 'activated',
-        'passive_stats': {
-            'attack_power': 72,
-        },
-        'active_stats': {
-            'stat_name': 'attack_power',
-            'stat_increment': 278,
-            'proc_name': 'Lust for Battle',
-            'proc_duration': 20,
-            'cooldown': 120,
-        },
-    },
     'berserkers_call': {
         'type': 'activated',
         'passive_stats': {
@@ -784,127 +765,88 @@ trinket_library = {
             'cooldown': 120,
         },
     },
-    'slayers': {
+    'sphere': {
         'type': 'activated',
         'passive_stats': {
-            'attack_power': 64,
+            'hit_chance': 55./32.79/100,
         },
         'active_stats': {
             'stat_name': 'attack_power',
-            'stat_increment': 260,
-            'proc_name': "Slayer's Crest",
+            'stat_increment': 670,
+            'proc_name': 'Heart of a Dragon',
             'proc_duration': 20,
             'cooldown': 120,
         },
     },
-    'icon': {
+    'incisor_fragment': {
         'type': 'activated',
         'passive_stats': {
-            'hit_chance': 30./15.77/100,
+            'attack_power': 148,
         },
         'active_stats': {
             'stat_name': 'armor_pen_rating',
-            'stat_increment': 85,
-            'proc_name': 'Armor Penetration',
+            'stat_increment': 291,
+            'proc_name': 'Incisor Fragment',
             'proc_duration': 20,
             'cooldown': 120,
         },
     },
-    'abacus': {
+    'fezzik': {
         'type': 'activated',
         'passive_stats': {
-            'attack_power': 64,
+            'haste_rating': 60,
         },
         'active_stats': {
-            'stat_name': 'haste_rating',
-            'stat_increment': 260,
-            'proc_name': 'Haste',
-            'proc_duration': 10,
-            'cooldown': 120,
-        },
-    },
-    'kiss': {
-        'type': 'activated',
-        'passive_stats': {
-            'crit_chance': 14./22.1/100,
-            'hit_chance': 10./15.77/100,
-        },
-        'active_stats': {
-            'stat_name': 'haste_rating',
-            'stat_increment': 200,
-            'proc_name': 'Kiss of the Spider',
+            'stat_name': 'attack_power',
+            'stat_increment': 432,
+            'proc_name': 'Argent Heroism',
             'proc_duration': 15,
             'cooldown': 120,
         },
     },
-    'tenacity': {
-        'type': 'activated',
-        'passive_stats': {},
-        'active_stats': {
-            'stat_name': 'Agility',
-            'stat_increment': 150,
-            'proc_name': 'Heightened Reflexes',
-            'proc_duration': 20,
-            'cooldown': 120,
-        },
-    },
-    'crystalforged': {
-        'type': 'activated',
-        'passive_stats': {
-            'bonus_damage': 7,
-        },
-        'active_stats': {
-            'stat_name': 'attack_power',
-            'stat_increment': 216,
-            'proc_name': 'Valor',
-            'proc_duration': 10,
-            'cooldown': 60,
-        },
-    },
-    'hourglass': {
+    'whetstone': {
         'type': 'proc',
         'passive_stats': {
-            'crit_chance': 32./22.1/100,
+            'crit_chance': 74./45.91/100,
+        },
+        'active_stats': {
+            'stat_name': 'haste_rating',
+            'stat_increment': 444,
+            'proc_name': 'Meteorite Whetstone',
+            'proc_duration': 10,
+            'cooldown': 45,
+            'proc_type': 'chance_on_hit',
+            'proc_rate': 0.15,
+        },
+    },
+    'mirror': {
+        'type': 'proc',
+        'passive_stats': {
+            'crit_chance': 84./45.91/100,
         },
         'active_stats': {
             'stat_name': 'attack_power',
-            'stat_increment': 300,
-            'proc_name': 'Rage of the Unraveller',
+            'stat_increment': 1000,
+            'proc_name': 'Reflection of Torment',
             'proc_duration': 10,
             'cooldown': 50,
             'proc_type': 'chance_on_crit',
             'proc_rate': 0.1,
         },
     },
-    'tsunami': {
+    'tears': {
         'type': 'proc',
         'passive_stats': {
-            'crit_chance': 38./22.1/100,
-            'hit_chance': 10./15.77/100,
-        },
-        'active_stats': {
-            'stat_name': 'attack_power',
-            'stat_increment': 340,
-            'proc_name': 'Fury of the Crashing Waves',
-            'proc_duration': 10,
-            'cooldown': 45,
-            'proc_type': 'chance_on_crit',
-            'proc_rate': 0.1,
-        },
-    },
-    'dst': {
-        'type': 'proc',
-        'passive_stats': {
-            'attack_power': 40,
+            'haste_rating': 73,
         },
         'active_stats': {
             'stat_name': 'haste_rating',
-            'stat_increment': 325,
-            'proc_name': 'Haste',
+            'stat_increment': 410,
+            'proc_name': 'Tears of Anguish',
             'proc_duration': 10,
-            'cooldown': 20,
-            'proc_type': 'ppm',
-            'proc_rate': 1.,
+            'cooldown': 50,
+            'proc_type': 'chance_on_crit',
+            'proc_rate': 0.1,
         },
     },
     'swarmguard': {
@@ -922,48 +864,79 @@ trinket_library = {
             'cooldown': 180,
         },
     },
-    'vial': {
-        'type': 'proc',
+    'vestige': {
+        'type': 'instant_damage',
         'passive_stats': {
-            'hit_chance': 35./15.77/100,
+            'haste_rating': 65,
         },
         'active_stats': {
             'stat_name': 'none',
-            'proc_type': 'ppm',
-            'proc_rate': 1.,
-        },
-    },
-    'wildheart': {
-        'type': 'refreshing_proc',
-        'passive_stats': {},
-        'active_stats': {
-            'stat_name': 'Strength',
-            'stat_increment': 64,
-            'proc_name': 'Feline Blessing',
-            'proc_duration': 15,
-            'cooldown': 0,
             'proc_type': 'chance_on_hit',
-            'proc_rate': 0.03,
+            'proc_rate': 0.15,
+            'proc_name': 'Vestige of Haldor',
+            'cooldown': 45,
+            'min_damage': 1024,
+            'damage_range': 512,
         },
     },
-    'ashtongue': {
-        'type': 'refreshing_proc',
-        'passive_stats': {},
-        'active_stats': {
-            'stat_name': 'Strength',
-            'stat_increment': 140,
-            'proc_name': 'Ashtongue Talisman of Equilibrium',
-            'proc_duration': 8,
-            'cooldown': 0,
-            'proc_type': 'chance_on_hit',
-            'proc_rate': 0.4,
-            'mangle_only': True,
-        },
-    },
-    'steely_naaru_sliver': {
-        'type': 'passive',
+    'dmcd': {
+        'type': 'instant_damage',
         'passive_stats': {
-            'expertise_rating': 54,
+            'crit_chance': 85./45.91/100,
+        },
+        'active_stats': {
+            'stat_name': 'none',
+            'proc_type': 'chance_on_hit',
+            'proc_rate': 0.15,
+            'proc_name': 'Darkmoon Card: Death',
+            'cooldown': 45,
+            'min_damage': 1750,
+            'damage_range': 500,
+        },
+    },
+    'lightning_generator': {
+        'type': 'instant_damage',
+        'passive_stats': {
+            'crit_chance': 84./45.91/100,
+        },
+        'active_stats': {
+            'stat_name': 'none',
+            'proc_type': 'chance_on_hit',
+            'proc_rate': 1.0,
+            'proc_name': 'Gnomish Lightning Generator',
+            'cooldown': 60,
+            'min_damage': 1530,
+            'damage_range': 340,
+        },
+    },
+    'dmcg_str': {
+        'type': 'proc',
+        'passive_stats': {
+            'strength': 90,
+        },
+        'active_stats': {
+            'stat_name': 'Agility',
+            'stat_increment': 300,
+            'proc_name': 'Darkmoon Card: Greatness',
+            'proc_duration': 15,
+            'cooldown': 45,
+            'proc_type': 'chance_on_hit',
+            'proc_rate': 0.35,
+        },
+    },
+    'dmcg_agi': {
+        'type': 'proc',
+        'passive_stats': {
+            'agility': 90,
+        },
+        'active_stats': {
+            'stat_name': 'Agility',
+            'stat_increment': 300,
+            'proc_name': 'Darkmoon Card: Greatness',
+            'proc_duration': 15,
+            'cooldown': 45,
+            'proc_type': 'chance_on_hit',
+            'proc_rate': 0.35,
         },
     },
     'shard_of_contempt': {
@@ -984,7 +957,7 @@ trinket_library = {
     'madness': {
         'type': 'refreshing_proc',
         'passive_stats': {
-            'hit_chance': 20./15.77/100,
+            'hit_chance': 20./32.79/100,
             'attack_power': 84,
         },
         'active_stats': {
@@ -997,34 +970,11 @@ trinket_library = {
             'proc_rate': 1.,
         },
     },
-    'motc': {
+    'mighty_alch': {
         'type': 'passive',
         'passive_stats': {
-            'attack_power': 150,
-        },
-    },
-    'dft': {
-        'type': 'passive',
-        'passive_stats': {
-            'attack_power': 56,
-            'hit_chance': 20./15.77/100,
-        },
-    },
-    'alch': {
-        'type': 'passive',
-        'passive_stats': {
-            'strength': 15,
-            'agility': 15,
-            'intellect': 15,
-            'spirit': 15,
-            'mana_pot_multi': 0.4,
-        },
-    },
-    'assassin_alch': {
-        'type': 'passive',
-        'passive_stats': {
-            'attack_power': 108,
-            'mana_pot_multi': 0.4,
+            'attack_power': 100,
+            'crit_chance': 50./45.91/100,
         },
     },
     'bns': {
@@ -1045,22 +995,6 @@ trinket_library = {
             'cooldown': 45,
             'aura_type': 'proc',
             'aura_proc_rates': {'white': 0.1, 'yellow': 0.1},
-        },
-    },
-    'crusade': {
-        'type': 'stacking_proc',
-        'passive_stats': {},
-        'active_stats': {
-            'stat_name': 'attack_power',
-            'stat_increment': 6,
-            'max_stacks': 20,
-            'aura_name': 'Aura of the Crusade',
-            'stack_name': 'Aura of the Crusader',
-            'proc_type': 'custom',
-            'chance_on_hit': 1.0,
-            'yellow_chance_on_hit': 1.0,
-            'aura_duration': 1e9,
-            'cooldown': 1e9,
         },
     },
 }
