@@ -644,7 +644,8 @@ class Simulation():
             can_roar (bool): Whether or not to clip Roar now.
         """
         # For now, consider only the case where Rip will expire after Roar
-        if (not self.rip_debuff) or (self.rip_end <= self.roar_end):
+        if ((not self.rip_debuff) or (self.rip_end <= self.roar_end)
+                or (self.fight_length - self.rip_end < 10)):
             return False
 
         # Calculate how much Energy we expect to accumulate after Roar expires
@@ -844,6 +845,7 @@ class Simulation():
             self.strategy['bearweave'] and self.strategy['lacerate_prio']
             and self.lacerate_debuff
             and (self.lacerate_end - time < 2.5 + self.latency)
+            and (self.lacerate_end < self.fight_length)
         )
 
         floating_energy = 0
@@ -898,6 +900,7 @@ class Simulation():
             maintain_lacerate = (not build_lacerate) and (
                 (self.lacerate_end - time <= self.strategy['lacerate_time'])
                 and ((self.player.rage < 38) or shift_next)
+                and (self.lacerate_end < self.fight_length)
             )
             lacerate_now = (
                 self.strategy['lacerate_prio']
@@ -906,6 +909,7 @@ class Simulation():
             emergency_lacerate = (
                 self.strategy['lacerate_prio'] and self.lacerate_debuff
                 and (self.lacerate_end - time < 3.0 + 2 * self.latency)
+                and (self.lacerate_end < self.fight_length)
             )
 
             if (not self.strategy['lacerate_prio']) or (not lacerate_now):
