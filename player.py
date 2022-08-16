@@ -413,7 +413,7 @@ class Player():
         # handful of proc effects that trigger only on Mangle must be
         # separately checked within the mangle() function.
         for trinket in self.proc_trinkets:
-            if not trinket.mangle_only:
+            if not (trinket.mangle_only or trinket.shred_only):
                 trinket.check_for_proc(crit, yellow)
 
     def regen(self, delta_t):
@@ -687,6 +687,14 @@ class Player():
             'Shred', self.shred_low, self.shred_high, self.shred_cost,
             mangle_mod=True
         )
+
+        # Since a handful of proc effects trigger only on Shred, we separately
+        # check for those procs here if the Shred landed successfully.
+        if success:
+            for trinket in self.proc_trinkets:
+                if trinket.shred_only:
+                    trinket.check_for_proc(False, True)
+
         return damage_done, success
 
     def rake(self):

@@ -402,7 +402,7 @@ class ProcTrinket(Trinket):
     def __init__(
         self, stat_name, stat_increment, proc_name, chance_on_hit,
         proc_duration, cooldown, chance_on_crit=0.0, yellow_chance_on_hit=None,
-        mangle_only=False
+        mangle_only=False, shred_only=False
     ):
         """Initialize a generic proc trinket with key parameters.
 
@@ -425,11 +425,13 @@ class ProcTrinket(Trinket):
                 interpreted as the proc rate for white attacks. Used for ppm
                 trinkets where white and yellow proc rates are normalized
                 differently.
-            mangle_only (bool): If True, then designate this trinket as being
-                able to proc exclusively on the Mangle ability. Defaults False.
             proc_duration (int): Duration of the buff, in seconds.
             cooldown (int): Internal cooldown before the trinket can proc
                 again.
+            mangle_only (bool): If True, then designate this trinket as being
+                able to proc exclusively on the Mangle ability. Defaults False.
+            shred_only (bool): If True, then designate this trinket as being
+                able to proc exclusively on the Shred ability. Defaults False.
         """
         Trinket.__init__(
             self, stat_name, stat_increment, proc_name, proc_duration,
@@ -447,6 +449,7 @@ class ProcTrinket(Trinket):
             self.separate_yellow_procs = False
 
         self.mangle_only = mangle_only
+        self.shred_only = shred_only
 
     def check_for_proc(self, crit, yellow):
         """Perform random roll for a trinket proc upon a successful attack.

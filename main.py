@@ -102,12 +102,17 @@ stat_input = dbc.Col([
     html.H5('Idols, Glyphs, and Other Bonuses'),
     dbc.Checklist(
         options=[{'label': 'Idol of the Raven Goddess', 'value': 'raven'}],
-        value=['raven'], id='raven_idol'
+        value=[], id='raven_idol'
     ),
     dbc.Checklist(
         options=[
-            {'label': 'Everbloom Idol', 'value': 'everbloom'},
+            {'label': 'Idol of the Ravenous Beast', 'value': 'everbloom'},
+            {'label': 'Idol of the Wastes', 'value': 'wastes_idol'},
             {'label': 'Idol of Terror', 'value': 'idol_of_terror'},
+            {
+                'label': "Deadly Gladiator's Idol of Resolve",
+                'value': 'glad_idol'
+            },
             {'label': 'Idol of the White Stag', 'value': 'stag_idol'},
             {'label': 'Idol of Feral Shadows', 'value': 'rip_idol'},
             {'label': 'Glyph of Rip', 'value': 'rip_glyph'},
@@ -126,8 +131,8 @@ stat_input = dbc.Col([
             {'label': 'Hyperspeed Accelerators', 'value': 'engi_gloves'},
         ],
         value=[
-            'rip_glyph', 'shred_glyph', 'roar_glyph', 't7_2p', 'meta',
-            'berserking', 'engi_gloves'
+            'everbloom', 'rip_glyph', 'shred_glyph', 'roar_glyph', 't7_2p',
+            'meta', 'berserking', 'engi_gloves'
         ],
         id='bonuses'
     ),
@@ -1317,7 +1322,7 @@ def create_player(
         (1 + 0.02 * int(naturalist))
         * (1 + 0.03 * ('sanc_aura' in other_buffs))
     )
-    shred_bonus = 88 * ('everbloom' in bonuses)
+    shred_bonus = 203 * ('everbloom' in bonuses)
     rip_bonus = 7 * ('rip_idol' in bonuses)
 
     # Create and return a corresponding Player object
@@ -1799,6 +1804,14 @@ def compute(
         )
         trinket_list.append(ring)
         player.proc_trinkets.append(ring)
+    if 'wastes_idol' in bonuses:
+        idol = trinkets.ProcTrinket(
+            chance_on_hit=0.75, stat_name='attack_power',
+            stat_increment=2 * stat_mod * ap_mod * 61, proc_duration=10,
+            cooldown=10, proc_name='Snap and Snarl', shred_only=True
+        )
+        trinket_list.append(idol)
+        player.proc_trinkets.append(idol)
     if 'idol_of_terror' in bonuses:
         idol = trinkets.ProcTrinket(
             chance_on_hit=0.85,
@@ -1818,6 +1831,14 @@ def compute(
             chance_on_hit=1.0, stat_name='attack_power',
             stat_increment=94 * ap_mod, proc_duration=20, cooldown=0,
             proc_name='Idol of the White Stag', mangle_only=True
+        )
+        trinket_list.append(idol)
+        player.proc_trinkets.append(idol)
+    if 'glad_idol' in bonuses:
+        idol = trinkets.RefreshingProcTrinket(
+            chance_on_hit=1.0, stat_name='attack_power',
+            stat_increment=120 * ap_mod, proc_duration=10, cooldown=0,
+            proc_name="Deadly Gladiator's Idol of Resolve", mangle_only=True
         )
         trinket_list.append(idol)
         player.proc_trinkets.append(idol)
