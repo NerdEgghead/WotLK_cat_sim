@@ -302,8 +302,7 @@ class Simulation():
                 np.inf if self.strategy['bear_mangle'] else (time + 60.0)
             )
 
-        threat_done = self.player.threat_from_damage(damage_done)
-        return damage_done, threat_done
+        return damage_done
 
     def rake(self, time):
         """Instruct the Player to Rake, and perform related bookkeeping.
@@ -313,7 +312,6 @@ class Simulation():
 
         Returns:
             damage_done (float): Damage done by the Rake initial hit.
-            threat_done (float): Threat done by the Rake initial hit.
         """
         damage_done, success = self.player.rake()
 
@@ -325,8 +323,7 @@ class Simulation():
             self.rake_damage = self.player.rake_tick
             self.rake_sr_snapshot = self.player.savage_roar
 
-        threat_done = self.player.threat_from_damage(damage_done)
-        return damage_done, threat_done
+        return damage_done
 
     def lacerate(self, time):
         """Instruct the Player to Lacerate, and perform related bookkeeping.
@@ -336,7 +333,6 @@ class Simulation():
 
         Returns:
             damage_done (float): Damage done by the Lacerate initial hit.
-            threat_done (float): Threat done by the Lacerate initial hit.
         """
         damage_done, success = self.player.lacerate(self.mangle_debuff)
 
@@ -367,24 +363,15 @@ class Simulation():
                 self.player.lacerate_tick * self.lacerate_stacks
                 * (1 + 0.15 * self.player.enrage)
             )
-            self.lacerate_crit_chance = self.player.calc_crit_chance()
+            self.lacerate_crit_chance = self.player.crit_chance - 0.04
 
-        # Lacerate damage has a 0.5x threat modifier, and successful
-        # casts add 258 threat.
-        threat_done = self.player.threat_from_damage(damage_done,
-            ability_threat_mod=0.5,
-            additive_threat=258) if success else 0.0
-        return damage_done, threat_done
+        return damage_done
 
     def rip(self, time):
         """Instruct Player to apply Rip, and perform related bookkeeping.
 
         Arguments:
             time (float): Current simulation time in seconds.
-
-        Returns:
-            damage_done (float): Damage done by Rip cast. This is always 0.0.
-            threat_done (float): Threat done by Rip cast. This is always 0.0.
         """
         damage_per_tick, success = self.player.rip()
 
@@ -397,14 +384,13 @@ class Simulation():
             self.rip_crit_chance = self.player.crit_chance
             self.rip_sr_snapshot = self.player.savage_roar
 
-        return 0.0, 0.0
+        return 0.0
 
     def shred(self):
         """Instruct Player to Shred, and perform related bookkeeping.
 
         Returns:
-            damage_done (float): Damage done by Shred cast.
-            threat_done (float): Threat done by Shred cast.
+            damage_done (Float): Damage done by Shred cast.
         """
         damage_done, success = self.player.shred()
 
@@ -414,19 +400,7 @@ class Simulation():
                 self.rip_end += 2
                 self.rip_ticks.append(self.rip_end)
 
-        threat_done = self.player.threat_from_damage(damage_done)
-        return damage_done, threat_done
-
-    def bite(self):
-        """Instructs Player to Bite.
-
-        Returns:
-            damage_done (float): Damage done by bite.
-            threat_done (float): Threat done by bite.
-        """
-        damage_done = self.player.bite()
-        threat_done = self.player.threat_from_damage(damage_done)
-        return damage_done, threat_done
+        return damage_done
 
     def berserk_expected_at(self, current_time, future_time):
         """Determine whether the Berserk buff is predicted to be active at
@@ -726,7 +700,6 @@ class Simulation():
 
         Returns:
             damage_done (float): Damage done by the player action.
-            threat_done (float): Threat done by the player action.
         """
         # If we're out of form because we just cast GotW/etc., always shift
         #if not self.player.cat_form:
@@ -747,7 +720,7 @@ class Simulation():
                 self.swing_times[0], self.swing_timer * swing_fac,
                 first_swing=True
             )
-            return 0.0, 0.0
+            return 0.0
 
         energy, cp = self.player.energy, self.player.combo_points
         rip_cp = self.strategy['min_combos_for_rip']
@@ -956,7 +929,7 @@ class Simulation():
             self.player.ready_to_shift = True
         elif berserk_now:
             self.apply_berserk(time)
-            return 0.0, 0.0
+            return 0.0
         elif roar_now: # or pool_for_roar:
             # If we have leeway to do so, don't Roar right away and instead
             # pool Energy to reduce how much we clip the buff
@@ -973,7 +946,7 @@ class Simulation():
             #     )
             if energy >= self.player.roar_cost:
                 self.roar_end = self.player.roar(time)
-                return 0.0, 0.0
+                return 0.0
             else:
                 time_to_next_action = (self.player.roar_cost - energy) / 10.
         elif rip_now:
@@ -982,7 +955,7 @@ class Simulation():
             time_to_next_action = (self.player.rip_cost - energy) / 10.
         elif bite_now:
             if energy >= self.player.bite_cost:
-                return self.bite()
+                return self.player.bite()
             time_to_next_action = (self.player.bite_cost - energy) / 10.
         elif rake_now:
             if (energy >= self.player.rake_cost) or self.player.omen_proc:
@@ -1011,7 +984,7 @@ class Simulation():
 
         self.next_action = next_action + self.latency
 
-        return 0.0, 0.0
+        return 0.0
 
     def update_swing_times(self, time, new_swing_timer, first_swing=False):
         """Generate an updated list of swing times after changes to the swing
@@ -1144,9 +1117,9 @@ class Simulation():
                 the simulation. Defaults False.
 
         Returns:
-            times, damage, threat, energy, combos: Lists of the time,
-                total damage done, total threat done, player energy, and player
-                combo points at each simulated event within the fight duration.
+            times, damage, energy, combos: Lists of the time,
+                total damage done, player energy, and player combo points at
+                each simulated event within the fight duration.
             damage_breakdown (collection.OrderedDict): Dictionary containing a
                 breakdown of the number of casts and damage done by each player
                 ability.
@@ -1209,7 +1182,6 @@ class Simulation():
         # Create empty lists of output variables
         times = []
         damage = []
-        threat = []
         energy = []
         combos = []
 
@@ -1223,9 +1195,8 @@ class Simulation():
             delta_t = time - previous_time
             self.player.regen(delta_t)
 
-            # Tabulate all damage and threat sources in this timestep
+            # Tabulate all damage sources in this timestep
             dmg_done = 0.0
-            threat_done = 0.0
 
             # Decrement cooldowns by time since last event
             self.player.gcd = max(0.0, self.player.gcd - delta_t)
@@ -1285,7 +1256,6 @@ class Simulation():
                     tick_damage *= 1 + self.player.roar_fac
 
                 dmg_done += tick_damage
-                threat_done += self.player.threat_from_damage(tick_damage)
                 self.rip_ticks.pop(0)
 
                 if self.log:
@@ -1314,7 +1284,6 @@ class Simulation():
                     tick_damage *= 1 + self.player.roar_fac
 
                 dmg_done += tick_damage
-                threat_done += self.player.threat_from_damage(tick_damage)
                 self.rake_ticks.pop(0)
 
                 if self.log:
@@ -1345,7 +1314,6 @@ class Simulation():
                     )
 
                 dmg_done += tick_damage
-                threat_done += self.player.threat_from_damage(tick_damage, 0.5)
                 self.player.dmg_breakdown['Lacerate']['damage'] += tick_damage
                 self.lacerate_ticks.pop(0)
 
@@ -1380,9 +1348,7 @@ class Simulation():
 
             # Activate or deactivate trinkets if appropriate
             for trinket in self.trinkets:
-                trinket_damage = trinket.update(time, self.player, self)
-                dmg_done += trinket_damage
-                threat_done += self.player.threat_from_damage(trinket_damage)
+                dmg_done += trinket.update(time, self.player, self)
 
             # Use Enrage if appropriate
             if ((not self.player.cat_form) and (self.player.enrage_cd < 1e-9)
@@ -1399,9 +1365,7 @@ class Simulation():
             # Check if a melee swing happens at this time
             if time == self.swing_times[0]:
                 if self.player.cat_form:
-                    swing_damage = self.player.swing()
-                    dmg_done += swing_damage
-                    threat_done += self.player.threat_from_damage(swing_damage)
+                    dmg_done += self.player.swing()
                 else:
                     # If we will have enough time and Energy leeway to stay in
                     # Dire Bear Form once the GCD expires, then only Maul if we
@@ -1463,16 +1427,9 @@ class Simulation():
                         maul_rage_thresh = 10
 
                     if self.player.rage >= maul_rage_thresh:
-                        maul_damage = self.player.maul(self.mangle_debuff)
-                        dmg_done += maul_damage
-                        if maul_damage > 0.0:
-                            threat_done += self.player.threat_from_damage(
-                                maul_damage,
-                                additive_threat=299.0)
+                        dmg_done += self.player.maul(self.mangle_debuff)
                     else:
-                        swing_damage = self.player.swing()
-                        dmg_done += swing_damage
-                        threat_done += self.player.threat_from_damage(swing_damage)
+                        dmg_done += self.player.swing()
 
                 self.swing_times.pop(0)
 
@@ -1490,9 +1447,7 @@ class Simulation():
             self.player.combat_log = None
 
             if (self.player.gcd < 1e-9) and (time >= self.next_action):
-                dmg, thr = self.execute_rotation(time)
-                dmg_done += dmg
-                threat_done += thr
+                dmg_done += self.execute_rotation(time)
 
             # Append player's log to running combat log
             if self.log and self.player.combat_log:
@@ -1506,10 +1461,7 @@ class Simulation():
 
             # If a trinket proc occurred from a swing or special, apply it
             for trinket in self.trinkets:
-                trinket_dmg = trinket.update(time, self.player, self)
-                dmg_done += trinket_dmg
-                threat_done += self.player.threat_from_damage(
-                    trinket_dmg)
+                dmg_done += trinket.update(time, self.player, self)
 
             # If a proc ended at this timestep, remove it from the list
             if self.proc_end_times and (time == self.proc_end_times[0]):
@@ -1542,7 +1494,6 @@ class Simulation():
             # Log current parameters
             times.append(time)
             damage.append(dmg_done)
-            threat.append(threat_done)
             energy.append(self.player.energy)
             combos.append(self.player.combo_points)
 
@@ -1582,7 +1533,7 @@ class Simulation():
                 pass
 
         output = (
-            times, damage, threat, energy, combos, self.player.dmg_breakdown,
+            times, damage, energy, combos, self.player.dmg_breakdown,
             aura_stats
         )
 
@@ -1599,7 +1550,6 @@ class Simulation():
             avg_dps (float): Average DPS on this iteration.
             dmg_breakdown (dict): Breakdown of cast count and damage done by
                 each player ability on this iteration.
-            avg_tps (float): Average TPS on this iteration.
             aura_stats (list of lists): Breakdown of proc count and total
                 uptime of each player cooldown on this iteration.
             time_to_oom (float): Time at which player went oom in this
@@ -1619,9 +1569,8 @@ class Simulation():
         randomized_fight_length = base_fight_length + np.random.randn()
         self.fight_length = randomized_fight_length
 
-        _, damage, threat, _, _, dmg_breakdown, aura_stats = self.run()
+        _, damage, _, _, dmg_breakdown, aura_stats = self.run()
         avg_dps = np.sum(damage) / self.fight_length
-        avg_tps = np.sum(threat) / self.fight_length
         self.fight_length = base_fight_length
 
         if self.time_to_oom is None:
@@ -1629,7 +1578,7 @@ class Simulation():
         else:
             oom_time = self.time_to_oom
 
-        return avg_dps, dmg_breakdown, avg_tps, aura_stats, oom_time
+        return avg_dps, dmg_breakdown, aura_stats, oom_time
 
     def run_replicates(self, num_replicates, detailed_output=False):
         """Perform several runs of the simulation in order to collect
@@ -1642,7 +1591,6 @@ class Simulation():
 
         Returns:
             dps_vals (np.ndarray): Array containing average DPS of each run.
-            tps_vals (np.ndarray): Array containing average TPS of each run.
             cast_summary (collections.OrderedDict): Dictionary containing
                 averaged statistics for the number of casts and total damage
                 done by each player ability over the simulated fight length.
@@ -1661,7 +1609,6 @@ class Simulation():
 
         # Run replicates and consolidate results
         dps_vals = np.zeros(num_replicates)
-        tps_vals = np.zeros(num_replicates)
 
         if detailed_output:
             oom_times = np.zeros(num_replicates)
@@ -1671,9 +1618,8 @@ class Simulation():
         i = 0
 
         for output in pool.imap(self.iterate, range(num_replicates)):
-            avg_dps, dmg_breakdown, avg_tps, aura_stats, time_to_oom = output
+            avg_dps, dmg_breakdown, aura_stats, time_to_oom = output
             dps_vals[i] = avg_dps
-            tps_vals[i] = avg_tps
 
             if not detailed_output:
                 i += 1
@@ -1706,7 +1652,7 @@ class Simulation():
         if not detailed_output:
             return dps_vals
 
-        return dps_vals, tps_vals, cast_sum, aura_sum, oom_times
+        return dps_vals, cast_sum, aura_sum, oom_times
 
     def calc_deriv(self, num_replicates, param, increment, base_dps):
         """Calculate DPS increase after incrementing a player stat.
