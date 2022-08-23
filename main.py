@@ -107,6 +107,7 @@ stat_input = dbc.Col([
     dbc.Checklist(
         options=[
             {'label': 'Idol of the Ravenous Beast', 'value': 'everbloom'},
+            {'label': 'Idol of Worship', 'value': 'rip_idol'},
             {'label': 'Idol of the Wastes', 'value': 'wastes_idol'},
             {'label': 'Idol of Terror', 'value': 'idol_of_terror'},
             {
@@ -114,7 +115,6 @@ stat_input = dbc.Col([
                 'value': 'glad_idol'
             },
             {'label': 'Idol of the White Stag', 'value': 'stag_idol'},
-            {'label': 'Idol of Feral Shadows', 'value': 'rip_idol'},
             {'label': 'Glyph of Rip', 'value': 'rip_glyph'},
             {'label': 'Glyph of Shred', 'value': 'shred_glyph'},
             {'label': 'Glyph of Savage Roar', 'value': 'roar_glyph'},
@@ -123,7 +123,7 @@ stat_input = dbc.Col([
             {'label': '4-piece Tier 6 bonus', 'value': 't6_4p'},
             {'label': '2-piece Tier 7 bonus', 'value': 't7_2p'},
             {'label': 'Wolfshead Helm', 'value': 'wolfshead'},
-            {'label': 'Relentless Earthstorm Diamond', 'value': 'meta'},
+            {'label': 'Relentless Earthsiege Diamond', 'value': 'meta'},
             {'label': 'Band of the Eternal Champion', 'value': 'exalted_ring'},
             {'label': 'Enchant Weapon: Mongoose', 'value': 'mongoose'},
             {'label': 'Enchant Weapon: Executioner', 'value': 'executioner'},
@@ -767,10 +767,19 @@ iteration_input = dbc.Col([
                     'label': 'Darkmoon Card: Greatness (Agility)',
                     'value': 'dmcg_agi',
                 },
+                {'label': 'Grim Toll', 'value': 'grim_toll'},
                 {'label': 'Mirror of Truth', 'value': 'mirror'},
-                {'label': "Sphere of Red Dragon's Blood", 'value': 'sphere'},
-                {'label': 'Incisor Fragment', 'value': 'incisor_fragment'},
+                {'label': "Loatheb's Shadow", 'value': 'loatheb'},
                 {'label': 'Meteorite Whetstone', 'value': 'whetstone'},
+                {
+                    'label': 'Fury of the Five Flights',
+                    'value': 'fury_of_the_five_flights',
+                },
+                {'label': 'Incisor Fragment', 'value': 'incisor_fragment'},
+                {'label': 'Mark of Norgannon', 'value': 'norgannon'},
+                {'label': "Sphere of Red Dragon's Blood", 'value': 'sphere'},
+                {'label': 'Extract of Necromantic Power', 'value': 'extract'},
+                {'label': "Bandit's Insignia", 'value': 'bandits_insignia'},
                 {'label': 'Blackened Naaru Sliver', 'value': 'bns'},
                 {'label': 'Darkmoon Card: Death', 'value': 'dmcd'},
                 {'label': 'Tears of Anguish', 'value': 'tears'},
@@ -802,10 +811,19 @@ iteration_input = dbc.Col([
                     'label': 'Darkmoon Card: Greatness (Agility)',
                     'value': 'dmcg_agi',
                 },
+                {'label': 'Grim Toll', 'value': 'grim_toll'},
                 {'label': 'Mirror of Truth', 'value': 'mirror'},
-                {'label': "Sphere of Red Dragon's Blood", 'value': 'sphere'},
-                {'label': 'Incisor Fragment', 'value': 'incisor_fragment'},
+                {'label': "Loatheb's Shadow", 'value': 'loatheb'},
                 {'label': 'Meteorite Whetstone', 'value': 'whetstone'},
+                {
+                    'label': 'Fury of the Five Flights',
+                    'value': 'fury_of_the_five_flights',
+                },
+                {'label': 'Incisor Fragment', 'value': 'incisor_fragment'},
+                {'label': 'Mark of Norgannon', 'value': 'norgannon'},
+                {'label': "Sphere of Red Dragon's Blood", 'value': 'sphere'},
+                {'label': 'Extract of Necromantic Power', 'value': 'extract'},
+                {'label': "Bandit's Insignia", 'value': 'bandits_insignia'},
                 {'label': 'Blackened Naaru Sliver', 'value': 'bns'},
                 {'label': 'Darkmoon Card: Death', 'value': 'dmcd'},
                 {'label': 'Tears of Anguish', 'value': 'tears'},
@@ -1323,7 +1341,7 @@ def create_player(
         * (1 + 0.03 * ('sanc_aura' in other_buffs))
     )
     shred_bonus = 203 * ('everbloom' in bonuses)
-    rip_bonus = 7 * ('rip_idol' in bonuses)
+    rip_bonus = 21 * ('rip_idol' in bonuses)
 
     # Create and return a corresponding Player object
     player = player_class.Player(

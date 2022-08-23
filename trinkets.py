@@ -402,7 +402,7 @@ class ProcTrinket(Trinket):
     def __init__(
         self, stat_name, stat_increment, proc_name, chance_on_hit,
         proc_duration, cooldown, chance_on_crit=0.0, yellow_chance_on_hit=None,
-        mangle_only=False, shred_only=False
+        mangle_only=False, shred_only=False, periodic_only=False
     ):
         """Initialize a generic proc trinket with key parameters.
 
@@ -432,6 +432,8 @@ class ProcTrinket(Trinket):
                 able to proc exclusively on the Mangle ability. Defaults False.
             shred_only (bool): If True, then designate this trinket as being
                 able to proc exclusively on the Shred ability. Defaults False.
+            periodic_only (bool): If True, then designate this trinket as being
+                able to proc exclusively on periodic damage. Defaults False.
         """
         Trinket.__init__(
             self, stat_name, stat_increment, proc_name, proc_duration,
@@ -450,6 +452,10 @@ class ProcTrinket(Trinket):
 
         self.mangle_only = mangle_only
         self.shred_only = shred_only
+        self.periodic_only = periodic_only
+        self.special_proc_conditions = (
+            mangle_only or shred_only or periodic_only
+        )
 
     def check_for_proc(self, crit, yellow):
         """Perform random roll for a trinket proc upon a successful attack.
@@ -666,7 +672,8 @@ class InstantDamageProc(ProcTrinket):
         ProcTrinket.__init__(
             self, stat_name='attack_power', stat_increment=0,
             proc_name=proc_name, proc_duration=0, cooldown=cooldown,
-            chance_on_hit=chance_on_hit, chance_on_crit=chance_on_crit
+            chance_on_hit=chance_on_hit, chance_on_crit=chance_on_crit,
+            periodic_only=kwargs.get('periodic_only', False)
         )
         self.min_damage = min_damage
         self.damage_range = damage_range
@@ -704,6 +711,7 @@ class InstantDamageProc(ProcTrinket):
 
         # Now roll the base damage done by the proc
         base_damage = self.min_damage + np.random.rand() * self.damage_range
+        base_damage *= 1.03 * 1.13 # assume Santified Retribution / CoE
 
         # Now roll for partial resists. Assume that the boss has no nature
         # resistance, so the only source of partials is the level based
@@ -804,6 +812,32 @@ trinket_library = {
             'stat_increment': 432,
             'proc_name': 'Argent Heroism',
             'proc_duration': 15,
+            'cooldown': 120,
+        },
+    },
+    'norgannon': {
+        'type': 'activated',
+        'passive_stats': {
+            'expertise_rating': 69,
+        },
+        'active_stats': {
+            'stat_name': 'haste_rating',
+            'stat_increment': 491,
+            'proc_name': 'Mark of Norgannon',
+            'proc_duration': 20,
+            'cooldown': 120,
+        },
+    },
+    'loatheb': {
+        'type': 'activated',
+        'passive_stats': {
+            'crit_chance': 84./45.91/100,
+        },
+        'active_stats': {
+            'stat_name': 'attack_power',
+            'stat_increment': 670,
+            'proc_name': "Loatheb's Shadow",
+            'proc_duration': 20,
             'cooldown': 120,
         },
     },
@@ -912,6 +946,37 @@ trinket_library = {
             'damage_range': 340,
         },
     },
+    'bandits_insignia': {
+        'type': 'instant_damage',
+        'passive_stats': {
+            'attack_power': 190,
+        },
+        'active_stats': {
+            'stat_name': 'none',
+            'proc_type': 'chance_on_hit',
+            'proc_rate': 0.15,
+            'proc_name': "Bandit's Insignia",
+            'cooldown': 45,
+            'min_damage': 1504,
+            'damage_range': 752,
+        },
+    },
+    'extract': {
+        'type': 'instant_damage',
+        'passive_stats': {
+            'crit_chance': 95./45.91/100,
+        },
+        'active_stats': {
+            'stat_name': 'none',
+            'proc_type': 'chance_on_hit',
+            'proc_rate': 0.1,
+            'proc_name': 'Extract of Necromantic Power',
+            'cooldown': 15,
+            'min_damage': 788,
+            'damage_range': 524,
+            'periodic_only': True,
+        },
+    },
     'dmcg_str': {
         'type': 'proc',
         'passive_stats': {
@@ -940,6 +1005,21 @@ trinket_library = {
             'cooldown': 45,
             'proc_type': 'chance_on_hit',
             'proc_rate': 0.35,
+        },
+    },
+    'grim_toll': {
+        'type': 'proc',
+        'passive_stats': {
+            'hit_chance': 83./32.79/100,
+        },
+        'active_stats': {
+            'stat_name': 'armor_pen_rating',
+            'stat_increment': 612,
+            'proc_name': 'Grim Toll',
+            'proc_duration': 10,
+            'cooldown': 45,
+            'proc_type': 'chance_on_hit',
+            'proc_rate': 0.15,
         },
     },
     'shard_of_contempt': {
@@ -998,6 +1078,22 @@ trinket_library = {
             'cooldown': 45,
             'aura_type': 'proc',
             'aura_proc_rates': {'white': 0.1, 'yellow': 0.1},
+        },
+    },
+    'fury_of_the_five_flights': {
+        'type': 'stacking_proc',
+        'passive_stats': {},
+        'active_stats': {
+            'stat_name': 'attack_power',
+            'stat_increment': 16,
+            'max_stacks': 20,
+            'aura_name': 'Fury of the Five Flights',
+            'stack_name': 'Fury of the Five Flights',
+            'proc_type': 'custom',
+            'chance_on_hit': 1.0,
+            'yellow_chance_on_hit': 1.0,
+            'aura_duration': 1e9,
+            'cooldown': 1e9,
         },
     },
 }

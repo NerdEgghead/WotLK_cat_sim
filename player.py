@@ -413,7 +413,7 @@ class Player():
         # handful of proc effects that trigger only on Mangle must be
         # separately checked within the mangle() function.
         for trinket in self.proc_trinkets:
-            if not (trinket.mangle_only or trinket.shred_only):
+            if not trinket.special_proc_conditions:
                 trinket.check_for_proc(crit, yellow)
 
     def regen(self, delta_t):

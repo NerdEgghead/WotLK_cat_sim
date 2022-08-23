@@ -1113,6 +1113,55 @@ class Simulation():
                 self.gen_log(time, 'Berserk', 'falls off')
             )
 
+    def apply_bleed_damage(
+        self, base_tick_damage, crit_chance, ability_name, sr_snapshot, time
+    ):
+        """Apply a periodic damage tick from an active bleed effect.
+
+        Arguments:
+            base_tick_damage (float): Damage per tick of the bleed prior to
+                Mangle or Savage Roar modifiers.
+            crit_chance (float): Snapshotted critical strike chance of the
+                bleed, between 0 and 1.
+            ability_name (str): Name of the bleed ability. Used for combat
+                logging.
+            sr_snapshot (bool): Whether Savage Roar was active when the bleed
+                was initially cast.
+            time (float): Simulation time, in seconds. Used for combat logging.
+
+        Returns:
+            tick_damage (float): Final damage done by the bleed tick.
+        """
+        tick_damage = base_tick_damage * (1 + 0.3 * self.mangle_debuff)
+
+        if (crit_chance > 0) and self.player.primal_gore:
+            tick_damage, _, _ = sim_utils.calc_yellow_damage(
+                tick_damage, tick_damage, 0.0, crit_chance,
+                crit_multiplier=self.player.calc_crit_multiplier()
+            )
+
+        self.player.dmg_breakdown[ability_name]['damage'] += tick_damage
+
+        if sr_snapshot:
+            self.player.dmg_breakdown['Savage Roar']['damage'] += (
+                self.player.roar_fac * tick_damage
+            )
+            tick_damage *= 1 + self.player.roar_fac
+
+        if self.log:
+            self.combat_log.append(
+                self.gen_log(time, ability_name + ' tick', '%d' % tick_damage)
+            )
+
+        # Since a handful of proc effects trigger only on periodic damage, we
+        # separately check for those procs here.
+        for trinket in self.player.proc_trinkets:
+            if trinket.periodic_only:
+                trinket.check_for_proc(False, True)
+                tick_damage += trinket.update(time, self.player, self)
+
+        return tick_damage
+
     def run(self, log=False):
         """Run a simulated trajectory for the fight.
 
@@ -1243,29 +1292,11 @@ class Simulation():
 
             # Check if a Rip tick happens at this time
             if self.rip_debuff and (time >= self.rip_ticks[0]):
-                tick_damage = self.rip_damage * (1 + 0.3 * self.mangle_debuff)
-
-                if self.player.primal_gore:
-                    tick_damage, _, _ = sim_utils.calc_yellow_damage(
-                        tick_damage, tick_damage, 0.0, self.rip_crit_chance,
-                        crit_multiplier=self.player.calc_crit_multiplier()
-                    )
-
-                self.player.dmg_breakdown['Rip']['damage'] += tick_damage
-
-                if self.rip_sr_snapshot:
-                    self.player.dmg_breakdown['Savage Roar']['damage'] += (
-                        self.player.roar_fac * tick_damage
-                    )
-                    tick_damage *= 1 + self.player.roar_fac
-
-                dmg_done += tick_damage
+                dmg_done += self.apply_bleed_damage(
+                    self.rip_damage, self.rip_crit_chance, 'Rip',
+                    self.rip_sr_snapshot, time
+                )
                 self.rip_ticks.pop(0)
-
-                if self.log:
-                    self.combat_log.append(
-                        self.gen_log(time, 'Rip tick', '%d' % tick_damage)
-                    )
 
             # Check if Rip fell off
             if self.rip_debuff and (time > self.rip_end - 1e-9):
@@ -1278,22 +1309,10 @@ class Simulation():
 
             # Check if a Rake tick happens at this time
             if self.rake_debuff and (time >= self.rake_ticks[0]):
-                tick_damage = self.rake_damage * (1 + 0.3 * self.mangle_debuff)
-                self.player.dmg_breakdown['Rake']['damage'] += tick_damage
-
-                if self.rake_sr_snapshot:
-                    self.player.dmg_breakdown['Savage Roar']['damage'] += (
-                        self.player.roar_fac * tick_damage
-                    )
-                    tick_damage *= 1 + self.player.roar_fac
-
-                dmg_done += tick_damage
+                dmg_done += self.apply_bleed_damage(
+                    self.rake_damage, 0, 'Rake', self.rake_sr_snapshot, time
+                )
                 self.rake_ticks.pop(0)
-
-                if self.log:
-                    self.combat_log.append(
-                        self.gen_log(time, 'Rake tick', '%d' % tick_damage)
-                    )
 
             # Check if Rake fell off
             if self.rake_debuff and (time > self.rake_end - 1e-9):
@@ -1308,23 +1327,11 @@ class Simulation():
             if (self.lacerate_debuff and self.lacerate_ticks
                     and (time >= self.lacerate_ticks[0])):
                 self.last_lacerate_tick = time
-                tick_damage = self.lacerate_damage * (1+0.3*self.mangle_debuff)
-
-                if self.player.primal_gore:
-                    tick_damage, _, _ = sim_utils.calc_yellow_damage(
-                        tick_damage, tick_damage, 0.0,
-                        self.lacerate_crit_chance,
-                        crit_multiplier=self.player.calc_crit_multiplier()
-                    )
-
-                dmg_done += tick_damage
-                self.player.dmg_breakdown['Lacerate']['damage'] += tick_damage
+                dmg_done += self.apply_bleed_damage(
+                    self.lacerate_damage, self.lacerate_crit_chance,
+                    'Lacerate', False, time
+                )
                 self.lacerate_ticks.pop(0)
-
-                if self.log:
-                    self.combat_log.append(
-                        self.gen_log(time, 'Lacerate tick', '%d' % tick_damage)
-                    )
 
             # Check if Lacerate fell off
             if self.lacerate_debuff and (time > self.lacerate_end - 1e-9):
