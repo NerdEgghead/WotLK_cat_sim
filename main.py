@@ -698,7 +698,7 @@ iteration_input = dbc.Col([
                 options=[{
                     'label': ' pre-proc Clearcasting before combat starts',
                     'value': 'preproc_omen'
-                }], value=[], id='preproc_omen'
+                }], value=['preproc_omen'], id='preproc_omen'
             ),
         ],
         id='omen_options', is_open=True

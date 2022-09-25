@@ -747,7 +747,7 @@ class Simulation():
 
         mangle_now = (
             (not rip_now) and (not self.mangle_debuff)
-            and (not self.player.omen_proc)
+            # and (not self.player.omen_proc)
         )
         mangle_cost = self.player.mangle_cost
 
