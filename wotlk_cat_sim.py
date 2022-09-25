@@ -313,7 +313,7 @@ class Simulation():
         Returns:
             damage_done (float): Damage done by the Rake initial hit.
         """
-        damage_done, success = self.player.rake()
+        damage_done, success = self.player.rake(self.mangle_debuff)
 
         # If it landed, flag the debuff as active and start timer
         if success:
@@ -392,7 +392,7 @@ class Simulation():
         Returns:
             damage_done (Float): Damage done by Shred cast.
         """
-        damage_done, success = self.player.shred()
+        damage_done, success = self.player.shred(self.mangle_debuff)
 
         # If it landed, apply Glyph of Shred
         if success and self.rip_debuff and self.player.shred_glyph:

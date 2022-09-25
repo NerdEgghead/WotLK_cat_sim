@@ -677,8 +677,12 @@ class Player():
 
         return damage_done + roar_damage, not miss
 
-    def shred(self):
+    def shred(self, mangle_debuff):
         """Execute a Shred.
+
+        Arguments:
+            mangle_debuff (bool): Whether the Mangle debuff is applied when
+                Shred is cast.
 
         Returns:
             damage_done (float): Damage done by the Shred cast.
@@ -686,7 +690,7 @@ class Player():
         """
         damage_done, success = self.execute_builder(
             'Shred', self.shred_low, self.shred_high, self.shred_cost,
-            mangle_mod=True
+            mangle_mod=mangle_debuff
         )
 
         # Since a handful of proc effects trigger only on Shred, we separately
@@ -698,8 +702,12 @@ class Player():
 
         return damage_done, success
 
-    def rake(self):
+    def rake(self, mangle_debuff):
         """Execute a Rake.
+
+        Arguments:
+            mangle_debuff (bool): Whether the Mangle debuff is applied when
+                Rake is cast.
 
         Returns:
             damage_done (float): Damage done by the Rake cast.
@@ -707,7 +715,7 @@ class Player():
         """
         damage_done, success = self.execute_builder(
             'Rake', self.rake_hit, self.rake_hit, self.rake_cost,
-            mangle_mod=True
+            mangle_mod=mangle_debuff
         )
         return damage_done, success
 
