@@ -498,6 +498,7 @@ class Player():
                     15./4./453.3 * proxy_damage + 2.5/2*3.5 * (1 + crit)
                     + 5 * crit
                 )
+                rage_gen = min(rage_gen, proxy_damage * 15. / 453.3)
                 self.rage = min(self.rage + rage_gen, 100)
 
         # Log the swing
