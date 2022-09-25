@@ -296,7 +296,7 @@ class Player():
         )
         lacerate_multi = bear_multi * self.lacerate_multi
         self.lacerate_hit = (88 + 0.01 * bear_ap) * lacerate_multi
-        self.lacerate_tick = (64+0.01*bear_ap)*lacerate_multi/armor_multiplier
+        self.lacerate_tick = (64+0.01*bear_ap) * bear_multi / armor_multiplier
 
         # Adjust damage values for Gift of Arthas
         if not gift_of_arthas:
