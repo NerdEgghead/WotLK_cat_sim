@@ -115,6 +115,7 @@ stat_input = dbc.Col([
                 'value': 'glad_idol'
             },
             {'label': 'Idol of the White Stag', 'value': 'stag_idol'},
+            {'label': 'Glyph of Mangle', 'value': 'mangle_glyph'},
             {'label': 'Glyph of Rip', 'value': 'rip_glyph'},
             {'label': 'Glyph of Shred', 'value': 'shred_glyph'},
             {'label': 'Glyph of Savage Roar', 'value': 'roar_glyph'},
@@ -1361,6 +1362,7 @@ def create_player(
         jow='jow' in stat_debuffs, armor_pen_rating=armor_pen_rating,
         t6_2p='t6_2p' in bonuses, t6_4p='t6_4p' in bonuses,
         t7_2p='t7_2p' in bonuses, wolfshead='wolfshead' in bonuses,
+        mangle_glyph='mangle_glyph' in bonuses,
         meta='meta' in bonuses, rune='rune' in cooldowns,
         shred_bonus=shred_bonus, rip_bonus=rip_bonus, debuff_ap=debuff_ap,
         roar_glyph='roar_glyph' in bonuses,

@@ -35,7 +35,7 @@ class Player():
             self, attack_power, ap_mod, agility, hit_chance, expertise_rating,
             crit_chance, armor_pen_rating, swing_timer, mana, intellect,
             spirit, mp5, jow=False, rune=True, t6_2p=False, t6_4p=False,
-            t7_2p=False, wolfshead=True, meta=False, bonus_damage=0,
+            t7_2p=False, wolfshead=True, mangle_glyph=False, meta=False, bonus_damage=0,
             shred_bonus=0, rip_bonus=0, debuff_ap=0, multiplier=1.1, omen=True,
             primal_gore=True, feral_aggression=0, predatory_instincts=3,
             savage_fury=2, furor=3, natural_shapeshifter=3, intensity=3,
@@ -71,6 +71,7 @@ class Player():
             t7_2p (bool): Whether the 2-piece T7 set bonus is used. Defaults
                 False.
             wolfshead (bool): Whether Wolfshead is worn. Defaults to True.
+            mangle_glyph (bool): Whether Glyph of Mangle is used. Defaults False.
             meta (bool): Whether a Relentless Earthstorm Diamond meta gem is
                 socketed. Defaults to False.
             bonus_damage (int): Bonus weapon damage from buffs such as Bogling
@@ -123,6 +124,7 @@ class Player():
         self.bear_ap_mod = ap_mod / 1.1 * (1 + 0.02 * potp)
         self.roar_fac = 0.3 + 0.03 * roar_glyph
         self.berserk_glyph = berserk_glyph
+        self.mangle_glyph = mangle_glyph
         self.rip_duration = 12 + 4 * rip_glyph + 4 * t7_2p
         self.shred_glyph = shred_glyph
         self.lacerate_multi = 1 + 0.05 * t7_2p
@@ -259,7 +261,7 @@ class Player():
         self.bite_high = {
             i: (290*i + 260 + 0.07 * i * ap) * bm for i in range(1, 6)
         }
-        mangle_fac = 1 + 0.1 * self.savage_fury
+        mangle_fac = (1 + 0.1 * self.savage_fury) * (1 + 0.1 * self.mangle_glyph)
         self.mangle_low = mangle_fac * (
             self.white_low * 2 + 566 * self.multiplier
         )
