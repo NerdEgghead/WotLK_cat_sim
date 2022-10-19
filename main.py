@@ -593,14 +593,14 @@ iteration_input = dbc.Col([
     dbc.InputGroup(
         [
             dbc.InputGroupAddon(
-                'Clip Savage Roar by at most', addon_type='prepend'
+                'Targeted offset in Rip/Roar timings:', addon_type='prepend'
             ),
             dbc.Input(
-                value=10, min=0, step=1, type='number', id='max_roar_clip'
+                value=10, min=0, step=1, type='number', id='min_roar_offset'
             ),
             dbc.InputGroupAddon('seconds', addon_type='append')
         ],
-        style={'width': '63%'}
+        style={'width': '65%'}
     ),
     html.Br(),
     dbc.Checklist(
@@ -1639,7 +1639,7 @@ def plot_new_trajectory(sim, show_whites):
     State('rip_cp', 'value'),
     State('bite_cp', 'value'),
     State('cd_delay', 'value'),
-    State('max_roar_clip', 'value'),
+    State('min_roar_offset', 'value'),
     State('use_rake', 'value'),
     State('mangle_spam', 'value'),
     State('use_biteweave', 'value'),
@@ -1665,7 +1665,7 @@ def compute(
         predatory_instincts, improved_mangle, furor, naturalist,
         natural_shapeshifter, intensity, fight_length, boss_armor,
         boss_debuffs, cooldowns, rip_cp, bite_cp, cd_delay,
-        max_roar_clip, use_rake, mangle_spam, use_biteweave, bite_model,
+        min_roar_offset, use_rake, mangle_spam, use_biteweave, bite_model,
         bite_time, bear_mangle, prepop_berserk, preproc_omen, bearweave,
         berserk_bite_thresh, lacerate_prio, lacerate_time, powerbear,
         num_replicates, latency, epic_gems, show_whites
@@ -1914,7 +1914,7 @@ def compute(
         prepop_berserk=bool(prepop_berserk), preproc_omen=bool(preproc_omen),
         bearweave=bool(bearweave), berserk_bite_thresh=berserk_bite_thresh,
         lacerate_prio=bool(lacerate_prio), lacerate_time=lacerate_time,
-        powerbear=bool(powerbear), max_roar_clip=max_roar_clip,
+        powerbear=bool(powerbear), min_roar_offset=min_roar_offset,
         trinkets=trinket_list, haste_multiplier=haste_multiplier,
         hot_uptime=hot_uptime / 100.
     )
