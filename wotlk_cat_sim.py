@@ -652,7 +652,8 @@ class Simulation():
 
         # If the existing Roar already falls off well after the existing Roar,
         # then no need to clip.
-        if self.roar_end >= rip_end + self.strategy['min_roar_offset']:
+        # if self.roar_end >= rip_end + self.strategy['min_roar_offset']:
+        if self.roar_end > rip_end:
             return False
 
         # Calculate when Roar would end if we cast it now.

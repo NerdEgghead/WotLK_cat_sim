@@ -596,7 +596,7 @@ iteration_input = dbc.Col([
                 'Targeted offset in Rip/Roar timings:', addon_type='prepend'
             ),
             dbc.Input(
-                value=10, min=0, step=1, type='number', id='min_roar_offset'
+                value=14, min=0, step=1, type='number', id='min_roar_offset'
             ),
             dbc.InputGroupAddon('seconds', addon_type='append')
         ],
