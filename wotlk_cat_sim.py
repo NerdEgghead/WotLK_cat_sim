@@ -140,7 +140,7 @@ class RoarTracker(UptimeTracker):
     proc_name = 'Savage Roar'
 
     def is_active(self, player, sim):
-        return player.savage_roar
+        return (player.savage_roar or (not player.cat_form))
 
 
 class Simulation():
