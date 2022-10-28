@@ -25,33 +25,36 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
 server = app.server
 
 default_input_stats = {
-        "agility": 888,
-        "armor": 5165,
-        "attackPower": 6173,
-        "crit": 41.54,
-        "critRating": 386,
+        "agility": 977,
+        "armor": 5468,
+        "armorPen": 12.28,
+        "armorPenRating": 172,
+        "attackPower": 7360,
+        "crit": 46.62,
+        "critRating": 570,
         "critReduction": 6,
         "defense": 400,
-        "dodge": 29.14,
-        "expertise": 26,
-        "expertiseRating": 134,
-        "feralAttackPower": 1843,
-        "haste": 2.54,
-        "hasteRating": 64,
-        "health": 18117,
-        "hit": 6.13,
-        "hitRating": 201,
-        "intellect": 208,
-        "mainHandSpeed": 3.4,
-        "mana": 6336,
+        "dodge": 30,
+        "expertise": 23,
+        "expertiseRating": 113,
+        "feralAttackPower": 2353,
+        "haste": 12.61,
+        "hasteRating": 318,
+        "health": 19527,
+        "hit": 5.25,
+        "hitRating": 172,
+        "intellect": 211,
+        "mainHandSpeed": 2.4,
+        "mana": 6381,
         "natureResist": 10,
         "parry": 5,
-        "spellCrit": 11.51,
-        "spellHaste": 2.54,
-        "spellHit": 7.66,
+        "spellCrit": 15.53,
+        "spellCritRating": 570,
+        "spellHaste": 9.7,
+        "spellHit": 6.56,
         "spirit": 193,
-        "stamina": 1088,
-        "strength": 334
+        "stamina": 1229,
+        "strength": 234
 }
 
 stat_input = dbc.Col([
@@ -132,7 +135,7 @@ stat_input = dbc.Col([
             {'label': 'Hyperspeed Accelerators', 'value': 'engi_gloves'},
         ],
         value=[
-            'everbloom', 'rip_glyph', 'shred_glyph', 'roar_glyph', 't7_2p',
+            'rip_idol', 'rip_glyph', 'shred_glyph', 'roar_glyph', 't7_2p',
             'meta', 'berserking', 'engi_gloves'
         ],
         id='bonuses'
@@ -211,7 +214,7 @@ buffs_1 = dbc.Col(
                  'Rejuvenation / Wild Growth uptime:', addon_type='prepend'
              ),
              dbc.Input(
-                 value=75.0, type='number', id='hot_uptime',
+                 value=0.0, type='number', id='hot_uptime',
              ),
              dbc.InputGroupAddon('%', addon_type='append')
          ],
@@ -227,7 +230,7 @@ encounter_details = dbc.Col(
          [
              dbc.InputGroupAddon('Fight Length:', addon_type='prepend'),
              dbc.Input(
-                 value=180.0, type='number', id='fight_length',
+                 value=120.0, type='number', id='fight_length',
              ),
              dbc.InputGroupAddon('seconds', addon_type='append')
          ],
@@ -605,7 +608,7 @@ iteration_input = dbc.Col([
     html.Br(),
     dbc.Checklist(
         options=[{'label': ' use Ferocious Bite', 'value': 'bite'}],
-        value=[], id='use_biteweave'
+        value=['bite'], id='use_biteweave'
     ),
     dbc.Collapse(
         [
@@ -842,7 +845,7 @@ iteration_input = dbc.Col([
                 {'label': 'Madness of the Betrayer', 'value': 'madness'},
                 {'label': 'Shard of Contempt', 'value': 'shard_of_contempt'},
             ],
-            value='mirror'
+            value='grim_toll'
         )),
     ]),
     html.Div(
@@ -872,7 +875,7 @@ iteration_input = dbc.Col([
 
 input_layout = html.Div(children=[
     html.H1(
-        children='WoW Classic WotLK Pre-Patch Feral Cat Simulator',
+        children='WoW Classic WotLK Feral Cat Simulator',
         style={'textAlign': 'center'}
     ),
     dbc.Row(
