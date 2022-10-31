@@ -509,24 +509,28 @@ class Simulation():
         # includes the cost of the Ferocious Bite itself, the cost of building
         # CPs for Rip and Roar, and the cost of Rip/Roar.
         ripcost, bitecost, srcost = self.get_finisher_costs(time)
-        cp_per_builder = 1 + self.player.crit_chance
         cost_per_builder = (
             (42. + 42. + 35.) / 3. * (1 + 0.2 * self.player.miss_chance)
         )
 
+        # Aus did an analytical waterfall calculation of the expected number of
+        # builders required for building 5 CPs
+        cc = self.player.crit_chance
+        required_builders_min = cc**4 - 2 * cc**3 + 3 * cc**2 - 4 * cc + 5
+
         if srdur < ripdur:
             nextcost = srcost
-            secondcps = 5
+            required_builders_max = 2 * required_builders_min
         else:
             nextcost = ripcost
-            secondcps = 1
+            required_builders_max = required_builders_min + 1
 
         total_energy_cost_min = (
-            bitecost + 5. / cp_per_builder * cost_per_builder + nextcost
+            bitecost + required_builders_min * cost_per_builder + nextcost
         )
         total_energy_cost_max = (
-            bitecost + (5. + secondcps) / cp_per_builder * cost_per_builder
-            + ripcost + srcost
+            bitecost + required_builders_max * cost_per_builder + ripcost
+            + srcost
         )
 
         # Actual Energy cost is a bit lower than this because it is okay to
