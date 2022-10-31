@@ -261,14 +261,15 @@ class Player():
         self.bite_high = {
             i: (290*i + 260 + 0.07 * i * ap) * bm for i in range(1, 6)
         }
-        mangle_fac = (1 + 0.1 * self.savage_fury) * (1 + 0.1 * self.mangle_glyph)
+        sf_fac = 1 + 0.1 * self.savage_fury
+        mangle_fac = sf_fac * (1 + 0.1 * self.mangle_glyph)
         self.mangle_low = mangle_fac * (
             self.white_low * 2 + 566 * self.multiplier
         )
         self.mangle_high = mangle_fac * (
             self.white_high * 2 + 566 * self.multiplier
         )
-        rake_multi = mangle_fac * damage_multiplier
+        rake_multi = sf_fac * damage_multiplier
         self.rake_hit = rake_multi * (176 + 0.01 * self.attack_power)
         self.rake_tick = rake_multi * (358 + 0.06 * self.attack_power)
         rip_multiplier = damage_multiplier * (1 + 0.15 * self.t6_bonus)
@@ -287,7 +288,7 @@ class Player():
         bear_multi = self.multiplier * 1.04 # Master Shapeshifter
         self.white_bear_low = (109.0 + bear_bonus_damage) * bear_multi
         self.white_bear_high = (165.0 + bear_bonus_damage) * bear_multi
-        maul_multi = mangle_fac * 1.2
+        maul_multi = sf_fac * 1.2
         self.maul_low = (self.white_bear_low + 578 * bear_multi) * maul_multi
         self.maul_high = (self.white_bear_high + 578 * bear_multi) * maul_multi
         self.mangle_bear_low = mangle_fac * (
