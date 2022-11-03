@@ -969,7 +969,25 @@ class Simulation():
             if emergency_lacerate and (self.player.rage >= 13):
                 return self.lacerate(time)
             elif shift_now:
-                self.player.ready_to_shift = True
+                # If we are resetting our swing timer using Albino Snake or a
+                # duplicate weapon swap, then do an additional check here to
+                # see whether we can delay the shift until the next bear swing
+                # goes out in order to maximize the gains from the reset.
+                projected_delay = self.swing_times[0] + 2 * self.latency - time
+                rip_conflict = (
+                    rip_refresh_pending and
+                    (self.rip_end < time + projected_delay + 1.5)
+                )
+                can_delay_shift = (
+                    self.strategy['snek'] and (not self.player.omen_proc)
+                    and (energy + 10 * projected_delay <= furor_cap)
+                    and (not rip_conflict)
+                )
+
+                if can_delay_shift:
+                    time_to_next_action = self.swing_times[0] - time
+                else:
+                    self.player.ready_to_shift = True
             elif powerbear_now:
                 self.player.shift(time, powershift=True)
             elif lacerate_now and (self.player.rage >= 13):
