@@ -175,6 +175,7 @@ class Simulation():
         'lacerate_time': 10.0,
         'powerbear': False,
         'min_roar_offset': 10.0,
+        'snek': False,
     }
 
     def __init__(
@@ -458,9 +459,19 @@ class Simulation():
             can_bite (bool): True if Biting now is optimal.
         """
         if self.strategy['bite_time'] is not None:
+            bt = self.strategy['bite_time']
+            # max_rip_dur = (
+            #     self.player.rip_duration + 6 * self.player.shred_glyph
+            # )
+            # rip_end = self.rip_start + max_rip_dur
+
+            # if self.rip_end < self.roar_end:
+            #     bt -= 6 * self.tf_expected_before(time, self.rip_end)
+            # else:
+            #     bt -= 6 * self.tf_expected_before(time, self.roar_end)
+
             return (
-                (self.rip_end - time >= self.strategy['bite_time'])
-                and (self.roar_end - time >= self.strategy['bite_time'])
+                (self.rip_end - time >= bt) and (self.roar_end - time >= bt)
             )
         return self.can_bite_analytical(time)
 
@@ -752,10 +763,15 @@ class Simulation():
 
             # Swing timer only updates on the next swing after we shift
             swing_fac = 1/2.5 if self.player.cat_form else 2.5
-            self.update_swing_times(
-                self.swing_times[0], self.swing_timer * swing_fac,
-                first_swing=True
-            )
+            new_timer = self.swing_timer * swing_fac
+            next_swing = self.swing_times[0]
+
+            # Add support for swing timer resets using Albino Snake summon or
+            # duplicate weapon swap or Idol unequip/re-equip.
+            if self.player.cat_form and self.strategy['snek']:
+                next_swing = time + new_timer
+
+            self.update_swing_times(next_swing, new_timer, first_swing=True)
             return 0.0
 
         energy, cp = self.player.energy, self.player.combo_points
