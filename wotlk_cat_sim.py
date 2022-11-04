@@ -980,7 +980,7 @@ class Simulation():
                 )
                 next_cat_swing = time + self.latency + self.swing_timer / 2.5
                 can_delay_shift = (
-                    self.strategy['snek'] and (not self.player.omen_proc)
+                    self.strategy['snek'] # and (not self.player.omen_proc)
                     and (energy + 10 * projected_delay <= furor_cap)
                     and (not rip_conflict)
                     and (self.swing_times[0] < next_cat_swing)
