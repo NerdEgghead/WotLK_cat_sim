@@ -935,16 +935,16 @@ class Simulation():
 
         floating_energy = 0
         previous_time = time
-        #tf_pending = False
+        tf_pending = False
 
         for refresh_time, refresh_cost in pending_actions:
             delta_t = refresh_time - previous_time
 
-            # if (not tf_pending):
-            #     tf_pending = self.tf_expected_before(time, refresh_time)
+            if (not tf_pending):
+                tf_pending = self.tf_expected_before(time, refresh_time)
 
-            #     if tf_pending:
-            #         refresh_cost -= 60
+                if tf_pending:
+                    refresh_cost -= 60
 
             if delta_t < refresh_cost / 10.:
                 floating_energy += refresh_cost - 10 * delta_t
