@@ -176,6 +176,7 @@ class Simulation():
         'powerbear': False,
         'min_roar_offset': 10.0,
         'snek': False,
+        'idol_swap': False,
     }
 
     def __init__(
@@ -233,6 +234,12 @@ class Simulation():
         # Set up trackers for Rip and Roar uptime
         self.trinkets.append(RipTracker())
         self.trinkets.append(RoarTracker())
+
+        # Automatically detect an Idol swapping configuration
+        if (self.player.shred_bonus > 0) and (self.player.rip_bonus > 0):
+            self.strategy['idol_swap'] = True
+            self.shred_bonus = self.player.shred_bonus
+            self.rip_bonus = self.player.rip_bonus
 
         # Calculate damage ranges for player abilities under the given
         # encounter parameters.
@@ -767,11 +774,38 @@ class Simulation():
             next_swing = self.swing_times[0]
 
             # Add support for swing timer resets using Albino Snake summon or
-            # duplicate weapon swap or Idol unequip/re-equip.
-            if self.player.cat_form and self.strategy['snek']:
+            # duplicate weapon swap or Idol swap.
+            rip_refresh_soon = (
+                ((not self.rip_debuff) and (self.fight_length - time >= 10))
+                or (self.rip_debuff and (self.rip_end - time <= 7) and
+                        (self.fight_length - self.rip_end >= 10))
+            )
+            swap_idols = self.strategy['idol_swap'] and (
+                ((self.player.shred_bonus > 0) and rip_refresh_soon)
+                or ((self.player.rip_bonus > 0) and (not rip_refresh_soon))
+            )
+
+            if self.player.cat_form and (self.strategy['snek'] or swap_idols):
                 next_swing = time + new_timer
 
             self.update_swing_times(next_swing, new_timer, first_swing=True)
+
+            # Toggle between Rip and Shred Idols if configured to do so
+            if swap_idols and self.player.cat_form:
+                if self.player.shred_bonus > 0:
+                    self.player.shred_bonus = 0
+                    self.player.rip_bonus = self.rip_bonus
+                    log_str = 'equip Rip Idol'
+                else:
+                    self.player.shred_bonus = self.shred_bonus
+                    self.player.rip_bonus = 0
+                    log_str = 'equip Shred Idol'
+
+                self.player.calc_damage_params(**self.params)
+
+                if self.log:
+                    self.player.combat_log[1] = log_str
+
             return 0.0
 
         energy, cp = self.player.energy, self.player.combo_points
@@ -1299,6 +1333,12 @@ class Simulation():
         # Pre-proc Clearcasting if requested
         if self.strategy['preproc_omen'] and self.player.omen:
             self.player.omen_proc = True
+
+        # If Idol swapping, then start fight with Shred Idol equipped
+        if self.strategy['idol_swap']:
+            self.player.shred_bonus = self.shred_bonus
+            self.player.rip_bonus = 0
+            self.player.calc_damage_params(**self.params)
 
         # Create placeholder for time to OOM if the player goes OOM in the run
         self.time_to_oom = None
