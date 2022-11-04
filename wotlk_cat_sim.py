@@ -392,6 +392,18 @@ class Simulation():
             self.rip_crit_chance = self.player.crit_chance
             self.rip_sr_snapshot = self.player.savage_roar
 
+        # If Idol swapping is configured, then swap to Shred Idol immmediately
+        # after Rip is cast. This incurs a 0.5 second GCD extension as well as
+        # a swing timer reset.
+        # if self.strategy['idol_swap'] and (self.player.rip_bonus > 0):
+        #     self.player.shred_bonus = self.shred_bonus
+        #     self.player.rip_bonus = 0
+        #     self.player.calc_damage_params(**self.params)
+        #     self.player.gcd = 1.5
+        #     self.update_swing_times(
+        #         time + self.swing_timer, self.swing_timer, first_swing=True
+        #     )
+
         return 0.0
 
     def shred(self):
@@ -1578,7 +1590,7 @@ class Simulation():
                 )
 
             # If we entered Dire Bear Form, Tiger's Fury fell off
-            if self.params['tigers_fury'] and (self.player.gcd == 1.5):
+            if self.params['tigers_fury'] and (not self.player.cat_form):
                 self.drop_tigers_fury(time)
 
             # If a trinket proc occurred from a swing or special, apply it
