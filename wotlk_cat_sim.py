@@ -777,7 +777,7 @@ class Simulation():
             # duplicate weapon swap or Idol swap.
             rip_refresh_soon = (
                 ((not self.rip_debuff) and (self.fight_length - time >= 10))
-                or (self.rip_debuff and (self.rip_end - time <= 7) and
+                or (self.rip_debuff and (self.rip_end - time <= 9) and
                         (self.fight_length - self.rip_end >= 10))
             )
             swap_idols = self.strategy['idol_swap'] and (

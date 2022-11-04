@@ -109,7 +109,7 @@ stat_input = dbc.Col([
     ),
     dbc.Checklist(
         options=[
-            {'label': 'Idol of the Ravenous Beast', 'value': 'everbloom'},
+            {'label': 'Idol of the Ravenous Beast', 'value': 'shred_idol'},
             {'label': 'Idol of Worship', 'value': 'rip_idol'},
             {'label': 'Idol of the Wastes', 'value': 'wastes_idol'},
             {'label': 'Idol of Terror', 'value': 'idol_of_terror'},
@@ -135,8 +135,8 @@ stat_input = dbc.Col([
             {'label': 'Hyperspeed Accelerators', 'value': 'engi_gloves'},
         ],
         value=[
-            'rip_idol', 'rip_glyph', 'shred_glyph', 'roar_glyph', 't7_2p',
-            'meta', 'berserking', 'engi_gloves'
+            'shred_idol', 'rip_idol', 'rip_glyph', 'shred_glyph', 'roar_glyph',
+            't7_2p', 'meta', 'berserking', 'engi_gloves'
         ],
         id='bonuses'
     ),
@@ -1352,7 +1352,7 @@ def create_player(
         (1 + 0.02 * int(naturalist))
         * (1 + 0.03 * ('sanc_aura' in other_buffs))
     )
-    shred_bonus = 203 * ('everbloom' in bonuses)
+    shred_bonus = 203 * ('shred_idol' in bonuses)
     rip_bonus = 21 * ('rip_idol' in bonuses)
 
     # Create and return a corresponding Player object
