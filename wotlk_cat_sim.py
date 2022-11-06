@@ -1277,6 +1277,14 @@ class Simulation():
                 trinket.check_for_proc(False, True)
                 tick_damage += trinket.update(time, self.player, self)
 
+        
+        if self.player.t8_2p_bonus and time - 15 >= self.t8_2p_icd:
+            t8_2p_proc = np.random.rand()
+            if t8_2p_proc < 0.02:
+                self.omen_proc = True
+                self.t8_2p_icd = time
+                # print('t8 icd triggered by ' + ability_name + ' at ' + str(time))
+
         return tick_damage
 
     def run(self, log=False):
@@ -1329,6 +1337,9 @@ class Simulation():
         # Reset all trinkets to fresh state
         self.proc_end_times = []
 
+        # Track 2pT8 icd end time
+        self.t8_2p_icd = 0
+
         for trinket in self.trinkets:
             trinket.reset()
 
@@ -1367,6 +1378,7 @@ class Simulation():
         num_hot_ticks = 0
 
         while time <= self.fight_length:
+
             # Update player Mana and Energy based on elapsed simulation time
             delta_t = time - previous_time
             self.player.regen(delta_t)

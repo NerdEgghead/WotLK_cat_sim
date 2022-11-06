@@ -35,7 +35,8 @@ class Player():
             self, attack_power, ap_mod, agility, hit_chance, expertise_rating,
             crit_chance, armor_pen_rating, swing_timer, mana, intellect,
             spirit, mp5, jow=False, rune=True, t6_2p=False, t6_4p=False,
-            t7_2p=False, wolfshead=True, mangle_glyph=False, meta=False, bonus_damage=0,
+            t7_2p=False, t8_2p=False, t8_4p=False, wolfshead=True,
+            mangle_glyph=False, meta=False, bonus_damage=0,
             shred_bonus=0, rip_bonus=0, debuff_ap=0, multiplier=1.1, omen=True,
             primal_gore=True, feral_aggression=0, predatory_instincts=3,
             savage_fury=2, furor=3, natural_shapeshifter=3, intensity=3,
@@ -147,6 +148,8 @@ class Player():
         self.rip_bonus = rip_bonus
         self._mangle_cost = 40 - 5 * t6_2p - 2 * improved_mangle
         self.t6_bonus = t6_4p
+        self.t8_2p_bonus = t8_2p
+        self.t8_4p_bonus = t8_4p
         self.wolfshead = wolfshead
         self.meta = meta
         self.damage_multiplier = multiplier
@@ -880,6 +883,8 @@ class Player():
         # Apply buff
         self.savage_roar = True
         roar_end = time + self.roar_durations[self.combo_points]
+        if self.t8_4p_bonus:
+            roar_end += 8
         self.combo_points = 0
 
         # Log the cast
