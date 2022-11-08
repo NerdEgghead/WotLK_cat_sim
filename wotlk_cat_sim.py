@@ -853,8 +853,8 @@ class Simulation():
             and self.strategy['use_bite'] and self.can_bite(time)
         )
         bite_now = (
-            (bite_before_rip or bite_at_end)
-            and (not self.player.omen_proc)
+            (bite_before_rip or bite_at_end) and (not self.player.omen_proc)
+            # and (energy < 42)
         )
 
         # During Berserk, we additionally add an Energy constraint on Bite
@@ -918,8 +918,22 @@ class Simulation():
         # weave_energy = min(furor_cap - 30 - 20 * self.latency, 42)
         weave_energy = furor_cap - 30 - 20 * self.latency
 
+        # With 4/5 or 5/5 Furor, force 2-GCD bearweaves whenever possible
         if self.player.furor > 3:
             weave_energy -= 15
+
+            # Remove the 2-GCD leeway restriction in situations where the Rip
+            # and Lacerate timers are synced
+            # weave_early = (
+            #     self.strategy['lacerate_prio'] and self.lacerate_debuff and
+            #     (self.lacerate_end < self.fight_length) and
+            #     (self.lacerate_end-time <= self.strategy['lacerate_time']+1.5)
+            #     and rip_refresh_pending and
+            #     (abs(self.lacerate_end - self.rip_end) < 2.5 + self.latency)
+            # )
+
+            # if weave_early:
+            #     weave_energy += 15
 
         weave_end = time + 4.5 + 2 * self.latency
         bearweave_now = (
