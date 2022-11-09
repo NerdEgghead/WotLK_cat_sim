@@ -35,12 +35,13 @@ class Player():
             self, attack_power, ap_mod, agility, hit_chance, expertise_rating,
             crit_chance, armor_pen_rating, swing_timer, mana, intellect,
             spirit, mp5, jow=False, rune=True, t6_2p=False, t6_4p=False,
-            t7_2p=False, wolfshead=True, mangle_glyph=False, meta=False, bonus_damage=0,
-            shred_bonus=0, rip_bonus=0, debuff_ap=0, multiplier=1.1, omen=True,
-            primal_gore=True, feral_aggression=0, predatory_instincts=3,
-            savage_fury=2, furor=3, natural_shapeshifter=3, intensity=3,
-            potp=2, improved_mangle=0, rip_glyph=True, shred_glyph=True,
-            roar_glyph=False, berserk_glyph=False, weapon_speed=3.0,
+            t7_2p=False, wolfshead=True, mangle_glyph=False, meta=False,
+            bonus_damage=0, shred_bonus=0, rip_bonus=0, debuff_ap=0,
+            multiplier=1.1, omen=True, primal_gore=True, feral_aggression=0,
+            predatory_instincts=3, savage_fury=2, furor=3,
+            natural_shapeshifter=3, intensity=3, potp=2, improved_mangle=0,
+            rip_glyph=True, shred_glyph=True, roar_glyph=False,
+            berserk_glyph=False, weapon_speed=3.0, gotw_targets=25,
             proc_trinkets=[], log=False
     ):
         """Initialize player with key damage parameters.
@@ -110,6 +111,9 @@ class Player():
                 False.
             weapon_speed (float): Equipped weapon speed, used for calculating
                 Omen of Clarity proc rate. Defaults to 3.0.
+            gotw_targets (int): Number of targets that will be buffed if the
+                player casts Gift of the Wild during combat. Used for
+                calculating Omen of Clarity proc chance. Defaults to 25.
             proc_trinkets (list of trinkets.ProcTrinket): If applicable, a list
                 of ProcTrinket objects modeling each on-hit or on-crit trinket
                 used by the player.
@@ -163,6 +167,7 @@ class Player():
             'white': 3.5/60,
             'yellow': 0.0,
             'bear': 3.5/60*2.5,
+            'gotw': 1 - (1 - 0.0875)**gotw_targets
         }
         self.proc_trinkets = proc_trinkets
         self.set_mana_regen()
@@ -332,6 +337,7 @@ class Player():
         self.five_second_rule = False
         self.cat_form = True
         self.ready_to_shift = False
+        self.ready_to_gift = False
         self.berserk = False
         self.berserk_cd = 0.0
         self.enrage = False
@@ -346,7 +352,7 @@ class Player():
         for cast_type in [
             'Melee', 'Mangle (Cat)', 'Rake', 'Shred', 'Savage Roar', 'Rip',
             'Ferocious Bite', 'Shift (Bear)', 'Maul', 'Mangle (Bear)',
-            'Lacerate', 'Shift (Cat)'
+            'Lacerate', 'Shift (Cat)', 'Gift of the Wild'
         ]:
             self.dmg_breakdown[cast_type] = {'casts': 0, 'damage': 0.0}
 
@@ -944,3 +950,27 @@ class Player():
                 cast_name, log_str, '%.1f' % self.energy,
                 '%d' % self.combo_points, '%d' % self.mana, '%d' % self.rage
             ]
+
+    def flowershift(self, time):
+        """Cast Gift of the Wild in order to fish for a Clearcasting proc.
+
+        Arguments:
+            time (float): Time at which the cast is executed, in seconds. Used
+                for determining the five second rule.
+        """
+        # Execute the cast and perform related bookkeeping
+        self.cat_form = False
+        self.gcd = 1.5
+        self.dmg_breakdown['Gift of the Wild']['casts'] += 1
+        self.mana -= 1119 # Glyph of the Wild assumed
+        self.five_second_rule = True
+        self.last_shift = time
+        self.ready_to_gift = False
+
+        # Check for Clearcasting proc
+        if self.omen and (np.random.rand() < self.omen_rates['gotw']):
+            self.omen_proc = True
+
+        # Log the cast
+        if self.log:
+            self.gen_log('Gift of the Wild', '', False, False, False)

@@ -764,6 +764,31 @@ iteration_input = dbc.Col([
         ],
         id='bearweave_options', is_open=True
     ),
+    dbc.Checklist(
+        options=[{'label': ' enable flowershifting', 'value': 'flowershift'}],
+        value=[], id='flowershift'
+    ),
+    dbc.Collapse(
+        [
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupAddon(
+                        'Number of targets for Gift of the Wild:',
+                        addon_type='prepend'
+                    ),
+                    dbc.Input(
+                        type='number', value=25, id='gotw_targets', min=1,
+                        step=1
+                    )
+                ],
+                style={
+                    'width': '70%', 'marginBottom': '1%', 'marginLeft': '5%',
+                    'marginTop': '1%',
+                }
+            ),
+        ],
+        id='flowershift_options', is_open=True
+    ),
     html.Br(),
     html.H5('Trinkets'),
     dbc.Row([
@@ -1317,7 +1342,7 @@ def create_player(
         unleashed_rage, kings, raven_idol, other_buffs, stat_debuffs,
         cooldowns, bonuses, binary_talents, naturalist, feral_aggression,
         savage_fury, potp, predatory_instincts, improved_mangle, imp_motw, furor,
-        natural_shapeshifter, intensity, potion
+        natural_shapeshifter, intensity, potion, gotw_targets
 ):
     """Takes in raid buffed player stats from Eighty Upgrades, modifies them
     based on boss debuffs and miscellaneous buffs not captured by Eighty
@@ -1378,7 +1403,8 @@ def create_player(
         shred_bonus=shred_bonus, rip_bonus=rip_bonus, debuff_ap=debuff_ap,
         roar_glyph='roar_glyph' in bonuses,
         berserk_glyph='berserk_glyph' in bonuses,
-        rip_glyph='rip_glyph' in bonuses, shred_glyph='shred_glyph' in bonuses
+        rip_glyph='rip_glyph' in bonuses, shred_glyph='shred_glyph' in bonuses,
+        gotw_targets=int(gotw_targets)
     )
     stat_mod = (1 + 0.1 * kings) * 1.06 * (1 + 0.01 * imp_motw)
     return player, ap_mod, stat_mod, haste_multiplier
@@ -1665,6 +1691,8 @@ def plot_new_trajectory(sim, show_whites):
     State('lacerate_time', 'value'),
     State('powerbear', 'value'),
     State('snek', 'value'),
+    State('flowershift', 'value'),
+    State('gotw_targets', 'value'),
     State('num_replicates', 'value'),
     State('latency', 'value'),
     State('epic_gems', 'checked'),
@@ -1680,7 +1708,8 @@ def compute(
         min_roar_offset, use_rake, mangle_spam, use_biteweave, bite_model,
         bite_time, bear_mangle, prepop_berserk, preproc_omen, bearweave,
         berserk_bite_thresh, lacerate_prio, lacerate_time, powerbear, snek,
-        num_replicates, latency, epic_gems, show_whites
+        flowershift, gotw_targets, num_replicates, latency, epic_gems,
+        show_whites
 ):
     ctx = dash.callback_context
 
@@ -1795,7 +1824,7 @@ def compute(
         unleashed_rage, kings, raven_idol, other_buffs, stat_debuffs,
         cooldowns, bonuses, binary_talents, naturalist, feral_aggression,
         savage_fury, potp, predatory_instincts, improved_mangle, imp_motw, furor,
-        natural_shapeshifter, intensity, potion
+        natural_shapeshifter, intensity, potion, gotw_targets
     )
 
     # Process trinkets
@@ -1926,9 +1955,10 @@ def compute(
         prepop_berserk=bool(prepop_berserk), preproc_omen=bool(preproc_omen),
         bearweave=bool(bearweave), berserk_bite_thresh=berserk_bite_thresh,
         lacerate_prio=bool(lacerate_prio), lacerate_time=lacerate_time,
-        powerbear=bool(powerbear), snek=bool(snek),
-        min_roar_offset=min_roar_offset, trinkets=trinket_list,
-        haste_multiplier=haste_multiplier, hot_uptime=hot_uptime / 100.
+        powerbear=bool(powerbear), snek=bool(snek) or bool(flowershift),
+        flowershift=bool(flowershift), min_roar_offset=min_roar_offset,
+        trinkets=trinket_list, haste_multiplier=haste_multiplier,
+        hot_uptime=hot_uptime / 100.
     )
     sim.set_active_debuffs(boss_debuffs)
     player.calc_damage_params(**sim.params)
@@ -1973,18 +2003,34 @@ def compute(
     Output('omen_options', 'is_open'),
     Output('empirical_options', 'is_open'),
     Output('lacerate_options', 'is_open'),
+    Output('bearweave', 'options'),
+    Output('flowershift', 'options'),
+    Output('flowershift_options', 'is_open'),
     Input('bearweave', 'value'),
+    Input('flowershift', 'value'),
     Input('use_biteweave', 'value'),
     Input('bite_model', 'value'),
     Input('lacerate_prio', 'value'),
     Input('binary_talents', 'value'))
 def disable_options(
-    bearweave, biteweave, bite_model, lacerate_prio, binary_talents
+    bearweave, flowershift, biteweave, bite_model, lacerate_prio,
+    binary_talents
 ):
+    bearweave_options = {'label': ' enable bearweaving', 'value': 'bearweave'}
+    flowershift_options = {
+        'label': ' enable flowershifting', 'value': 'flowershift'
+    }
+
+    if bearweave:
+        flowershift_options['disabled'] = True
+    if flowershift:
+        bearweave_options['disabled'] = True
+
     return (
         bool(bearweave), bool(biteweave), 'berserk' in binary_talents,
         'omen' in binary_talents, bite_model == 'empirical',
-        bool(lacerate_prio)
+        bool(lacerate_prio), [bearweave_options], [flowershift_options],
+        bool(flowershift)
     )
 
 
