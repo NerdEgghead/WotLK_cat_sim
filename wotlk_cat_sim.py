@@ -177,6 +177,7 @@ class Simulation():
         'min_roar_offset': 10.0,
         'snek': False,
         'idol_swap': False,
+        'flowershift': False,
     }
 
     def __init__(
@@ -767,10 +768,20 @@ class Simulation():
         Returns:
             damage_done (float): Damage done by the player action.
         """
-        # If we're out of form because we just cast GotW/etc., always shift
-        #if not self.player.cat_form:
-        #    self.player.shift(time)
-        #    return 0.0
+        # If we previously decided to cast GotW, then execute the cast now once
+        # the input delay is over.
+        if self.player.ready_to_gift:
+            self.player.flowershift(time)
+
+            # Hack to re-use the bearweave swing timer code even though we're
+            # not entering Dire Bear Form. Since we're using a stopattack macro
+            # when flowershifting, the line below will halt all melees until
+            # the next swing timer update by setting the "first swing" to
+            # infinitely far away.
+            self.update_swing_times(
+                np.inf, self.swing_timer * 2.5, first_swing=True
+            )
+            return 0.0
 
         # If we previously decided to shift, then execute the shift now once
         # the input delay is over.
@@ -929,8 +940,13 @@ class Simulation():
             #     (self.lacerate_end < self.fight_length) and
             #     (self.lacerate_end-time <= self.strategy['lacerate_time']+1.5)
             #     and rip_refresh_pending and
-            #     (abs(self.lacerate_end - self.rip_end) < 2.5 + self.latency)
+            #     (abs(self.lacerate_end - self.rip_end) < 3.0 + self.latency)
             # )
+
+            # if weave_early and (self.rip_end < self.lacerate_end):
+            #     weave_early = (
+            #         self.lacerate_end - self.rip_end < 2.5 + 2 * self.latency
+            #     )
 
             # if weave_early:
             #     weave_energy += 15
@@ -938,9 +954,9 @@ class Simulation():
         weave_end = time + 4.5 + 2 * self.latency
         bearweave_now = (
             self.strategy['bearweave'] and (energy <= weave_energy)
-            and (not self.player.omen_proc) and
+            and (not self.player.omen_proc)
             # ((not pending_actions) or (pending_actions[0][0] >= weave_end))
-            ((not rip_refresh_pending) or (self.rip_end >= weave_end))
+            and ((not rip_refresh_pending) or (self.rip_end >= weave_end))
             # and (not self.tf_expected_before(time, weave_end))
             # and (not self.params['tigers_fury'])
             and (not self.player.berserk)
@@ -957,6 +973,22 @@ class Simulation():
             and self.lacerate_debuff
             and (self.lacerate_end - time < 2.5 + self.latency)
             and (self.lacerate_end < self.fight_length)
+        )
+
+        # As an alternative to bearweaving, cast GotW on the raid under
+        # analagous conditions to the above. Only difference is that there is
+        # more available time/Energy leeway for the technique, since
+        # flowershifts take only 3 seconds to execute.
+        flowershift_energy = (
+            furor_cap - 15 - 20 * self.latency - 10 * (self.player.furor > 3)
+        )
+        flower_end = time + 3.0 + 2 * self.latency
+        flowershift_now = (
+            self.strategy['flowershift'] and (energy <= flowershift_energy)
+            and (not self.player.omen_proc)
+            and ((not rip_refresh_pending) or (self.rip_end >= flower_end))
+            and (not self.player.berserk)
+            and (not self.tf_expected_before(time, flower_end))
         )
 
         floating_energy = 0
@@ -981,7 +1013,15 @@ class Simulation():
         excess_e = energy - floating_energy
         time_to_next_action = 0.0
 
-        if not self.player.cat_form:
+        if (not self.player.cat_form) and self.strategy['flowershift']:
+            # If the previous GotW cast was unsuccessful and we still have
+            # leeway available, then try again. Otherwise, shift back into Cat
+            # Form.
+            if flowershift_now:
+                self.player.flowershift(time)
+            else:
+                self.player.ready_to_shift = True
+        elif not self.player.cat_form:
             # Shift back into Cat Form if (a) our first bear auto procced
             # Clearcasting, or (b) our first bear auto didn't generate enough
             # Rage to Mangle or Maul, or (c) we don't have enough time or
@@ -1102,6 +1142,8 @@ class Simulation():
             time_to_next_action = (mangle_cost - energy) / 10.
         elif bearweave_now:
             self.player.ready_to_shift = True
+        elif flowershift_now:
+            self.player.ready_to_gift = True
         elif self.strategy['mangle_spam'] and (not self.player.omen_proc):
             if excess_e >= mangle_cost:
                 return self.mangle(time)
@@ -1511,7 +1553,8 @@ class Simulation():
                 dmg_done += trinket.update(time, self.player, self)
 
             # Use Enrage if appropriate
-            if ((not self.player.cat_form) and (self.player.enrage_cd < 1e-9)
+            if (self.strategy['bearweave'] and (not self.player.cat_form)
+                    and (self.player.enrage_cd < 1e-9)
                     and (time < self.player.last_shift + 1.5 + 1e-9)):
                 self.player.rage = min(100, self.player.rage + 20)
                 self.player.enrage = True
