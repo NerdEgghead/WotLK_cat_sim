@@ -1339,7 +1339,6 @@ class Simulation():
             if t8_2p_proc < 0.02:
                 self.player.omen_proc = True
                 self.t8_2p_icd = time
-                # print('t8 icd triggered by ' + ability_name + ' at ' + str(time))
 
         return tick_damage
 
