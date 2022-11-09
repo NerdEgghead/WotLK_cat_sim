@@ -137,8 +137,8 @@ stat_input = dbc.Col([
             {'label': 'Hyperspeed Accelerators', 'value': 'engi_gloves'},
         ],
         value=[
-            'shred_idol', 'rip_glyph', 'shred_glyph', 'roar_glyph',
-            't7_2p', 'meta', 'berserking', 'engi_gloves', 't8_2p'
+            'shred_idol', 'rip_idol', 'rip_glyph', 'shred_glyph', 'roar_glyph',
+            't7_2p', 'meta', 'berserking', 'engi_gloves'
         ],
         id='bonuses'
     ),
@@ -816,7 +816,7 @@ iteration_input = dbc.Col([
                 {'label': 'Madness of the Betrayer', 'value': 'madness'},
                 {'label': 'Shard of Contempt', 'value': 'shard_of_contempt'},
             ],
-            value='comet_trail'
+            value='dmcg_str'
         )),
         dbc.Col(dbc.Select(
             id='trinket_2',
@@ -865,7 +865,7 @@ iteration_input = dbc.Col([
                 {'label': 'Madness of the Betrayer', 'value': 'madness'},
                 {'label': 'Shard of Contempt', 'value': 'shard_of_contempt'},
             ],
-            value='mjolnir_runestone'
+            value='grim_toll'
         )),
     ]),
     html.Div(
