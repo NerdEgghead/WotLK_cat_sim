@@ -1450,6 +1450,7 @@ class Simulation():
             # Decrement cooldowns by time since last event
             self.player.gcd = max(0.0, self.player.gcd - delta_t)
             self.player.omen_icd = max(0.0, self.player.omen_icd - delta_t)
+            self.player.ilotp_icd = max(0.0, self.player.ilotp_icd - delta_t)
             self.player.rune_cd = max(0.0, self.player.rune_cd - delta_t)
             self.player.tf_cd = max(0.0, self.player.tf_cd - delta_t)
             self.player.berserk_cd = max(0.0, self.player.berserk_cd - delta_t)

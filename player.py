@@ -39,8 +39,8 @@ class Player():
             bonus_damage=0, shred_bonus=0, rip_bonus=0, debuff_ap=0,
             multiplier=1.1, omen=True, primal_gore=True, feral_aggression=0,
             predatory_instincts=3, savage_fury=2, furor=3,
-            natural_shapeshifter=3, intensity=3, potp=2, improved_mangle=0,
-            rip_glyph=True, shred_glyph=True, roar_glyph=False,
+            natural_shapeshifter=3, intensity=0, potp=2, improved_mangle=0,
+            ilotp=2, rip_glyph=True, shred_glyph=True, roar_glyph=False,
             berserk_glyph=False, weapon_speed=3.0, gotw_targets=25,
             proc_trinkets=[], log=False
     ):
@@ -98,11 +98,13 @@ class Player():
             furor (int): Points taken in Furor talent. Default to 3.
             natural_shapeshifter (int): Points taken in Natural Shapeshifter
                 talent. Defaults to 3.
-            intensity (int): Points taken in Intensity talent. Defaults to 3.
+            intensity (int): Points taken in Intensity talent. Defaults to 0.
             potp (int): Points taken in Protector of the Pack talent. Defaults
                 to 2.
             improved_mangle (int): Points taken in Improved Mangle talent.
                 Defaults to 0.
+            ilotp (int): Points taken in Improved Leader of the Pack talent.
+                Defaults to 2.
             rip_glyph (bool): Whether Glyph of Rip is used. Defaults True.
             shred_glyph (bool): Whether Glyph of Shred is used. Defaults True.
             roar_glyph (bool): Whether Glyph of Savage Roar is used. Defaults
@@ -162,6 +164,7 @@ class Player():
         self.furor = furor
         self.natural_shapeshifter = natural_shapeshifter
         self.intensity = intensity
+        self.ilotp = ilotp
         self.weapon_speed = weapon_speed
         self.omen_rates = {
             'white': 3.5/60,
@@ -346,6 +349,7 @@ class Player():
         self.gcd = 0.0
         self.omen_proc = False
         self.omen_icd = 0.0
+        self.ilotp_icd = 0.0
         self.tf_cd = 0.0
         self.energy = 100
         self.combo_points = 0
@@ -434,6 +438,12 @@ class Player():
         """
         self.check_omen_proc(yellow=yellow)
         self.check_jow_proc()
+
+        if crit and (self.ilotp_icd < 1e-9):
+            self.mana = min(
+                self.mana + 0.04 * self.ilotp * self.mana_pool, self.mana_pool
+            )
+            self.ilotp_icd = 6.0
 
         # Now check for all trinket procs that may occur. Only trinkets that
         # can trigger on all possible abilities will be checked here. The
