@@ -1968,7 +1968,7 @@ def compute(
         prepop_berserk=bool(prepop_berserk), preproc_omen=bool(preproc_omen),
         bearweave=bool(bearweave), berserk_bite_thresh=berserk_bite_thresh,
         lacerate_prio=bool(lacerate_prio), lacerate_time=lacerate_time,
-        powerbear=bool(powerbear), snek=bool(snek) or bool(flowershift),
+        powerbear=bool(powerbear), snek=bool(snek) and bool(bearweave),
         flowershift=bool(flowershift), min_roar_offset=min_roar_offset,
         trinkets=trinket_list, haste_multiplier=haste_multiplier,
         hot_uptime=hot_uptime / 100.

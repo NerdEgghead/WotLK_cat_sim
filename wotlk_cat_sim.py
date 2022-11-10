@@ -773,14 +773,20 @@ class Simulation():
         if self.player.ready_to_gift:
             self.player.flowershift(time)
 
+            # Reset swing timer based on equipped weapon speed
+            self.update_swing_times(
+                time + self.swing_timer * self.player.weapon_speed,
+                self.swing_timer, first_swing=True
+            )
+
             # Hack to re-use the bearweave swing timer code even though we're
             # not entering Dire Bear Form. Since we're using a stopattack macro
             # when flowershifting, the line below will halt all melees until
             # the next swing timer update by setting the "first swing" to
             # infinitely far away.
-            self.update_swing_times(
-                np.inf, self.swing_timer * 2.5, first_swing=True
-            )
+            # self.update_swing_times(
+            #     np.inf, self.swing_timer * 2.5, first_swing=True
+            # )
             return 0.0
 
         # If we previously decided to shift, then execute the shift now once
@@ -792,7 +798,11 @@ class Simulation():
                 self.time_to_oom = time
 
             # Swing timer only updates on the next swing after we shift
-            swing_fac = 1/2.5 if self.player.cat_form else 2.5
+            if self.strategy['bearweave']:
+                swing_fac = 1./2.5 if self.player.cat_form else 2.5
+            else:
+                swing_fac = 1.
+
             new_timer = self.swing_timer * swing_fac
             next_swing = self.swing_times[0]
 
@@ -1020,6 +1030,10 @@ class Simulation():
             # Form.
             if flowershift_now:
                 self.player.flowershift(time)
+                self.update_swing_times(
+                    time + self.swing_timer * self.player.weapon_speed,
+                    self.swing_timer, first_swing=True
+                )
             else:
                 self.player.ready_to_shift = True
         elif not self.player.cat_form:
@@ -1206,11 +1220,11 @@ class Simulation():
         """
         new_haste_rating = haste_rating_delta + sim_utils.calc_haste_rating(
             self.swing_timer, multiplier=self.haste_multiplier,
-            cat_form=self.player.cat_form
+            cat_form=self.player.cat_form or self.strategy['flowershift']
         )
         new_swing_timer = sim_utils.calc_swing_timer(
             new_haste_rating, multiplier=self.haste_multiplier,
-            cat_form=self.player.cat_form
+            cat_form=self.player.cat_form or self.strategy['flowershift']
         )
         self.update_swing_times(time, new_swing_timer)
         self.player.update_spell_gcd(new_haste_rating)
