@@ -1558,6 +1558,8 @@ class Simulation():
 
             # Check if a melee swing happens at this time
             if time == self.swing_times[0]:
+                prior_omen_proc = self.player.omen_proc
+
                 if self.player.cat_form:
                     dmg_done += self.player.swing()
                 else:
@@ -1634,7 +1636,7 @@ class Simulation():
 
                 # If the swing/Maul resulted in an Omen proc, then schedule the
                 # next player decision based on latency.
-                if self.player.omen_proc:
+                if self.player.omen_proc and (not prior_omen_proc):
                     self.next_action = time + self.latency
 
             # Check if we're able to act, and if so execute the optimal cast.
