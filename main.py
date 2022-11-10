@@ -507,7 +507,7 @@ encounter_details = dbc.Col(
          )]),
      html.Div([
          html.Div(
-             'Intensity:',
+             'Improved Leader of the Pack:',
              style={
                  'width': '35%', 'display': 'inline-block',
                  'fontWeight': 'bold'
@@ -518,9 +518,8 @@ encounter_details = dbc.Col(
                  {'label': '0', 'value': 0},
                  {'label': '1', 'value': 1},
                  {'label': '2', 'value': 2},
-                 {'label': '3', 'value': 3},
              ],
-             value='0', id='intensity',
+             value=2, id='ilotp',
              style={
                  'width': '20%', 'display': 'inline-block',
                  'marginBottom': '2.5%', 'marginRight': '5%'
@@ -1358,7 +1357,7 @@ def create_player(
         unleashed_rage, kings, raven_idol, other_buffs, stat_debuffs,
         cooldowns, bonuses, binary_talents, naturalist, feral_aggression,
         savage_fury, potp, predatory_instincts, improved_mangle, imp_motw, furor,
-        natural_shapeshifter, intensity, potion, gotw_targets
+        natural_shapeshifter, ilotp, potion, gotw_targets
 ):
     """Takes in raid buffed player stats from Eighty Upgrades, modifies them
     based on boss debuffs and miscellaneous buffs not captured by Eighty
@@ -1415,7 +1414,7 @@ def create_player(
         potp=int(potp), predatory_instincts=int(predatory_instincts),
         improved_mangle=int(improved_mangle), furor=int(furor),
         natural_shapeshifter=int(natural_shapeshifter),
-        intensity=int(intensity), weapon_speed=weapon_speed,
+        ilotp=int(ilotp), weapon_speed=weapon_speed,
         bonus_damage=encounter_weapon_damage, multiplier=damage_multiplier,
         jow='jow' in stat_debuffs, armor_pen_rating=armor_pen_rating,
         t6_2p='t6_2p' in bonuses, t6_4p='t6_4p' in bonuses,
@@ -1694,7 +1693,7 @@ def plot_new_trajectory(sim, show_whites):
     State('furor', 'value'),
     State('naturalist', 'value'),
     State('natural_shapeshifter', 'value'),
-    State('intensity', 'value'),
+    State('ilotp', 'value'),
     State('fight_length', 'value'),
     State('boss_armor', 'value'),
     State('boss_debuffs', 'value'),
@@ -1729,7 +1728,7 @@ def compute(
         weight_clicks, graph_clicks, hot_uptime, potion, bonuses,
         binary_talents, feral_aggression, savage_fury, potp,
         predatory_instincts, improved_mangle, furor, naturalist,
-        natural_shapeshifter, intensity, fight_length, boss_armor,
+        natural_shapeshifter, ilotp, fight_length, boss_armor,
         boss_debuffs, cooldowns, rip_cp, bite_cp, cd_delay,
         min_roar_offset, use_rake, mangle_spam, use_biteweave, bite_model,
         bite_time, bear_mangle, prepop_berserk, preproc_omen, bearweave,
@@ -1850,7 +1849,7 @@ def compute(
         unleashed_rage, kings, raven_idol, other_buffs, stat_debuffs,
         cooldowns, bonuses, binary_talents, naturalist, feral_aggression,
         savage_fury, potp, predatory_instincts, improved_mangle, imp_motw, furor,
-        natural_shapeshifter, intensity, potion, gotw_targets
+        natural_shapeshifter, ilotp, potion, gotw_targets
     )
 
     # Process trinkets
