@@ -980,9 +980,10 @@ class Simulation():
         # more available time/Energy leeway for the technique, since
         # flowershifts take only 3 seconds to execute.
         flowershift_energy = (
-            furor_cap - 15 - 20 * self.latency - 10 * (self.player.furor > 3)
+            furor_cap - 10 * self.player.spell_gcd - 20 * self.latency
+            - 10 * (self.player.furor > 3)
         )
-        flower_end = time + 3.0 + 2 * self.latency
+        flower_end = time + self.player.spell_gcd + 1.5 + 2 * self.latency
         flowershift_now = (
             self.strategy['flowershift'] and (energy <= flowershift_energy)
             and (not self.player.omen_proc)
@@ -1194,23 +1195,25 @@ class Simulation():
                 self.swing_timer
             ))
 
-    def apply_haste_buff(self, time, haste_rating_increment):
+    def apply_haste_buff(self, time, haste_rating_delta):
         """Perform associated bookkeeping when the player Haste Rating is
         modified.
 
         Arguments:
             time (float): Simulation time in seconds.
-            haste_rating_increment (int): Amount by which the player Haste
-                Rating changes.
+            haste_rating_delta (int): Amount by which the player Haste Rating
+                changes.
         """
+        new_haste_rating = haste_rating_delta + sim_utils.calc_haste_rating(
+            self.swing_timer, multiplier=self.haste_multiplier,
+            cat_form=self.player.cat_form
+        )
         new_swing_timer = sim_utils.calc_swing_timer(
-            sim_utils.calc_haste_rating(
-                self.swing_timer, multiplier=self.haste_multiplier,
-                cat_form=self.player.cat_form
-            ) + haste_rating_increment,
-            multiplier=self.haste_multiplier, cat_form=self.player.cat_form
+            new_haste_rating, multiplier=self.haste_multiplier,
+            cat_form=self.player.cat_form
         )
         self.update_swing_times(time, new_swing_timer)
+        self.player.update_spell_gcd(new_haste_rating)
 
     def apply_tigers_fury(self, time):
         """Apply Tiger's Fury buff and document if requested.

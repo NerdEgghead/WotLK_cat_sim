@@ -110,7 +110,7 @@ class Player():
             berserk_glyph (bool): Whether Glyph of Berserk is used. Defaults
                 False.
             weapon_speed (float): Equipped weapon speed, used for calculating
-                Omen of Clarity proc rate. Defaults to 3.0.
+                swing timer resets from instant spell casts. Defaults to 3.0.
             gotw_targets (int): Number of targets that will be buffed if the
                 player casts Gift of the Wild during combat. Used for
                 calculating Omen of Clarity proc chance. Defaults to 25.
@@ -323,6 +323,24 @@ class Player():
 
             for cp in range(1, 6):
                 bite_damage[cp] += 8 * armor_multiplier
+
+    def update_spell_gcd(self, haste_rating, multiplier=None):
+        """Update GCD length for Gift of the Wild when player Spell Haste is
+        modified.
+
+        Arguments:
+            haste_rating (int): Updated Haste Rating stat.
+            multiplier (float): Overall Spell Haste multiplier from
+                multiplicative Haste buffs such as Bloodlust. If provided,
+                the new multiplier will be stored for future use. If omitted,
+                the previously stored multiplier will be used instead.
+        """
+        if multiplier is not None:
+            self.spell_haste_multiplier = multiplier
+
+        self.spell_gcd = sim_utils.calc_hasted_gcd(
+            haste_rating, multiplier=self.spell_haste_multiplier
+        )
 
     def reset(self):
         """Reset fight-specific parameters to their starting values at the
@@ -964,7 +982,7 @@ class Player():
         """
         # Execute the cast and perform related bookkeeping
         self.cat_form = False
-        self.gcd = 1.5
+        self.gcd = self.spell_gcd
         self.dmg_breakdown['Gift of the Wild']['casts'] += 1
         self.mana -= 1119 # Glyph of the Wild assumed
         self.five_second_rule = True
