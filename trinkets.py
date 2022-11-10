@@ -328,12 +328,16 @@ class Bloodlust(ActivatedTrinket):
         haste_rating = sim_utils.calc_haste_rating(
             sim.swing_timer, multiplier=old_multi, cat_form=player.cat_form
         )
-        new_multi = old_multi/1.3 if self.active else old_multi*1.3
+        multi_fac = 1./1.3 if self.active else 1.3
+        new_multi = old_multi * multi_fac
         new_swing_timer = sim_utils.calc_swing_timer(
             haste_rating, multiplier=new_multi, cat_form=player.cat_form
         )
         sim.update_swing_times(time, new_swing_timer)
         sim.haste_multiplier = new_multi
+        player.update_spell_gcd(
+            haste_rating, multiplier=player.spell_haste_multiplier * multi_fac
+        )
 
 
 class UnholyFrenzy(ActivatedTrinket):

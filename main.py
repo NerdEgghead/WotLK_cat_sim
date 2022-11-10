@@ -203,9 +203,13 @@ buffs_1 = dbc.Col(
                  'label': 'Improved Moonkin Form / Swift Retribution',
                  'value': 'minor_haste'
              },
+             {'label': 'Wrath of Air Totem', 'value': 'spell_haste'},
              {'label': 'Mana Replenishment', 'value': 'replenishment'},
          ],
-         value=['sanc_aura', 'major_haste', 'minor_haste', 'replenishment'],
+         value=[
+             'sanc_aura', 'major_haste', 'minor_haste', 'spell_haste',
+             'replenishment'
+         ],
          id='other_buffs'
      ),
      dbc.InputGroup(
@@ -1359,6 +1363,12 @@ def create_player(
         buffed_haste_rating, multiplier=haste_multiplier
     )
 
+    # Also calculate hasted spell GCD for use when flowershifting
+    spell_haste_multiplier = (
+        (1 + 0.03 * ('minor_haste' in other_buffs))
+        * (1 + 0.05 * ('spell_haste' in other_buffs))
+    )
+
     # Augment secondary stats as needed
     ap_mod = 1.1 * (1 + 0.1 * unleashed_rage)
     debuff_ap = 0
@@ -1405,6 +1415,9 @@ def create_player(
         berserk_glyph='berserk_glyph' in bonuses,
         rip_glyph='rip_glyph' in bonuses, shred_glyph='shred_glyph' in bonuses,
         gotw_targets=int(gotw_targets)
+    )
+    player.update_spell_gcd(
+        buffed_haste_rating, multiplier=spell_haste_multiplier
     )
     stat_mod = (1 + 0.1 * kings) * 1.06 * (1 + 0.01 * imp_motw)
     return player, ap_mod, stat_mod, haste_multiplier

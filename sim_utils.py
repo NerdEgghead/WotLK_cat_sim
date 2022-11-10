@@ -129,6 +129,20 @@ def calc_haste_rating(swing_timer, multiplier=1.0, cat_form=True):
     return 2521 * (base_timer / (swing_timer * multiplier) - 1)
 
 
+def calc_hasted_gcd(haste_rating, multiplier=1.0):
+    """Calculate GCD for spell casts given a total haste rating stat.
+
+    Arguments:
+        haste_rating (int): Player haste rating stat.
+        multiplier (float): Overall spell haste multiplier from multiplicative
+            haste buffs such as Bloodlust. Defaults to 1.
+
+    Returns:
+        spell_gcd (float): Hasted GCD in seconds.
+    """
+    return max(1.5 / (multiplier * (1 + haste_rating / 3279)), 1.0)
+
+
 def gen_import_link(
     stat_weights, EP_name='Simmed Weights', multiplier=1.166, epic_gems=False
 ):
