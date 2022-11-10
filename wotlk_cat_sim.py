@@ -990,8 +990,7 @@ class Simulation():
         # more available time/Energy leeway for the technique, since
         # flowershifts take only 3 seconds to execute.
         flowershift_energy = (
-            furor_cap - 10 * self.player.spell_gcd - 20 * self.latency
-            - 10 * (self.player.furor > 3)
+            min(furor_cap, 75) - 10 * self.player.spell_gcd - 20 * self.latency
         )
         flower_end = time + self.player.spell_gcd + 1.5 + 2 * self.latency
         flowershift_now = (
@@ -1157,7 +1156,7 @@ class Simulation():
             time_to_next_action = (mangle_cost - energy) / 10.
         elif bearweave_now:
             self.player.ready_to_shift = True
-        elif flowershift_now:
+        elif flowershift_now and (energy < 42):
             self.player.ready_to_gift = True
         elif self.strategy['mangle_spam'] and (not self.player.omen_proc):
             if excess_e >= mangle_cost:
