@@ -178,6 +178,8 @@ class Simulation():
         'snek': False,
         'idol_swap': False,
         'flowershift': False,
+        'daggerweave': False,
+        'dagger_ep_loss': 1461,
     }
 
     def __init__(
@@ -779,14 +781,6 @@ class Simulation():
                 self.swing_timer, first_swing=True
             )
 
-            # Hack to re-use the bearweave swing timer code even though we're
-            # not entering Dire Bear Form. Since we're using a stopattack macro
-            # when flowershifting, the line below will halt all melees until
-            # the next swing timer update by setting the "first swing" to
-            # infinitely far away.
-            # self.update_swing_times(
-            #     np.inf, self.swing_timer * 2.5, first_swing=True
-            # )
             return 0.0
 
         # If we previously decided to shift, then execute the shift now once
@@ -820,6 +814,15 @@ class Simulation():
 
             if self.player.cat_form and (self.strategy['snek'] or swap_idols):
                 next_swing = time + new_timer
+
+            # If we weapon swapped to a fast dagger when casting GotW, then we
+            # can perform a weaker auto-attack immediately upon shifting prior
+            # to swapping back to our normal weapon.
+            if self.strategy['flowershift'] and self.strategy['daggerweave']:
+                next_swing = time
+                self.player.attack_power -= self.strategy['dagger_ep_loss']
+                self.player.calc_damage_params(**self.params)
+                self.player.dagger_equipped = True
 
             self.update_swing_times(next_swing, new_timer, first_swing=True)
 
@@ -1587,6 +1590,16 @@ class Simulation():
 
                 if self.player.cat_form:
                     dmg_done += self.player.swing()
+
+                    # If daggerweaving, swap back to normal weapon after the
+                    # swing goes out.
+                    if self.player.dagger_equipped:
+                        self.player.attack_power = (
+                            self.player.attack_power
+                            + self.strategy['dagger_ep_loss']
+                        )
+                        self.player.calc_damage_params(**self.params)
+                        self.player.dagger_equipped = False
                 else:
                     # If we will have enough time and Energy leeway to stay in
                     # Dire Bear Form once the GCD expires, then only Maul if we

@@ -368,6 +368,7 @@ class Player():
         self.enrage_cd = 0.0
         self.mangle_cd = 0.0
         self.savage_roar = False
+        self.dagger_equipped = False
         self.set_ability_costs()
 
         # Create dictionary to hold breakdown of total casts and damage
