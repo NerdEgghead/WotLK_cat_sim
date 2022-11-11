@@ -780,7 +780,7 @@ iteration_input = dbc.Col([
                         addon_type='prepend'
                     ),
                     dbc.Input(
-                        type='number', value=25, id='gotw_targets', min=1,
+                        type='number', value=30, id='gotw_targets', min=1,
                         step=1
                     )
                 ],
