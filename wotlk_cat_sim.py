@@ -820,7 +820,9 @@ class Simulation():
             # to swapping back to our normal weapon.
             if self.strategy['flowershift'] and self.strategy['daggerweave']:
                 next_swing = time
-                self.player.attack_power -= self.strategy['dagger_ep_loss']
+                self.player.attack_power -= (
+                    self.strategy['dagger_ep_loss'] * self.player.ap_mod
+                )
                 self.player.calc_damage_params(**self.params)
                 self.player.dagger_equipped = True
 
@@ -1594,9 +1596,9 @@ class Simulation():
                     # If daggerweaving, swap back to normal weapon after the
                     # swing goes out.
                     if self.player.dagger_equipped:
-                        self.player.attack_power = (
-                            self.player.attack_power
-                            + self.strategy['dagger_ep_loss']
+                        self.player.attack_power += (
+                            self.strategy['dagger_ep_loss']
+                            * self.player.ap_mod
                         )
                         self.player.calc_damage_params(**self.params)
                         self.player.dagger_equipped = False
