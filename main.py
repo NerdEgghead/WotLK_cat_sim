@@ -789,6 +789,35 @@ iteration_input = dbc.Col([
                     'marginTop': '1%',
                 }
             ),
+            dbc.Checklist(
+                options=[{
+                    'label': ' reset swing timer using fast dagger',
+                    'value': 'daggerweave'
+                }],
+                value=['daggerweave'], id='daggerweave',
+                style={'marginTop': '1%', 'marginLeft': '5%'}
+            ),
+            dbc.Collapse(
+                [
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon(
+                                'EP loss from dagger swap:',
+                                addon_type='prepend'
+                            ),
+                            dbc.Input(
+                                type='number', value=1461, id='dagger_ep_loss',
+                                min=0, step=1
+                            ),
+                        ],
+                        style={
+                            'width': '70%', 'marginBottom': '1%',
+                            'marginLeft': '5%', 'marginTop': '1%',
+                        }
+                    ),
+                ],
+                id='dagger_options', is_open=True
+            ),
         ],
         id='flowershift_options', is_open=True
     ),
@@ -1705,6 +1734,8 @@ def plot_new_trajectory(sim, show_whites):
     State('snek', 'value'),
     State('flowershift', 'value'),
     State('gotw_targets', 'value'),
+    State('daggerweave', 'value'),
+    State('dagger_ep_loss', 'value'),
     State('num_replicates', 'value'),
     State('latency', 'value'),
     State('epic_gems', 'checked'),
@@ -1720,8 +1751,8 @@ def compute(
         min_roar_offset, use_rake, mangle_spam, use_biteweave, bite_model,
         bite_time, bear_mangle, prepop_berserk, preproc_omen, bearweave,
         berserk_bite_thresh, lacerate_prio, lacerate_time, powerbear, snek,
-        flowershift, gotw_targets, num_replicates, latency, epic_gems,
-        show_whites
+        flowershift, gotw_targets, daggerweave, dagger_ep_loss, num_replicates,
+        latency, epic_gems, show_whites
 ):
     ctx = dash.callback_context
 
@@ -1968,7 +1999,8 @@ def compute(
         bearweave=bool(bearweave), berserk_bite_thresh=berserk_bite_thresh,
         lacerate_prio=bool(lacerate_prio), lacerate_time=lacerate_time,
         powerbear=bool(powerbear), snek=bool(snek) and bool(bearweave),
-        flowershift=bool(flowershift), min_roar_offset=min_roar_offset,
+        flowershift=bool(flowershift), daggerweave=bool(daggerweave),
+        dagger_ep_loss=dagger_ep_loss, min_roar_offset=min_roar_offset,
         trinkets=trinket_list, haste_multiplier=haste_multiplier,
         hot_uptime=hot_uptime / 100.
     )
@@ -2018,14 +2050,16 @@ def compute(
     Output('bearweave', 'options'),
     Output('flowershift', 'options'),
     Output('flowershift_options', 'is_open'),
+    Output('dagger_options', 'is_open'),
     Input('bearweave', 'value'),
     Input('flowershift', 'value'),
     Input('use_biteweave', 'value'),
     Input('bite_model', 'value'),
     Input('lacerate_prio', 'value'),
+    Input('daggerweave', 'value'),
     Input('binary_talents', 'value'))
 def disable_options(
-    bearweave, flowershift, biteweave, bite_model, lacerate_prio,
+    bearweave, flowershift, biteweave, bite_model, lacerate_prio, daggerweave,
     binary_talents
 ):
     bearweave_options = {'label': ' enable bearweaving', 'value': 'bearweave'}
@@ -2042,7 +2076,7 @@ def disable_options(
         bool(bearweave), bool(biteweave), 'berserk' in binary_talents,
         'omen' in binary_talents, bite_model == 'empirical',
         bool(lacerate_prio), [bearweave_options], [flowershift_options],
-        bool(flowershift)
+        bool(flowershift), bool(daggerweave)
     )
 
 
