@@ -916,9 +916,7 @@ class Player():
 
         # Apply buff
         self.savage_roar = True
-        roar_end = time + self.roar_durations[self.combo_points]
-        if self.t8_4p_bonus:
-            roar_end += 8
+        roar_end = time + self.roar_durations[self.combo_points] + 8 * self.t8_4p_bonus
         self.combo_points = 0
 
         # Log the cast
