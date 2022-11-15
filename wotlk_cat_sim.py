@@ -684,7 +684,7 @@ class Simulation():
             return False
 
         # Project Rip end time assuming full Glyph of Shred extensions.
-        max_rip_dur = self.player.rip_duration + 6 * self.player.shred_glyph + 8 * self.player.t8_4p_bonus
+        max_rip_dur = self.player.rip_duration + 6 * self.player.shred_glyph
         rip_end = self.rip_start + max_rip_dur
 
         # If the existing Roar already falls off well after the existing Roar,
@@ -694,7 +694,7 @@ class Simulation():
             return False
 
         # Calculate when Roar would end if we cast it now.
-        new_roar_dur = self.player.roar_durations[self.player.combo_points]
+        new_roar_dur = self.player.roar_durations[self.player.combo_points] + 8 * self.player.t8_4p_bonus
         new_roar_end = time + new_roar_dur
 
         # Clip as soon as we have enough CPs for the new Roar to expire well
