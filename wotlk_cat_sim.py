@@ -1170,6 +1170,12 @@ class Simulation():
         else:
             if (excess_e >= self.player.shred_cost) or self.player.omen_proc:
                 return self.shred()
+
+            # Also Shred if we're about to cap on Energy. Catches some edge
+            # cases where floating_energy > 100 due to too many synced timers.
+            if energy > 100 - self.latency:
+                return self.shred()
+
             time_to_next_action = (self.player.shred_cost - excess_e) / 10.
 
         # Model in latency when waiting on Energy for our next action
@@ -1177,6 +1183,12 @@ class Simulation():
 
         if pending_actions:
             next_action = min(next_action, pending_actions[0][0])
+
+        # Also schedule an action right at Energy cap to make sure we never
+        # accidentally over-cap while waiting on other timers.
+        next_action = min(
+            next_action, time + (100. - energy) / 10. - self.latency
+        )
 
         self.next_action = next_action + self.latency
 
