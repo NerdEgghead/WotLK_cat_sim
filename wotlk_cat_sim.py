@@ -1206,6 +1206,16 @@ class Simulation():
             next_action, time + (100. - energy) / 10. - self.latency
         )
 
+        # If Lacerateweaving, then also schedule an action just before Lacerate
+        # expires to ensure we can save it in time.
+        if (self.strategy['bearweave'] and self.strategy['lacerate_prio']
+                and self.lacerate_debuff
+                and (self.lacerate_end < self.fight_length)
+                and (time < self.lacerate_end - 1.5 - 2 * self.latency)):
+            next_action = min(
+                next_action, self.lacerate_end - 1.5 - 2 * self.latency
+            )
+
         self.next_action = next_action + self.latency
 
         return 0.0
