@@ -1170,13 +1170,51 @@ class Simulation():
         else:
             if (excess_e >= self.player.shred_cost) or self.player.omen_proc:
                 return self.shred()
+
+            # Also Shred if we're about to cap on Energy. Catches some edge
+            # cases where floating_energy > 100 due to too many synced timers.
+            if energy > 100 - self.latency:
+                return self.shred()
+
             time_to_next_action = (self.player.shred_cost - excess_e) / 10.
+
+            # When Lacerateweaving, there are scenarios where Lacerate is
+            # synced with other pending actions. When this happens, pooling for
+            # the pending action will inevitably lead to capping on Energy,
+            # since we will be forced to shift into Dire Bear Form immediately
+            # after pooling in order to save the Lacerate. Instead, it is
+            # preferable to just Shred and bearweave early.
+            next_cast_end = time + time_to_next_action + self.latency + 2.0
+            ignore_pooling = (
+                self.strategy['bearweave'] and self.strategy['lacerate_prio']
+                and self.lacerate_debuff
+                and (self.lacerate_end - 1.5 - self.latency <= next_cast_end)
+            )
+
+            if ignore_pooling and (energy >= self.player.shred_cost):
+                return self.shred()
 
         # Model in latency when waiting on Energy for our next action
         next_action = time + time_to_next_action
 
         if pending_actions:
             next_action = min(next_action, pending_actions[0][0])
+
+        # Also schedule an action right at Energy cap to make sure we never
+        # accidentally over-cap while waiting on other timers.
+        next_action = min(
+            next_action, time + (100. - energy) / 10. - self.latency
+        )
+
+        # If Lacerateweaving, then also schedule an action just before Lacerate
+        # expires to ensure we can save it in time.
+        if (self.strategy['bearweave'] and self.strategy['lacerate_prio']
+                and self.lacerate_debuff
+                and (self.lacerate_end < self.fight_length)
+                and (time < self.lacerate_end - 1.5 - 2 * self.latency)):
+            next_action = min(
+                next_action, self.lacerate_end - 1.5 - 2 * self.latency
+            )
 
         self.next_action = next_action + self.latency
 
