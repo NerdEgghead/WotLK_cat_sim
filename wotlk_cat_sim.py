@@ -1178,6 +1178,22 @@ class Simulation():
 
             time_to_next_action = (self.player.shred_cost - excess_e) / 10.
 
+            # When Lacerateweaving, there are scenarios where Lacerate is
+            # synced with other pending actions. When this happens, pooling for
+            # the pending action will inevitably lead to capping on Energy,
+            # since we will be forced to shift into Dire Bear Form immediately
+            # after pooling in order to save the Lacerate. Instead, it is
+            # preferable to just Shred and bearweave early.
+            next_cast_end = time + time_to_next_action + self.latency + 1.0
+            ignore_pooling = (
+                self.strategy['bearweave'] and self.strategy['lacerate_prio']
+                and self.lacerate_debuff
+                and (self.lacerate_end - 1.5 - self.latency <= next_cast_end)
+            )
+
+            if ignore_pooling and (energy >= self.player.shred_cost):
+                return self.shred()
+
         # Model in latency when waiting on Energy for our next action
         next_action = time + time_to_next_action
 
