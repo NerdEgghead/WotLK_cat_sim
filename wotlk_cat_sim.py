@@ -1184,7 +1184,7 @@ class Simulation():
             # since we will be forced to shift into Dire Bear Form immediately
             # after pooling in order to save the Lacerate. Instead, it is
             # preferable to just Shred and bearweave early.
-            next_cast_end = time + time_to_next_action + self.latency + 1.0
+            next_cast_end = time + time_to_next_action + self.latency + 2.0
             ignore_pooling = (
                 self.strategy['bearweave'] and self.strategy['lacerate_prio']
                 and self.lacerate_debuff
