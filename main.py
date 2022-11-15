@@ -126,6 +126,8 @@ stat_input = dbc.Col([
             {'label': '2-piece Tier 6 bonus', 'value': 't6_2p'},
             {'label': '4-piece Tier 6 bonus', 'value': 't6_4p'},
             {'label': '2-piece Tier 7 bonus', 'value': 't7_2p'},
+            {'label': '2-piece Tier 8 bonus', 'value': 't8_2p'},
+            {'label': '4-piece Tier 8 bonus', 'value': 't8_4p'},
             {'label': 'Wolfshead Helm', 'value': 'wolfshead'},
             {'label': 'Relentless Earthsiege Diamond', 'value': 'meta'},
             {'label': 'Band of the Eternal Champion', 'value': 'exalted_ring'},
@@ -828,6 +830,11 @@ iteration_input = dbc.Col([
             id='trinket_1',
             options=[
                 {'label': 'Empty', 'value': 'none'},
+                {'label': 'Comet\'s Trail', 'value': 'comet_trail'},
+                {'label': 'Mjolnir Runestone', 'value': 'mjolnir_runestone'},
+                {'label': 'Dark Matter', 'value': 'dark_matter'},
+                {'label': 'Pyrite Infusion', 'value': 'pyrite_infuser'},
+                {'label': 'Wrathstone', 'value': 'wrathstone'},
                 {
                     'label': 'Darkmoon Card: Greatness (Strength)',
                     'value': 'dmcg_str',
@@ -872,6 +879,11 @@ iteration_input = dbc.Col([
             id='trinket_2',
             options=[
                 {'label': 'Empty', 'value': 'none'},
+                {'label': 'Comet\'s Trail', 'value': 'comet_trail'},
+                {'label': 'Mjolnir Runestone', 'value': 'mjolnir_runestone'},
+                {'label': 'Dark Matter', 'value': 'dark_matter'},
+                {'label': 'Pyrite Infusion', 'value': 'pyrite_infuser'},
+                {'label': 'Wrathstone', 'value': 'wrathstone'},
                 {
                     'label': 'Darkmoon Card: Greatness (Strength)',
                     'value': 'dmcg_str',
@@ -1435,7 +1447,8 @@ def create_player(
         bonus_damage=encounter_weapon_damage, multiplier=damage_multiplier,
         jow='jow' in stat_debuffs, armor_pen_rating=armor_pen_rating,
         t6_2p='t6_2p' in bonuses, t6_4p='t6_4p' in bonuses,
-        t7_2p='t7_2p' in bonuses, wolfshead='wolfshead' in bonuses,
+        t7_2p='t7_2p' in bonuses, t8_2p='t8_2p' in bonuses,
+        t8_4p='t8_4p' in bonuses, wolfshead='wolfshead' in bonuses,
         mangle_glyph='mangle_glyph' in bonuses,
         meta='meta' in bonuses, rune='rune' in cooldowns,
         shred_bonus=shred_bonus, rip_bonus=rip_bonus, debuff_ap=debuff_ap,

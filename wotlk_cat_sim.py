@@ -694,7 +694,7 @@ class Simulation():
             return False
 
         # Calculate when Roar would end if we cast it now.
-        new_roar_dur = self.player.roar_durations[self.player.combo_points]
+        new_roar_dur = self.player.roar_durations[self.player.combo_points] + 8 * self.player.t8_4p_bonus
         new_roar_end = time + new_roar_dur
 
         # Clip as soon as we have enough CPs for the new Roar to expire well
@@ -1392,6 +1392,13 @@ class Simulation():
                 trinket.check_for_proc(False, True)
                 tick_damage += trinket.update(time, self.player, self)
 
+        
+        if self.player.t8_2p_bonus and time - 15 >= self.t8_2p_icd:
+            t8_2p_proc = np.random.rand()
+            if t8_2p_proc < 0.02:
+                self.player.omen_proc = True
+                self.t8_2p_icd = time
+
         return tick_damage
 
     def run(self, log=False):
@@ -1444,6 +1451,9 @@ class Simulation():
         # Reset all trinkets to fresh state
         self.proc_end_times = []
 
+        # Track 2pT8 icd end time
+        self.t8_2p_icd = 0
+
         for trinket in self.trinkets:
             trinket.reset()
 
@@ -1482,6 +1492,7 @@ class Simulation():
         num_hot_ticks = 0
 
         while time <= self.fight_length:
+
             # Update player Mana and Energy based on elapsed simulation time
             delta_t = time - previous_time
             self.player.regen(delta_t)

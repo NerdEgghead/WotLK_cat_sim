@@ -42,7 +42,7 @@ class Player():
             natural_shapeshifter=3, intensity=0, potp=2, improved_mangle=0,
             ilotp=2, rip_glyph=True, shred_glyph=True, roar_glyph=False,
             berserk_glyph=False, weapon_speed=3.0, gotw_targets=25,
-            proc_trinkets=[], log=False
+            t8_2p=False, t8_4p=False, proc_trinkets=[], log=False
     ):
         """Initialize player with key damage parameters.
 
@@ -153,6 +153,8 @@ class Player():
         self.rip_bonus = rip_bonus
         self._mangle_cost = 40 - 5 * t6_2p - 2 * improved_mangle
         self.t6_bonus = t6_4p
+        self.t8_2p_bonus = t8_2p
+        self.t8_4p_bonus = t8_4p
         self.wolfshead = wolfshead
         self.meta = meta
         self.damage_multiplier = multiplier
@@ -914,7 +916,7 @@ class Player():
 
         # Apply buff
         self.savage_roar = True
-        roar_end = time + self.roar_durations[self.combo_points]
+        roar_end = time + self.roar_durations[self.combo_points] + 8 * self.t8_4p_bonus
         self.combo_points = 0
 
         # Log the cast
