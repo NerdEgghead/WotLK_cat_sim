@@ -1753,6 +1753,18 @@ class Simulation():
                 and self.player.cat_form
             )
 
+            # If Lacerateweaving, then delay Tiger's Fury if Lacerate is due to
+            # expire within 3 GCDs (two cat specials + shapeshift), since we
+            # won't be able to spend down our Energy fast enough to avoid
+            # Energy capping otherwise.
+            if self.strategy['bearweave'] and self.strategy['lacerate_prio']:
+                next_possible_lac = time + leeway_time + 3.5 + self.latency
+                tf_now = tf_now and (
+                    (not self.lacerate_debuff)
+                    or (self.lacerate_end > next_possible_lac)
+                    or (self.lacerate_end > self.fight_length)
+                )
+
             if tf_now:
                 # If Berserk is available, then pool to 30 Energy before
                 # casting TF to maximize Berserk efficiency.
