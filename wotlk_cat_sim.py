@@ -1191,8 +1191,10 @@ class Simulation():
                 and (self.lacerate_end - 1.5 - self.latency <= next_cast_end)
             )
 
-            if ignore_pooling and (energy >= self.player.shred_cost):
-                return self.shred()
+            if ignore_pooling:
+                if energy >= self.player.shred_cost:
+                    return self.shred()
+                time_to_next_action = (self.player.shred_cost - energy) / 10.
 
         # Model in latency when waiting on Energy for our next action
         next_action = time + time_to_next_action
