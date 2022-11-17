@@ -948,6 +948,10 @@ class Simulation():
         if self.player.furor > 3:
             weave_energy -= 15
 
+            # Force a 3-GCD weave when stacking Lacerates for the first time
+            if self.strategy['lacerate_prio'] and (not self.lacerate_debuff):
+                weave_energy -= 15
+
             # Remove the 2-GCD leeway restriction in situations where the Rip
             # and Lacerate timers are synced
             # weave_early = (
