@@ -397,15 +397,16 @@ class Simulation():
 
         # If Idol swapping is configured, then swap to Shred Idol immmediately
         # after Rip is cast. This incurs a 0.5 second GCD extension as well as
-        # a swing timer reset.
-        # if self.strategy['idol_swap'] and (self.player.rip_bonus > 0):
-        #     self.player.shred_bonus = self.shred_bonus
-        #     self.player.rip_bonus = 0
-        #     self.player.calc_damage_params(**self.params)
-        #     self.player.gcd = 1.5
-        #     self.update_swing_times(
-        #         time + self.swing_timer, self.swing_timer, first_swing=True
-        #     )
+        # a swing timer reset, so it should only be done during Berserk.
+        if (self.strategy['idol_swap'] and (self.player.rip_bonus > 0)
+                and self.player.berserk):
+            self.player.shred_bonus = self.shred_bonus
+            self.player.rip_bonus = 0
+            self.player.calc_damage_params(**self.params)
+            self.player.gcd = 1.5
+            self.update_swing_times(
+                time + self.swing_timer, self.swing_timer, first_swing=True
+            )
 
         return 0.0
 
@@ -1477,10 +1478,10 @@ class Simulation():
         if self.strategy['preproc_omen'] and self.player.omen:
             self.player.omen_proc = True
 
-        # If Idol swapping, then start fight with Shred Idol equipped
+        # If Idol swapping, then start fight with Rip Idol equipped
         if self.strategy['idol_swap']:
-            self.player.shred_bonus = self.shred_bonus
-            self.player.rip_bonus = 0
+            self.player.shred_bonus = 0
+            self.player.rip_bonus = self.rip_bonus
             self.player.calc_damage_params(**self.params)
 
         # Create placeholder for time to OOM if the player goes OOM in the run
