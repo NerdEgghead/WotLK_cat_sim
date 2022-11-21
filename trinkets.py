@@ -1103,11 +1103,11 @@ trinket_library = {
     'comet_trail': {
         'type': 'proc',
         'passive_stats': {
-            'attack_power': 240,
+            'attack_power': 254,
         },
         'active_stats': {
             'stat_name': 'haste_rating',
-            'stat_increment': 300,
+            'stat_increment': 768,
             'proc_name': 'Comet\'s Trail',
             'proc_duration': 10,
             'cooldown': 45,
@@ -1118,7 +1118,7 @@ trinket_library = {
     'dark_matter': {
         'type': 'proc',
         'passive_stats': {
-            'attack_power': 222,
+            'attack_power': 235,
         },
         'active_stats': {
             'stat_name': 'crit_chance',
@@ -1133,11 +1133,11 @@ trinket_library = {
     'mjolnir_runestone': {
         'type': 'proc',
         'passive_stats': {
-            'crit_chance': 102./45.91/100,
+            'crit_chance': 115./45.91/100,
         },
         'active_stats': {
             'stat_name': 'armor_pen_rating',
-            'stat_increment': 665,
+            'stat_increment': 751,
             'proc_name': 'Mjolnir Runestone',
             'proc_duration': 10,
             'cooldown': 45,
@@ -1148,11 +1148,11 @@ trinket_library = {
     'pyrite_infuser': {
         'type': 'proc',
         'passive_stats': {
-            'hit_chance': 95./32.79/100,
+            'hit_chance': 100./32.79/100,
         },
         'active_stats': {
             'stat_name': 'attack_power',
-            'stat_increment': 1234,
+            'stat_increment': 1305,
             'proc_name': 'Pyrite Infusion',
             'proc_duration': 10,
             'cooldown': 50,
@@ -1163,11 +1163,11 @@ trinket_library = {
     'wrathstone': {
         'type': 'activated',
         'passive_stats': {
-            'crit_chance': 109./45.91/100,
+            'crit_chance': 114./45.91/100,
         },
         'active_stats': {
             'stat_name': 'attack_power',
-            'stat_increment': 856,
+            'stat_increment': 905,
             'proc_name': 'Wrathstone',
             'proc_duration': 20,
             'cooldown': 120,
