@@ -241,7 +241,7 @@ class Player():
         armor_constant = 467.5 * 80 - 22167.5
         arp_cap = (debuffed_armor + armor_constant) / 3.
         armor_pen = (
-            self.armor_pen_rating / 13.99 / 100 * min(arp_cap, debuffed_armor)
+            min(1399, self.armor_pen_rating) / 13.99 / 100 * min(arp_cap, debuffed_armor)
         )
         residual_armor = debuffed_armor - armor_pen
         armor_multiplier = (
