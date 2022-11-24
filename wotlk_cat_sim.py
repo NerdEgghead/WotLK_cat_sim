@@ -1011,6 +1011,16 @@ class Simulation():
             and (not self.tf_expected_before(time, flower_end))
         )
 
+        # Also add an end of fight condition to make sure we can spend down our
+        # Energy post-flowershift before the encounter ends. Time to spend is
+        # given by flower_end plus 1 second for Clearcast Shred plus 1 second
+        # per 42 Energy that we have after that Clearcast Shred.
+        if flowershift_now:
+            energy_to_dump = energy + (flower_end + 1.0 - time) * 10
+            flowershift_now = (
+                flower_end + 1.0 + energy_to_dump // 42 < self.fight_length
+            )
+
         floating_energy = 0
         previous_time = time
         tf_pending = False
