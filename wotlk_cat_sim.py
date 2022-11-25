@@ -722,11 +722,6 @@ class Simulation():
         max_rip_dur = self.player.rip_duration + 6 * self.player.shred_glyph
         rip_end = self.rip_start + max_rip_dur
 
-        # If the existing Roar already falls off after the existing Rip, then
-        # no need to clip.
-        if self.roar_end > rip_end:
-            return False
-
         # Calculate when Roar would end if we cast it now.
         new_roar_dur = (
             self.player.roar_durations[self.player.combo_points]
@@ -734,12 +729,23 @@ class Simulation():
         )
         new_roar_end = time + new_roar_dur
 
+        # If the existing Roar already falls off after the existing Rip, then
+        # we shouldn't clip in order to maximize CP generation leeway for the
+        # Rip refresh. The only exception to this is if the existing Rip will
+        # be the last one of the fight AND the new Roar will be the last one of
+        # the fight.
+        if self.roar_end > rip_end:
+            return (
+                (new_roar_end >= self.fight_length)
+                and (self.fight_length - rip_end < 10)
+            )
+
         # If clipping Roar now will cover us for the rest of the fight, then do
         # it so we can start generating CPs for end-of-fight Bites.
         if new_roar_end >= self.fight_length:
             return True
 
-        # Next we handle the interesting conflict scenario of clipping to
+        # Finally, we handle the interesting conflict scenario of clipping to
         # desync the Rip and Roar timers. First exclude end-of-fight conflicts
         # since we won't be refreshing Rip at all in those cases.
         if self.fight_length - rip_end < 10:
