@@ -700,61 +700,61 @@ class Simulation():
         # after the current Rip.
         return (new_roar_end >= rip_end + self.strategy['min_roar_offset'])
 
-    def clip_roar_new(self, time):
-        """Determine whether to clip a currently active Savage Roar in order to
-        de-sync the Rip and Roar timers.
+    # def clip_roar_experimental(self, time):
+    #     """Determine whether to clip a currently active Savage Roar in order to
+    #     de-sync the Rip and Roar timers.
 
-        Arguments:
-            time (float): Current simulation time in seconds.
+    #     Arguments:
+    #         time (float): Current simulation time in seconds.
 
-        Returns:
-            can_roar (bool): Whether or not to clip Roar now.
-        """
-        # If existing Roar already covers the rest of the fight, don't clip.
-        if self.roar_end >= self.fight_length:
-            return False
+    #     Returns:
+    #         can_roar (bool): Whether or not to clip Roar now.
+    #     """
+    #     # If existing Roar already covers the rest of the fight, don't clip.
+    #     if self.roar_end >= self.fight_length:
+    #         return False
 
-        # If Rip isn't currently up, then also don't clip so we can get it up.
-        if (not self.rip_debuff):
-            return False
+    #     # If Rip isn't currently up, then also don't clip so we can get it up.
+    #     if (not self.rip_debuff):
+    #         return False
 
-        # Project Rip end time assuming full Glyph of Shred extensions.
-        max_rip_dur = self.player.rip_duration + 6 * self.player.shred_glyph
-        rip_end = self.rip_start + max_rip_dur
+    #     # Project Rip end time assuming full Glyph of Shred extensions.
+    #     max_rip_dur = self.player.rip_duration + 6 * self.player.shred_glyph
+    #     rip_end = self.rip_start + max_rip_dur
 
-        # Calculate when Roar would end if we cast it now.
-        new_roar_dur = (
-            self.player.roar_durations[self.player.combo_points]
-            + 8 * self.player.t8_4p_bonus
-        )
-        new_roar_end = time + new_roar_dur
+    #     # Calculate when Roar would end if we cast it now.
+    #     new_roar_dur = (
+    #         self.player.roar_durations[self.player.combo_points]
+    #         + 8 * self.player.t8_4p_bonus
+    #     )
+    #     new_roar_end = time + new_roar_dur
 
-        # If the existing Roar already falls off after the existing Rip, then
-        # we shouldn't clip in order to maximize CP generation leeway for the
-        # Rip refresh. The only exception to this is if the existing Rip will
-        # be the last one of the fight AND the new Roar will be the last one of
-        # the fight.
-        if self.roar_end > rip_end:
-            return False
-            # return (
-            #     (new_roar_end >= self.fight_length)
-            #     and (self.fight_length - rip_end < 10)
-            # )
+    #     # If the existing Roar already falls off after the existing Rip, then
+    #     # we shouldn't clip in order to maximize CP generation leeway for the
+    #     # Rip refresh. The only exception to this is if the existing Rip will
+    #     # be the last one of the fight AND the new Roar will be the last one of
+    #     # the fight.
+    #     if self.roar_end > rip_end:
+    #         return False
+    #         # return (
+    #         #     (new_roar_end >= self.fight_length)
+    #         #     and (self.fight_length - rip_end < 10)
+    #         # )
 
-        # If clipping Roar now will cover us for the rest of the fight, then do
-        # it so we can start generating CPs for end-of-fight Bites.
-        if new_roar_end >= self.fight_length:
-            return True
+    #     # If clipping Roar now will cover us for the rest of the fight, then do
+    #     # it so we can start generating CPs for end-of-fight Bites.
+    #     if new_roar_end >= self.fight_length:
+    #         return True
 
-        # Finally, we handle the interesting conflict scenario of clipping to
-        # desync the Rip and Roar timers. First exclude end-of-fight conflicts
-        # since we won't be refreshing Rip at all in those cases.
-        if self.fight_length - rip_end < 10:
-            return False
+    #     # Finally, we handle the interesting conflict scenario of clipping to
+    #     # desync the Rip and Roar timers. First exclude end-of-fight conflicts
+    #     # since we won't be refreshing Rip at all in those cases.
+    #     if self.fight_length - rip_end < 10:
+    #         return False
 
-        # Clip as soon as we have enough CPs for the new Roar to expire well
-        # after the current Rip.
-        return (new_roar_end >= rip_end + self.strategy['min_roar_offset'])
+    #     # Clip as soon as we have enough CPs for the new Roar to expire well
+    #     # after the current Rip.
+    #     return (new_roar_end >= rip_end + self.strategy['min_roar_offset'])
 
     def execute_rotation(self, time):
         """Execute the next player action in the DPS rotation according to the
