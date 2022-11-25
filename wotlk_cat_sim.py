@@ -735,10 +735,11 @@ class Simulation():
         # be the last one of the fight AND the new Roar will be the last one of
         # the fight.
         if self.roar_end > rip_end:
-            return (
-                (new_roar_end >= self.fight_length)
-                and (self.fight_length - rip_end < 10)
-            )
+            return False
+            # return (
+            #     (new_roar_end >= self.fight_length)
+            #     and (self.fight_length - rip_end < 10)
+            # )
 
         # If clipping Roar now will cover us for the rest of the fight, then do
         # it so we can start generating CPs for end-of-fight Bites.
@@ -979,6 +980,16 @@ class Simulation():
         if bearweave_now and (not self.strategy['lacerate_prio']):
             bearweave_now = not self.tf_expected_before(time, weave_end)
 
+        # Also add an end of fight condition to make sure we can spend down our
+        # Energy post-bearweave before the encounter ends. Time to spend is
+        # given by weave_end plus 1 second per 42 Energy that we have at
+        # weave_end.
+        if bearweave_now:
+            energy_to_dump = energy + (weave_end - time) * 10
+            bearweave_now = (
+                weave_end + energy_to_dump // 42 < self.fight_length
+            )
+
         # If we're maintaining Lacerate, then allow for emergency bearweaves
         # if Lacerate is about to fall off even if the above conditions do not
         # apply.
@@ -1093,6 +1104,13 @@ class Simulation():
 
             if (not self.strategy['lacerate_prio']) or (not lacerate_now):
                 shift_now = shift_now or self.player.omen_proc
+
+            # Also add an end of fight condition to prevent extending a weave
+            # if we don't have enough time to spend the pooled Energy thus far.
+            if not shift_now:
+                energy_to_dump = energy + 30 + 10 * self.latency
+                time_to_dump = 3.0 + self.latency + energy_to_dump // 42
+                shift_now = (time + time_to_dump >= self.fight_length)
 
             if emergency_lacerate and (self.player.rage >= 13):
                 return self.lacerate(time)
