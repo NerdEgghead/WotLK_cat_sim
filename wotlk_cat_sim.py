@@ -890,11 +890,18 @@ class Simulation():
             and (not self.player.omen_proc)
         )
 
-        berserk_energy_thresh = 90 - 10 * self.player.omen_proc
+        # Berserk algorithm: time Berserk for just after a Tiger's Fury
+        # *unless* we'll lose Berserk uptime by waiting for Tiger's Fury to
+        # come off cooldown. The latter exception is necessary for
+        # Lacerateweave rotation since TF timings can drift over time.
+        berserk_dur = 15 + 5 * self.player.berserk_glyph
+        wait_for_tf = (
+            (self.player.tf_cd <= berserk_dur) and
+            (time + self.player.tf_cd + 1.0 < self.fight_length - berserk_dur)
+        )
         berserk_now = (
             self.strategy['use_berserk'] and (self.player.berserk_cd < 1e-9)
-            and (self.player.tf_cd > 15 + 5 * self.player.berserk_glyph)
-            # and (energy < berserk_energy_thresh + 1e-9)
+            and (not wait_for_tf)
         )
 
         # roar_now = (not self.player.savage_roar) and (cp >= 1)
@@ -1068,10 +1075,12 @@ class Simulation():
             shift_now = (
                 (energy + 15 + 10 * self.latency > furor_cap)
                 or (rip_refresh_pending and (self.rip_end < time + 3.0))
+                or self.player.berserk
             )
             shift_next = (
                 (energy + 30 + 10 * self.latency > furor_cap)
                 or (rip_refresh_pending and (self.rip_end < time + 4.5))
+                or self.player.berserk
             )
 
             if self.strategy['powerbear']:
@@ -1242,7 +1251,7 @@ class Simulation():
                 and (self.lacerate_end < self.fight_length)
                 and (time < self.lacerate_end - 1.5 - 2 * self.latency)):
             next_action = min(
-                next_action, self.lacerate_end - 1.5 - 2 * self.latency
+                next_action, self.lacerate_end - 1.5 - 3 * self.latency
             )
 
         self.next_action = next_action + self.latency
