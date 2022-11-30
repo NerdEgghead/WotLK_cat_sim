@@ -904,6 +904,18 @@ class Simulation():
             and (not wait_for_tf)
         )
 
+        # Additionally, for Lacerateweave rotation, postpone the final Berserk
+        # of the fight to as late as possible so as to minimize the impact of
+        # dropping Lacerate stacks during the Berserk window. Rationale for the
+        # 3 second additional leeway given beyond just berserk_dur in the below
+        # expression is to be able to fit in a final TF and dump the Energy
+        # from it in cases where Berserk and TF CDs are desynced due to drift.
+        if (berserk_now and self.strategy['bearweave']
+                and self.strategy['lacerate_prio']
+                and (self.max_berserk_uses > 1)
+                and (self.num_berserk_uses == self.max_berserk_uses - 1)):
+            berserk_now = (self.fight_length - time < berserk_dur + 3.0)
+
         # roar_now = (not self.player.savage_roar) and (cp >= 1)
         # pool_for_roar = (not roar_now) and (cp >= 1) and self.clip_roar(time)
         roar_now = (cp >= 1) and (
@@ -1005,6 +1017,7 @@ class Simulation():
             and self.lacerate_debuff
             and (self.lacerate_end - time < 2.5 + self.latency)
             and (self.lacerate_end < self.fight_length)
+            and (not self.player.berserk)
         )
 
         # As an alternative to bearweaving, cast GotW on the raid under
@@ -1359,6 +1372,7 @@ class Simulation():
         self.player.gcd = 1.0 * (not prepop)
         self.berserk_end = time + 15. + 5 * self.player.berserk_glyph
         self.player.berserk_cd = 180. - prepop
+        self.num_berserk_uses += 1
 
         if self.log:
             self.combat_log.append(
@@ -1489,11 +1503,15 @@ class Simulation():
         # Reset all trinkets to fresh state
         self.proc_end_times = []
 
+        for trinket in self.trinkets:
+            trinket.reset()
+
         # Track 2pT8 icd end time
         self.t8_2p_icd = 0
 
-        for trinket in self.trinkets:
-            trinket.reset()
+        # Calculate maximum Berserk cooldown uses for given fight length
+        self.max_berserk_uses = 1 + int((self.fight_length - 4.0) // 180)
+        self.num_berserk_uses = 0
 
         # If a bear tank is providing Mangle uptime for us, then flag the
         # debuff as permanently on.
