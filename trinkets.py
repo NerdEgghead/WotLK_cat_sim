@@ -1103,7 +1103,7 @@ trinket_library = {
     'comet_trail': {
         'type': 'proc',
         'passive_stats': {
-            'attack_power': 254,
+            'attack_power': 271,
         },
         'active_stats': {
             'stat_name': 'haste_rating',
@@ -1118,7 +1118,7 @@ trinket_library = {
     'dark_matter': {
         'type': 'proc',
         'passive_stats': {
-            'attack_power': 235,
+            'attack_power': 251,
         },
         'active_stats': {
             'stat_name': 'crit_chance',
