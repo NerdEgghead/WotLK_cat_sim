@@ -25,36 +25,36 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
 server = app.server
 
 default_input_stats = {
-        "agility": 977,
-        "armor": 5468,
-        "armorPen": 12.28,
-        "armorPenRating": 172,
-        "attackPower": 7360,
-        "crit": 46.62,
-        "critRating": 570,
+        "agility": 1456,
+        "armor": 6675,
+        "armorPen": 43,
+        "armorPenRating": 602,
+        "attackPower": 8543,
+        "crit": 53.34,
+        "critRating": 615,
         "critReduction": 6,
         "defense": 400,
-        "dodge": 30,
-        "expertise": 23,
-        "expertiseRating": 113,
-        "feralAttackPower": 2353,
-        "haste": 12.61,
-        "hasteRating": 318,
-        "health": 19527,
-        "hit": 5.25,
-        "hitRating": 172,
-        "intellect": 211,
+        "dodge": 40,
+        "expertise": 25,
+        "expertiseRating": 126,
+        "feralAttackPower": 3001,
+        "haste": 10.94,
+        "hasteRating": 276,
+        "health": 21517,
+        "hit": 6.89,
+        "hitRating": 226,
+        "intellect": 206,
         "mainHandSpeed": 2.4,
-        "mana": 6381,
+        "mana": 6306,
         "natureResist": 10,
         "parry": 5,
-        "spellCrit": 15.53,
-        "spellCritRating": 570,
-        "spellHaste": 9.7,
-        "spellHit": 6.56,
-        "spirit": 193,
-        "stamina": 1229,
-        "strength": 234
+        "spellCrit": 16.48,
+        "spellCritRating": 615,
+        "spellHaste": 8.42,
+        "spellHit": 8.62,
+        "spirit": 189,
+        "stamina": 1428,
+        "strength": 251
 }
 
 stat_input = dbc.Col([
@@ -138,7 +138,7 @@ stat_input = dbc.Col([
         ],
         value=[
             'shred_idol', 'rip_idol', 'rip_glyph', 'shred_glyph', 'roar_glyph',
-            't7_2p', 'meta', 'berserking', 'engi_gloves'
+            't8_2p', 'meta', 'berserking', 'engi_gloves'
         ],
         id='bonuses'
     ),
@@ -154,8 +154,9 @@ buffs_1 = dbc.Col(
                   },
                   {'label': 'Blackened Dragonfin', 'value': 'agi_food'},
                   {'label': 'Dragonfin Filet', 'value': 'str_food'},
+                  {'label': 'Hearty Rhino', 'value': 'arp_food'},
                   {'label': 'Adamantite Weightstone', 'value': 'weightstone'}],
-         value=['flask', 'str_food'],
+         value=['flask', 'arp_food'],
          id='consumables'
      ),
      html.Br(),
@@ -184,7 +185,7 @@ buffs_1 = dbc.Col(
                   {'label': 'Prayer of Spirit', 'value': 'spirit'}],
          value=[
              'kings', 'might', 'wisdom', 'motw', 'str_totem', 'unleashed_rage',
-             'ai'
+             'ai', 'heroic_presence'
          ],
          id='raid_buffs'
      ),
@@ -236,7 +237,7 @@ encounter_details = dbc.Col(
          [
              dbc.InputGroupAddon('Fight Length:', addon_type='prepend'),
              dbc.Input(
-                 value=120.0, type='number', id='fight_length',
+                 value=180.0, type='number', id='fight_length',
              ),
              dbc.InputGroupAddon('seconds', addon_type='append')
          ],
@@ -537,7 +538,7 @@ iteration_input = dbc.Col([
     dbc.InputGroup(
         [
             dbc.InputGroupAddon('Number of replicates:', addon_type='prepend'),
-            dbc.Input(value=20000, type='number', id='num_replicates')
+            dbc.Input(value=67000, type='number', id='num_replicates')
         ],
         style={'width': '50%'}
     ),
@@ -873,7 +874,7 @@ iteration_input = dbc.Col([
                 {'label': 'Madness of the Betrayer', 'value': 'madness'},
                 {'label': 'Shard of Contempt', 'value': 'shard_of_contempt'},
             ],
-            value='dmcg_str'
+            value='mjolnir_runestone'
         )),
         dbc.Col(dbc.Select(
             id='trinket_2',
@@ -922,7 +923,7 @@ iteration_input = dbc.Col([
                 {'label': 'Madness of the Betrayer', 'value': 'madness'},
                 {'label': 'Shard of Contempt', 'value': 'shard_of_contempt'},
             ],
-            value='grim_toll'
+            value='comet_trail'
         )),
     ]),
     html.Div(
@@ -987,6 +988,19 @@ stats_output = dbc.Col(
              style={'width': '50%', 'display': 'inline-block',
                     'fontSize': 'large'},
              id='buffed_attack_power'
+         )
+     ]),
+     html.Div([
+         html.Div(
+             'Armor Penetration Rating:',
+             style={'width': '50%', 'display': 'inline-block',
+                    'fontWeight': 'bold', 'fontSize': 'large'}
+         ),
+         html.Div(
+             '',
+             style={'width': '50%', 'display': 'inline-block',
+                    'fontSize': 'large'},
+             id='buffed_arp'
          )
      ]),
      html.Div([
@@ -1466,8 +1480,9 @@ def create_player(
 
 def apply_buffs(
         unbuffed_ap, unbuffed_strength, unbuffed_agi, unbuffed_hit,
-        unbuffed_crit, unbuffed_mana, unbuffed_int, unbuffed_spirit,
-        unbuffed_mp5, weapon_damage, raid_buffs, consumables, imp_motw
+        unbuffed_crit, unbuffed_arp, unbuffed_mana, unbuffed_int,
+        unbuffed_spirit, unbuffed_mp5, weapon_damage, raid_buffs, consumables,
+        imp_motw
 ):
     """Takes in unbuffed player stats, and turns them into buffed stats based
     on specified consumables and raid buffs. This function should only be
@@ -1518,6 +1533,7 @@ def apply_buffs(
     buffed_weapon_damage = (
         12 * ('weightstone' in consumables) + weapon_damage
     )
+    buffed_arp = unbuffed_arp + 40 * ('arp_food' in consumables)
 
     return {
         'strength': buffed_strength,
@@ -1529,7 +1545,8 @@ def apply_buffs(
         'hit': buffed_hit,
         'weaponDamage': buffed_weapon_damage,
         'mana': buffed_mana_pool,
-        'mp5': buffed_mp5
+        'mp5': buffed_mp5,
+        'armorPenRating': buffed_arp
     }
 
 
@@ -1681,6 +1698,7 @@ def plot_new_trajectory(sim, show_whites):
     Output('buff_section', 'is_open'),
     Output('buffed_swing_timer', 'children'),
     Output('buffed_attack_power', 'children'),
+    Output('buffed_arp', 'children'),
     Output('buffed_crit', 'children'),
     Output('buffed_miss', 'children'),
     Output('buffed_mana', 'children'),
@@ -1847,10 +1865,10 @@ def compute(
         input_stats.update(apply_buffs(
             input_stats['attackPower'], input_stats['strength'],
             input_stats['agility'], input_stats['hit'], input_stats['crit'],
-            input_stats['mana'], input_stats['intellect'],
-            input_stats['spirit'], input_stats.get('mp5', 0),
-            input_stats.get('weaponDamage', 0), raid_buffs, consumables,
-            imp_motw
+            input_stats.get('armorPenRating', 0), input_stats['mana'],
+            input_stats['intellect'], input_stats['spirit'],
+            input_stats.get('mp5', 0), input_stats.get('weaponDamage', 0),
+            raid_buffs, consumables,imp_motw
         ))
 
     # Determine whether Unleashed Rage and/or Blessing of Kings are present, as
@@ -1893,6 +1911,7 @@ def compute(
     stats_output = (
         '%.3f seconds' % player.swing_timer,
         '%d' % player.attack_power,
+        '%d' % player.armor_pen_rating,
         '%.2f %%' % (player.crit_chance * 100),
         '%.2f %%' % (player.miss_chance * 100),
         '%d' % player.mana_pool, '%d' % player.intellect,
