@@ -605,7 +605,7 @@ iteration_input = dbc.Col([
                 'Targeted offset in Rip/Roar timings:', addon_type='prepend'
             ),
             dbc.Input(
-                value=14, min=0, step=1, type='number', id='min_roar_offset'
+                value=12, min=0, step=1, type='number', id='min_roar_offset'
             ),
             dbc.InputGroupAddon('seconds', addon_type='append')
         ],
@@ -625,7 +625,7 @@ iteration_input = dbc.Col([
                         addon_type='prepend'
                     ),
                     dbc.Input(
-                        value=30, min=18, step=1, type='number',
+                        value=25, min=18, step=1, type='number',
                         id='berserk_bite_thresh'
                     )
                 ],
@@ -736,7 +736,7 @@ iteration_input = dbc.Col([
                                 addon_type='prepend'
                             ),
                             dbc.Input(
-                                type='number', value=10, id='lacerate_time',
+                                type='number', value=8, id='lacerate_time',
                                 min=0, step=1
                             ),
                             dbc.InputGroupAddon(
