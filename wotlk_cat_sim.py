@@ -671,6 +671,26 @@ class Simulation():
         )
         return allowed_rip_downtime, allowed_sr_downtime
 
+    def calc_builder_dpe(self):
+        """Calculate current damage-per-Energy of Rake vs. Shred. Used to
+        determine whether Rake is worth casting when player stats change upon a
+        dynamic proc occurring.
+
+        Returns:
+            rake_dpe (float): Average DPE of a Rake cast with current stats.
+            shred_dpe (float): Average DPE of a Shred cast with current stats.
+        """
+        crit_factor = self.player.calc_crit_multiplier() - 1
+        crit_mod = crit_factor * self.player.crit_chance
+        shred_dpc = (
+            0.5 * (self.player.shred_low + self.player.shred_high) * 1.3
+            * (1 + crit_mod)
+        )
+        rake_dpc = 1.3 * (
+            self.player.rake_hit * (1 + crit_mod) + 3 * self.player.rake_tick
+        )
+        return rake_dpc / 35., shred_dpc / 42.
+
     def clip_roar(self, time):
         """Determine whether to clip a currently active Savage Roar in order to
         de-sync the Rip and Roar timers.
@@ -889,6 +909,12 @@ class Simulation():
             and (self.fight_length - time > 9)
             and (not self.player.omen_proc)
         )
+
+        # Additionally, don't Rake if the current Shred DPE is higher due to
+        # trinket procs etc.
+        if rake_now:
+            rake_dpe, shred_dpe = self.calc_builder_dpe()
+            rake_now = (rake_dpe > shred_dpe)
 
         # Berserk algorithm: time Berserk for just after a Tiger's Fury
         # *unless* we'll lose Berserk uptime by waiting for Tiger's Fury to
