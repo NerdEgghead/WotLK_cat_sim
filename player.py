@@ -350,7 +350,6 @@ class Player():
         beginning of an encounter."""
         self.gcd = 0.0
         self.omen_proc = False
-        self.omen_icd = 0.0
         self.ilotp_icd = 0.0
         self.tf_cd = 0.0
         self.energy = 100
@@ -391,23 +390,17 @@ class Player():
         self.rip_cost = 30. / (1 + self.berserk)
         self.roar_cost = 25. / (1 + self.berserk)
 
-    def check_omen_proc(self, yellow=False, spell=False):
+    def check_omen_proc(self, yellow=False):
         """Check for Omen of Clarity proc on a successful swing.
 
         Arguments:
             yellow (bool): Check proc for a yellow ability rather than a melee
                 swing. Defaults False.
-            spell (bool): Check proc for a spell cast rather than a melee
-                swing or ability. Defaults False.
         """
         if (not self.omen) or yellow:
             return
-        if spell and (self.omen_icd > 1e-9):
-            return
 
-        if spell:
-            proc_rate = self.omen_rates['spell']
-        elif self.cat_form:
+        if self.cat_form:
             proc_rate = self.omen_rates['white']
         else:
             proc_rate = self.omen_rates['bear']
@@ -416,9 +409,6 @@ class Player():
 
         if proc_roll < proc_rate:
             self.omen_proc = True
-
-            if spell:
-                self.omen_icd = 10.0
 
     def check_jow_proc(self):
         """Check for a Judgment Wisdom on a successful melee attack."""
@@ -600,7 +590,7 @@ class Player():
 
         # Check for procs
         if not miss:
-            self.check_procs(crit=crit, yellow=yellow)
+            self.check_procs(crit=crit, yellow=True)
 
         # Log the cast
         self.dmg_breakdown[ability_name]['casts'] += 1
