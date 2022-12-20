@@ -1156,7 +1156,22 @@ trinket_library = {
             'proc_name': 'Pyrite Infusion',
             'proc_duration': 10,
             'cooldown': 50,
-            'proc_type': 'chance_on_hit',
+            'proc_type': 'chance_on_crit',
+            'proc_rate': 0.1,
+        },
+    },
+    'blood_of_the_old_god': {
+        'type': 'proc',
+        'passive_stats': {
+            'hit_chance': 114./32.79/100,
+        },
+        'active_stats': {
+            'stat_name': 'attack_power',
+            'stat_increment': 1284,
+            'proc_name': 'Blood of the Old God',
+            'proc_duration': 10,
+            'cooldown': 50,
+            'proc_type': 'chance_on_crit',
             'proc_rate': 0.1,
         },
     },

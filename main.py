@@ -834,8 +834,12 @@ iteration_input = dbc.Col([
                 {'label': 'Comet\'s Trail', 'value': 'comet_trail'},
                 {'label': 'Mjolnir Runestone', 'value': 'mjolnir_runestone'},
                 {'label': 'Dark Matter', 'value': 'dark_matter'},
-                {'label': 'Pyrite Infusion', 'value': 'pyrite_infuser'},
+                {'label': 'Pyrite Infuser', 'value': 'pyrite_infuser'},
                 {'label': 'Wrathstone', 'value': 'wrathstone'},
+                {
+                    'label': 'Blood of the Old God',
+                    'value': 'blood_of_the_old_god',
+                },
                 {
                     'label': 'Darkmoon Card: Greatness (Strength)',
                     'value': 'dmcg_str',
@@ -883,8 +887,12 @@ iteration_input = dbc.Col([
                 {'label': 'Comet\'s Trail', 'value': 'comet_trail'},
                 {'label': 'Mjolnir Runestone', 'value': 'mjolnir_runestone'},
                 {'label': 'Dark Matter', 'value': 'dark_matter'},
-                {'label': 'Pyrite Infusion', 'value': 'pyrite_infuser'},
+                {'label': 'Pyrite Infuser', 'value': 'pyrite_infuser'},
                 {'label': 'Wrathstone', 'value': 'wrathstone'},
+                {
+                    'label': 'Blood of the Old God',
+                    'value': 'blood_of_the_old_god',
+                },
                 {
                     'label': 'Darkmoon Card: Greatness (Strength)',
                     'value': 'dmcg_str',
