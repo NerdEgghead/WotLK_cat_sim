@@ -803,6 +803,8 @@ class Player():
             for trinket in self.proc_trinkets:
                 if trinket.mangle_only:
                     trinket.check_for_proc(False, True)
+                if trinket.cat_mangle_only and self.cat_form:
+                    trinket.check_for_proc(False, True)
 
         return dmg, success
 

@@ -406,7 +406,7 @@ class ProcTrinket(Trinket):
     def __init__(
         self, stat_name, stat_increment, proc_name, chance_on_hit,
         proc_duration, cooldown, chance_on_crit=0.0, yellow_chance_on_hit=None,
-        mangle_only=False, shred_only=False, periodic_only=False
+        mangle_only=False, cat_mangle_only=False, shred_only=False, periodic_only=False
     ):
         """Initialize a generic proc trinket with key parameters.
 
@@ -434,6 +434,8 @@ class ProcTrinket(Trinket):
                 again.
             mangle_only (bool): If True, then designate this trinket as being
                 able to proc exclusively on the Mangle ability. Defaults False.
+            cat_mangle_only (bool): If True, then designate this trinket as being
+                able to proc exclusively on the Cat Mangle ability. Defaults False.
             shred_only (bool): If True, then designate this trinket as being
                 able to proc exclusively on the Shred ability. Defaults False.
             periodic_only (bool): If True, then designate this trinket as being
@@ -455,10 +457,11 @@ class ProcTrinket(Trinket):
             self.separate_yellow_procs = False
 
         self.mangle_only = mangle_only
+        self.cat_mangle_only = cat_mangle_only
         self.shred_only = shred_only
         self.periodic_only = periodic_only
         self.special_proc_conditions = (
-            mangle_only or shred_only or periodic_only
+            mangle_only or cat_mangle_only or shred_only or periodic_only
         )
 
     def check_for_proc(self, crit, yellow):
@@ -1186,6 +1189,36 @@ trinket_library = {
             'proc_name': 'Wrathstone',
             'proc_duration': 20,
             'cooldown': 120,
+        },
+    },
+    'Deaths Verdict heroic': {
+        'type': 'proc',
+        'passive_stats': {
+            'attack_power': 288,
+        },
+        'active_stats': {
+            'stat_name': 'Agility',
+            'stat_increment': 510,
+            'proc_name': 'Darkmoon Card: Greatness',
+            'proc_duration': 15,
+            'cooldown': 45,
+            'proc_type': 'chance_on_hit',
+            'proc_rate': 0.35,
+        },
+    },
+    'Deaths Verdict normal': {
+        'type': 'proc',
+        'passive_stats': {
+            'attack_power': 256,
+        },
+        'active_stats': {
+            'stat_name': 'Agility',
+            'stat_increment': 450,
+            'proc_name': 'Darkmoon Card: Greatness',
+            'proc_duration': 15,
+            'cooldown': 45,
+            'proc_type': 'chance_on_hit',
+            'proc_rate': 0.35,
         },
     },
 }

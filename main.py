@@ -112,6 +112,7 @@ stat_input = dbc.Col([
             {'label': 'Idol of the Ravenous Beast', 'value': 'shred_idol'},
             {'label': 'Idol of Worship', 'value': 'rip_idol'},
             {'label': 'Idol of the Wastes', 'value': 'wastes_idol'},
+            {'label': 'Idol of Mutilation', 'value': 'idol_of_Mutilation'},
             {'label': 'Idol of Terror', 'value': 'idol_of_terror'},
             {
                 'label': "Deadly Gladiator's Idol of Resolve",
@@ -833,6 +834,14 @@ iteration_input = dbc.Col([
             id='trinket_1',
             options=[
                 {'label': 'Empty', 'value': 'none'},
+                {
+                    'label': 'Death\'s Verdict (H)',
+                    'value': 'Deaths Verdict heroic',
+                },
+                {
+                    'label': 'Death\'s Verdict (N)',
+                    'value': 'Deaths Verdict normal',
+                },
                 {'label': 'Comet\'s Trail', 'value': 'comet_trail'},
                 {'label': 'Mjolnir Runestone', 'value': 'mjolnir_runestone'},
                 {'label': 'Dark Matter', 'value': 'dark_matter'},
@@ -886,6 +895,14 @@ iteration_input = dbc.Col([
             id='trinket_2',
             options=[
                 {'label': 'Empty', 'value': 'none'},
+                {
+                    'label': 'Death\'s Verdict (H)',
+                    'value': 'Deaths Verdict heroic',
+                },
+                {
+                    'label': 'Death\'s Verdict (N)',
+                    'value': 'Deaths Verdict normal',
+                },
                 {'label': 'Comet\'s Trail', 'value': 'comet_trail'},
                 {'label': 'Mjolnir Runestone', 'value': 'mjolnir_runestone'},
                 {'label': 'Dark Matter', 'value': 'dark_matter'},
@@ -1970,6 +1987,21 @@ def compute(
             ]),
             proc_duration=10, cooldown=10, proc_name='Primal Instinct',
             mangle_only=True
+        )
+        trinket_list.append(idol)
+        player.proc_trinkets.append(idol)
+    if 'idol_of_Mutilation' in bonuses:
+        idol = trinkets.RefreshingProcTrinket(
+            chance_on_hit=0.70,
+            stat_name=['agility', 'attack_power', 'crit_chance'],
+            stat_increment=np.array([
+                200. * stat_mod,
+                200. * stat_mod * ap_mod,
+                200. * stat_mod / 83.33 / 100.,
+            ]),
+            proc_duration=16, cooldown=0, proc_name='Mutilation',
+            cat_mangle_only=True,
+            shred_only=True
         )
         trinket_list.append(idol)
         player.proc_trinkets.append(idol)
