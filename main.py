@@ -112,7 +112,7 @@ stat_input = dbc.Col([
             {'label': 'Idol of the Ravenous Beast', 'value': 'shred_idol'},
             {'label': 'Idol of Worship', 'value': 'rip_idol'},
             {'label': 'Idol of the Wastes', 'value': 'wastes_idol'},
-            {'label': 'Idol of Mutilation', 'value': 'idol_of_Mutilation'},
+            {'label': 'Idol of Mutilation', 'value': 'idol_of_mutilation'},
             {'label': 'Idol of Terror', 'value': 'idol_of_terror'},
             {
                 'label': "Deadly Gladiator's Idol of Resolve",
@@ -836,11 +836,11 @@ iteration_input = dbc.Col([
                 {'label': 'Empty', 'value': 'none'},
                 {
                     'label': 'Death\'s Verdict (H)',
-                    'value': 'Deaths Verdict heroic',
+                    'value': 'deaths_verdict_heroic',
                 },
                 {
                     'label': 'Death\'s Verdict (N)',
-                    'value': 'Deaths Verdict normal',
+                    'value': 'deaths_verdict_normal',
                 },
                 {'label': 'Comet\'s Trail', 'value': 'comet_trail'},
                 {'label': 'Mjolnir Runestone', 'value': 'mjolnir_runestone'},
@@ -897,11 +897,11 @@ iteration_input = dbc.Col([
                 {'label': 'Empty', 'value': 'none'},
                 {
                     'label': 'Death\'s Verdict (H)',
-                    'value': 'Deaths Verdict heroic',
+                    'value': 'deaths_verdict_heroic',
                 },
                 {
                     'label': 'Death\'s Verdict (N)',
-                    'value': 'Deaths Verdict normal',
+                    'value': 'deaths_verdict_normal',
                 },
                 {'label': 'Comet\'s Trail', 'value': 'comet_trail'},
                 {'label': 'Mjolnir Runestone', 'value': 'mjolnir_runestone'},
@@ -1990,7 +1990,7 @@ def compute(
         )
         trinket_list.append(idol)
         player.proc_trinkets.append(idol)
-    if 'idol_of_Mutilation' in bonuses:
+    if 'idol_of_mutilation' in bonuses:
         idol = trinkets.RefreshingProcTrinket(
             chance_on_hit=0.70,
             stat_name=['agility', 'attack_power', 'crit_chance'],
@@ -1999,7 +1999,7 @@ def compute(
                 200. * stat_mod * ap_mod,
                 200. * stat_mod / 83.33 / 100.,
             ]),
-            proc_duration=16, cooldown=0, proc_name='Mutilation',
+            proc_duration=16, cooldown=8, proc_name='Mutilation',
             cat_mangle_only=True,
             shred_only=True
         )

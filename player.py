@@ -143,9 +143,9 @@ class Player():
         self.rip_duration = 12 + 4 * rip_glyph + 4 * t7_2p
         self.rake_duration = 9 + 3 * t9_2p
         self.lacerate_multi = 1 + 0.05 * t7_2p
-        self.lacerate_dot_multi = 0.05 * t9_2p
-        self.bite_crit = 0.25 + 0.05 * t9_4p
-        self.rip_crit = 0.05 * t9_4p
+        self.lacerate_dot_multi = 1 + 0.05 * t9_2p
+        self.bite_crit_bonus = 0.25 + 0.05 * t9_4p
+        self.rip_crit_bonus = 0.05 * t9_4p
 
         # Set internal hit and expertise values, and derive total miss chance.
         self._hit_chance = hit_chance
@@ -832,7 +832,7 @@ class Player():
         damage_done, miss, crit = sim_utils.calc_yellow_damage(
             self.bite_low[self.combo_points] + bonus_damage,
             self.bite_high[self.combo_points] + bonus_damage, self.miss_chance,
-            self.crit_chance + self.bite_crit,
+            self.crit_chance + self.bite_crit_bonus,
             crit_multiplier=self.calc_crit_multiplier()
         )
 

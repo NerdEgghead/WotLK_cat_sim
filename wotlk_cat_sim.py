@@ -392,7 +392,7 @@ class Simulation():
             self.rip_end = time + self.player.rip_duration
             self.rip_ticks = list(np.arange(time + 2, self.rip_end + 1e-9, 2))
             self.rip_damage = damage_per_tick
-            self.rip_crit_chance = self.player.crit_chance + self.player.rip_crit
+            self.rip_crit_bonus_chance = self.player.crit_chance + self.player.rip_crit_bonus
             self.rip_sr_snapshot = self.player.savage_roar
 
         # If Idol swapping is configured, then swap to Shred Idol immmediately
@@ -1624,7 +1624,7 @@ class Simulation():
             # Check if a Rip tick happens at this time
             if self.rip_debuff and (time >= self.rip_ticks[0]):
                 dmg_done += self.apply_bleed_damage(
-                    self.rip_damage, self.rip_crit_chance, 'Rip',
+                    self.rip_damage, self.rip_crit_bonus_chance, 'Rip',
                     self.rip_sr_snapshot, time
                 )
                 self.rip_ticks.pop(0)

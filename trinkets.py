@@ -1191,7 +1191,7 @@ trinket_library = {
             'cooldown': 120,
         },
     },
-    'Deaths Verdict heroic': {
+    'deaths_verdict_heroic': {
         'type': 'proc',
         'passive_stats': {
             'attack_power': 288,
@@ -1199,14 +1199,14 @@ trinket_library = {
         'active_stats': {
             'stat_name': 'Agility',
             'stat_increment': 510,
-            'proc_name': 'Darkmoon Card: Greatness',
+            'proc_name': 'Death\'s Verdict Heroic',
             'proc_duration': 15,
             'cooldown': 45,
             'proc_type': 'chance_on_hit',
             'proc_rate': 0.35,
         },
     },
-    'Deaths Verdict normal': {
+    'deaths_verdict_normal': {
         'type': 'proc',
         'passive_stats': {
             'attack_power': 256,
@@ -1214,7 +1214,7 @@ trinket_library = {
         'active_stats': {
             'stat_name': 'Agility',
             'stat_increment': 450,
-            'proc_name': 'Darkmoon Card: Greatness',
+            'proc_name': 'Death\'s Verdict normal',
             'proc_duration': 15,
             'cooldown': 45,
             'proc_type': 'chance_on_hit',
