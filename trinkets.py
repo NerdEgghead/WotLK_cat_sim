@@ -1107,7 +1107,7 @@ trinket_library = {
         },
         'active_stats': {
             'stat_name': 'haste_rating',
-            'stat_increment': 768,
+            'stat_increment': 819,
             'proc_name': 'Comet\'s Trail',
             'proc_duration': 10,
             'cooldown': 45,
@@ -1122,7 +1122,7 @@ trinket_library = {
         },
         'active_stats': {
             'stat_name': 'crit_chance',
-            'stat_increment': 612./45.91/100,
+            'stat_increment': 692./45.91/100,
             'proc_name': 'Dark Matter',
             'proc_duration': 10,
             'cooldown': 45,
@@ -1167,7 +1167,7 @@ trinket_library = {
         },
         'active_stats': {
             'stat_name': 'attack_power',
-            'stat_increment': 1284,
+            'stat_increment': 1358,
             'proc_name': 'Blood of the Old God',
             'proc_duration': 10,
             'cooldown': 50,
