@@ -112,6 +112,7 @@ stat_input = dbc.Col([
             {'label': 'Idol of the Ravenous Beast', 'value': 'shred_idol'},
             {'label': 'Idol of Worship', 'value': 'rip_idol'},
             {'label': 'Idol of the Wastes', 'value': 'wastes_idol'},
+            {'label': 'Idol of Mutilation', 'value': 'idol_of_mutilation'},
             {'label': 'Idol of Terror', 'value': 'idol_of_terror'},
             {
                 'label': "Deadly Gladiator's Idol of Resolve",
@@ -128,6 +129,8 @@ stat_input = dbc.Col([
             {'label': '2-piece Tier 7 bonus', 'value': 't7_2p'},
             {'label': '2-piece Tier 8 bonus', 'value': 't8_2p'},
             {'label': '4-piece Tier 8 bonus', 'value': 't8_4p'},
+            {'label': '2-piece Tier 9 bonus', 'value': 't9_2p'},
+            {'label': '4-piece Tier 9 bonus', 'value': 't9_4p'},
             {'label': 'Wolfshead Helm', 'value': 'wolfshead'},
             {'label': 'Relentless Earthsiege Diamond', 'value': 'meta'},
             {'label': 'Band of the Eternal Champion', 'value': 'exalted_ring'},
@@ -831,6 +834,14 @@ iteration_input = dbc.Col([
             id='trinket_1',
             options=[
                 {'label': 'Empty', 'value': 'none'},
+                {
+                    'label': 'Death\'s Verdict (H)',
+                    'value': 'deaths_verdict_heroic',
+                },
+                {
+                    'label': 'Death\'s Verdict (N)',
+                    'value': 'deaths_verdict_normal',
+                },
                 {'label': 'Comet\'s Trail', 'value': 'comet_trail'},
                 {'label': 'Mjolnir Runestone', 'value': 'mjolnir_runestone'},
                 {'label': 'Dark Matter', 'value': 'dark_matter'},
@@ -884,6 +895,14 @@ iteration_input = dbc.Col([
             id='trinket_2',
             options=[
                 {'label': 'Empty', 'value': 'none'},
+                {
+                    'label': 'Death\'s Verdict (H)',
+                    'value': 'deaths_verdict_heroic',
+                },
+                {
+                    'label': 'Death\'s Verdict (N)',
+                    'value': 'deaths_verdict_normal',
+                },
                 {'label': 'Comet\'s Trail', 'value': 'comet_trail'},
                 {'label': 'Mjolnir Runestone', 'value': 'mjolnir_runestone'},
                 {'label': 'Dark Matter', 'value': 'dark_matter'},
@@ -1470,7 +1489,8 @@ def create_player(
         jow='jow' in stat_debuffs, armor_pen_rating=armor_pen_rating,
         t6_2p='t6_2p' in bonuses, t6_4p='t6_4p' in bonuses,
         t7_2p='t7_2p' in bonuses, t8_2p='t8_2p' in bonuses,
-        t8_4p='t8_4p' in bonuses, wolfshead='wolfshead' in bonuses,
+        t8_4p='t8_4p' in bonuses, t9_2p='t9_2p' in bonuses,
+        t9_4p='t9_4p' in bonuses, wolfshead='wolfshead' in bonuses,
         mangle_glyph='mangle_glyph' in bonuses,
         meta='meta' in bonuses, rune='rune' in cooldowns,
         shred_bonus=shred_bonus, rip_bonus=rip_bonus, debuff_ap=debuff_ap,
@@ -1967,6 +1987,21 @@ def compute(
             ]),
             proc_duration=10, cooldown=10, proc_name='Primal Instinct',
             mangle_only=True
+        )
+        trinket_list.append(idol)
+        player.proc_trinkets.append(idol)
+    if 'idol_of_mutilation' in bonuses:
+        idol = trinkets.RefreshingProcTrinket(
+            chance_on_hit=0.70,
+            stat_name=['agility', 'attack_power', 'crit_chance'],
+            stat_increment=np.array([
+                200. * stat_mod,
+                200. * stat_mod * ap_mod,
+                200. * stat_mod / 83.33 / 100.,
+            ]),
+            proc_duration=16, cooldown=8, proc_name='Mutilation',
+            cat_mangle_only=True,
+            shred_only=True
         )
         trinket_list.append(idol)
         player.proc_trinkets.append(idol)
