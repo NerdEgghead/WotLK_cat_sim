@@ -812,7 +812,7 @@ iteration_input = dbc.Col([
                                 addon_type='prepend'
                             ),
                             dbc.Input(
-                                type='number', value=1323, id='dagger_ep_loss',
+                                type='number', value=1421, id='dagger_ep_loss',
                                 min=0, step=1
                             ),
                         ],
