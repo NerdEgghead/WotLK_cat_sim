@@ -113,12 +113,7 @@ stat_input = dbc.Col([
             {'label': 'Idol of Worship', 'value': 'rip_idol'},
             {'label': 'Idol of the Wastes', 'value': 'wastes_idol'},
             {'label': 'Idol of Mutilation', 'value': 'idol_of_mutilation'},
-            {'label': 'Idol of Terror', 'value': 'idol_of_terror'},
-            {
-                'label': "Deadly Gladiator's Idol of Resolve",
-                'value': 'glad_idol'
-            },
-            {'label': 'Idol of the White Stag', 'value': 'stag_idol'},
+            {'label': 'Idol of the Corruptor', 'value': 'mangle_idol'},
             {'label': 'Glyph of Mangle', 'value': 'mangle_glyph'},
             {'label': 'Glyph of Rip', 'value': 'rip_glyph'},
             {'label': 'Glyph of Shred', 'value': 'shred_glyph'},
@@ -133,15 +128,15 @@ stat_input = dbc.Col([
             {'label': '4-piece Tier 9 bonus', 'value': 't9_4p'},
             {'label': 'Wolfshead Helm', 'value': 'wolfshead'},
             {'label': 'Relentless Earthsiege Diamond', 'value': 'meta'},
-            {'label': 'Band of the Eternal Champion', 'value': 'exalted_ring'},
             {'label': 'Enchant Weapon: Mongoose', 'value': 'mongoose'},
             {'label': 'Enchant Weapon: Executioner', 'value': 'executioner'},
             {'label': 'Enchant Weapon: Berserking', 'value': 'berserking'},
             {'label': 'Hyperspeed Accelerators', 'value': 'engi_gloves'},
         ],
         value=[
-            'shred_idol', 'rip_idol', 'rip_glyph', 'shred_glyph', 'roar_glyph',
-            't8_2p', 'meta', 'berserking', 'engi_gloves'
+            'shred_idol', 'rip_idol', 'mangle_idol', 'rip_glyph',
+            'shred_glyph', 'roar_glyph', 't8_2p', 'meta', 'berserking',
+            'engi_gloves'
         ],
         id='bonuses'
     ),
@@ -1957,36 +1952,11 @@ def compute(
         trinket_list.append(trinkets.UnholyFrenzy(delay=cd_delay))
     if 'shattering_throw' in cooldowns:
         trinket_list.append(trinkets.ShatteringThrow(delay=cd_delay))
-    if 'exalted_ring' in bonuses:
-        ring_ppm = 1.0
-        ring = trinkets.ProcTrinket(
-            chance_on_hit=ring_ppm / 60.,
-            yellow_chance_on_hit=ring_ppm / 60.,
-            stat_name='attack_power', stat_increment=160 * ap_mod,
-            proc_duration=10, cooldown=60,
-            proc_name='Band of the Eternal Champion',
-        )
-        trinket_list.append(ring)
-        player.proc_trinkets.append(ring)
     if 'wastes_idol' in bonuses:
         idol = trinkets.ProcTrinket(
             chance_on_hit=0.75, stat_name='attack_power',
             stat_increment=2 * stat_mod * ap_mod * 61, proc_duration=10,
             cooldown=10, proc_name='Snap and Snarl', shred_only=True
-        )
-        trinket_list.append(idol)
-        player.proc_trinkets.append(idol)
-    if 'idol_of_terror' in bonuses:
-        idol = trinkets.ProcTrinket(
-            chance_on_hit=0.85,
-            stat_name=['agility', 'attack_power', 'crit_chance'],
-            stat_increment=np.array([
-                65. * stat_mod,
-                65. * stat_mod * ap_mod,
-                65. * stat_mod / 83.33 / 100.,
-            ]),
-            proc_duration=10, cooldown=10, proc_name='Primal Instinct',
-            mangle_only=True
         )
         trinket_list.append(idol)
         player.proc_trinkets.append(idol)
@@ -2002,22 +1972,6 @@ def compute(
             proc_duration=16, cooldown=8, proc_name='Mutilation',
             cat_mangle_only=True,
             shred_only=True
-        )
-        trinket_list.append(idol)
-        player.proc_trinkets.append(idol)
-    if 'stag_idol' in bonuses:
-        idol = trinkets.RefreshingProcTrinket(
-            chance_on_hit=1.0, stat_name='attack_power',
-            stat_increment=94 * ap_mod, proc_duration=20, cooldown=0,
-            proc_name='Idol of the White Stag', mangle_only=True
-        )
-        trinket_list.append(idol)
-        player.proc_trinkets.append(idol)
-    if 'glad_idol' in bonuses:
-        idol = trinkets.RefreshingProcTrinket(
-            chance_on_hit=1.0, stat_name='attack_power',
-            stat_increment=120 * ap_mod, proc_duration=10, cooldown=0,
-            proc_name="Deadly Gladiator's Idol of Resolve", mangle_only=True
         )
         trinket_list.append(idol)
         player.proc_trinkets.append(idol)
@@ -2064,6 +2018,13 @@ def compute(
     if potion == 'haste':
         trinket_list.append(trinkets.HastePotion(delay=cd_delay))
 
+    mangle_idol = None
+
+    if 'mangle_idol' in bonuses:
+        mangle_idol = trinkets.IdolOfTheCorruptor(stat_mod, ap_mod)
+        trinket_list.append(mangle_idol)
+        player.proc_trinkets.append(mangle_idol)
+
     sim = ccs.Simulation(
         player, fight_length + 1e-9, 0.001 * latency, boss_armor=boss_armor,
         min_combos_for_rip=rip_combos, min_combos_for_bite=int(bite_cp),
@@ -2077,7 +2038,7 @@ def compute(
         flowershift=bool(flowershift), daggerweave=bool(daggerweave),
         dagger_ep_loss=dagger_ep_loss, min_roar_offset=min_roar_offset,
         trinkets=trinket_list, haste_multiplier=haste_multiplier,
-        hot_uptime=hot_uptime / 100.
+        hot_uptime=hot_uptime / 100., mangle_idol=mangle_idol
     )
     sim.set_active_debuffs(boss_debuffs)
     player.calc_damage_params(**sim.params)

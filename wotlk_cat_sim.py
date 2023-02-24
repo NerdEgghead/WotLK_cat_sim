@@ -180,11 +180,12 @@ class Simulation():
         'flowershift': False,
         'daggerweave': False,
         'dagger_ep_loss': 1461,
+        'mangle_idol_swap': False,
     }
 
     def __init__(
         self, player, fight_length, latency, trinkets=[], haste_multiplier=1.0,
-        hot_uptime=0.0, **kwargs
+        hot_uptime=0.0, mangle_idol=None, **kwargs
     ):
         """Initialize simulation.
 
@@ -203,6 +204,9 @@ class Simulation():
             hot_uptime (float): Fractional uptime of Rejuvenation / Wild Growth
                 HoTs from a Restoration Druid. Used for simulating Revitalize
                 procs. Defaults to 0.
+            mangle_idol (trinkets.ProcTrinket): Optional Mangle proc Idol to
+                use. If supplied, then Mangle Idol swaps will be configured
+                automatically if appropriate.
             kwargs (dict): Key, value pairs for all other encounter parameters,
                 including boss armor, relevant debuffs, and player stregy
                 specification. An error will be thrown if the parameter is not
@@ -213,6 +217,7 @@ class Simulation():
         self.fight_length = fight_length
         self.latency = latency
         self.trinkets = trinkets
+        self.mangle_idol = mangle_idol
         self.params = copy.deepcopy(self.default_params)
         self.strategy = copy.deepcopy(self.default_strategy)
 
@@ -239,10 +244,14 @@ class Simulation():
         self.trinkets.append(RoarTracker())
 
         # Automatically detect an Idol swapping configuration
+        self.shred_bonus = self.player.shred_bonus
+        self.rip_bonus = self.player.rip_bonus
+
         if (self.player.shred_bonus > 0) and (self.player.rip_bonus > 0):
             self.strategy['idol_swap'] = True
-            self.shred_bonus = self.player.shred_bonus
-            self.rip_bonus = self.player.rip_bonus
+
+        if self.mangle_idol and (self.shred_bonus or self.rip_bonus):
+            self.strategy['mangle_idol_swap'] = True
 
         # Calculate damage ranges for player abilities under the given
         # encounter parameters.
@@ -312,6 +321,23 @@ class Simulation():
             self.mangle_end = (
                 np.inf if self.strategy['bear_mangle'] else (time + 60.0)
             )
+
+        # If Idol swapping is configured, then swap to Shred or Rip Idol
+        # immmediately after Mangle is cast. This incurs a 0.5 second GCD
+        # extension as well as a swing timer reset, so it should only be done
+        # in Cat Form.
+        if (self.strategy['mangle_idol_swap'] and self.player.cat_form
+                and self.mangle_idol.equipped):
+            self.player.shred_bonus = (
+                0 if self.strategy['idol_swap'] else self.shred_bonus
+            )
+            self.player.rip_bonus = self.rip_bonus
+            self.player.calc_damage_params(**self.params)
+            self.player.gcd = 1.5
+            self.update_swing_times(
+                time + self.swing_timer, self.swing_timer, first_swing=True
+            )
+            self.mangle_idol.equipped = False
 
         return damage_done
 
@@ -1554,8 +1580,13 @@ class Simulation():
         if self.strategy['preproc_omen'] and self.player.omen:
             self.player.omen_proc = True
 
-        # If Idol swapping, then start fight with Rip Idol equipped
-        if self.strategy['idol_swap']:
+        # If Idol swapping, then start fight with Mangle or Rip Idol equipped
+        if self.strategy['mangle_idol_swap']:
+            self.mangle_idol.equipped = True
+            self.player.shred_bonus = 0
+            self.player.rip_bonus = 0
+            self.player.calc_damage_params(**self.params)
+        elif self.strategy['idol_swap']:
             self.player.shred_bonus = 0
             self.player.rip_bonus = self.rip_bonus
             self.player.calc_damage_params(**self.params)

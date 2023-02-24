@@ -507,6 +507,53 @@ class ProcTrinket(Trinket):
         self.proc_happened = False
 
 
+class IdolOfTheCorruptor(ProcTrinket):
+    """Custom class to model the Mangle proc from Idol of the Corruptor, which
+    has different proc rates in Cat Form vs. Dire Bear Form and which can be
+    dynamically unequipped and re-equipped in combat as an advanced tactic."""
+
+    def __init__(self, stat_mod, ap_mod):
+        """Initialize Idol with default state set to "equipped" with Cat Form
+        proc rate.
+
+        Arguments:
+            stat_mod (float): Multiplicative scaling factor for primary stats
+                from talents and raid buffs.
+            ap_mod (float): Multiplicative scaling factor for Attack Power in
+                Cat Form from talents and raid buffs.
+        """
+        agi_gain = 162. * stat_mod
+        ProcTrinket.__init__(
+            self, ['agility', 'attack_power', 'crit_chance'],
+            np.array([agi_gain, agi_gain * ap_mod, agi_gain / 83.33 / 100.]),
+            'Primal Wrath', 1.0, 12, 0, mangle_only=True
+        )
+        self.equipped = True
+
+    def update(self, time, player, sim):
+        """Adjust Idol proc chance based on whether it is currently equipped
+        and the player's current form, then call normal Trinket update loop.
+
+        Arguments:
+            time (float): Simulation time, in seconds.
+            player (player.Player): Player object whose attributes will be
+                modified by the Idol proc.
+            sim (wotlk_cat_sim.Simulation): Simulation object controlling the
+                fight execution.
+
+        Returns:
+            damage_done (float): Any instant damage that is dealt if the
+                proc is activated at the specified time. Always 0 for Idol of
+                the Corruptor.
+        """
+        if self.equipped:
+            self.chance_on_hit = 1.0 if player.cat_form else 0.5
+        else:
+            self.chance_on_hit = 0.0
+
+        return ProcTrinket.update(self, time, player, sim)
+
+
 class StackingProcTrinket(ProcTrinket):
     """Models trinkets that provide temporary stacking buffs to the player
     after an initial proc or activation."""
