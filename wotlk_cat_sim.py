@@ -953,7 +953,8 @@ class Simulation():
         pending_actions = []
         rip_refresh_pending = False
 
-        if self.rip_debuff and (self.rip_end < self.fight_length - end_thresh):
+        if (self.rip_debuff and (cp == 5)
+                and (self.rip_end < self.fight_length - end_thresh)):
             if self.berserk_expected_at(time, self.rip_end):
                 rip_cost = 15
             else:
