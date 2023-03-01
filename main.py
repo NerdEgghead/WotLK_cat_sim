@@ -795,7 +795,7 @@ iteration_input = dbc.Col([
                     'label': ' reset swing timer using fast weapon',
                     'value': 'daggerweave'
                 }],
-                value=['daggerweave'], id='daggerweave',
+                value=[], id='daggerweave',
                 style={'marginTop': '1%', 'marginLeft': '5%'}
             ),
             dbc.Collapse(
@@ -807,7 +807,7 @@ iteration_input = dbc.Col([
                                 addon_type='prepend'
                             ),
                             dbc.Input(
-                                type='number', value=1421, id='dagger_ep_loss',
+                                type='number', value=1415, id='dagger_ep_loss',
                                 min=0, step=1
                             ),
                         ],

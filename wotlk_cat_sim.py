@@ -817,10 +817,18 @@ class Simulation():
         if self.player.ready_to_gift:
             self.player.flowershift(time)
 
+            # If daggerweaving, then GotW GCD is reset to 1.5 seconds
+            # regardless of Spell Haste.
+            if self.strategy['daggerweave']:
+                self.player.gcd = 1.5
+
             # Reset swing timer based on equipped weapon speed
+            next_swing = time + max(
+                self.swing_timer * self.player.weapon_speed,
+                self.player.gcd + 2 * self.latency
+            )
             self.update_swing_times(
-                time + self.swing_timer * self.player.weapon_speed,
-                self.swing_timer, first_swing=True
+                next_swing, self.swing_timer, first_swing=True
             )
 
             return 0.0
@@ -1077,10 +1085,9 @@ class Simulation():
         # analagous conditions to the above. Only difference is that there is
         # more available time/Energy leeway for the technique, since
         # flowershifts take only 3 seconds to execute.
-        flowershift_energy = (
-            min(furor_cap, 75) - 10 * self.player.spell_gcd - 20 * self.latency
-        )
-        flower_end = time + self.player.spell_gcd + 1.5 + 2 * self.latency
+        gcd = 1.5 if self.strategy['daggerweave'] else self.player.spell_gcd
+        flowershift_energy = min(furor_cap, 75) - 10 * gcd - 20 * self.latency
+        flower_end = time + gcd + 1.5 + 2 * self.latency
         flowershift_now = (
             self.strategy['flowershift'] and (energy <= flowershift_energy)
             and (not self.player.omen_proc)
@@ -1127,9 +1134,12 @@ class Simulation():
             # Form.
             if flowershift_now:
                 self.player.flowershift(time)
+                next_swing = time + max(
+                    self.swing_timer * self.player.weapon_speed,
+                    self.player.gcd + 2 * self.latency
+                )
                 self.update_swing_times(
-                    time + self.swing_timer * self.player.weapon_speed,
-                    self.swing_timer, first_swing=True
+                    next_swing, self.swing_timer, first_swing=True
                 )
             else:
                 self.player.ready_to_shift = True

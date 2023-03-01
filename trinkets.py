@@ -325,13 +325,14 @@ class Bloodlust(ActivatedTrinket):
                 fight execution.
         """
         old_multi = sim.haste_multiplier
+        not_bear = player.cat_form or sim.strategy['flowershift']
         haste_rating = sim_utils.calc_haste_rating(
-            sim.swing_timer, multiplier=old_multi, cat_form=player.cat_form
+            sim.swing_timer, multiplier=old_multi, cat_form=not_bear
         )
         multi_fac = 1./1.3 if self.active else 1.3
         new_multi = old_multi * multi_fac
         new_swing_timer = sim_utils.calc_swing_timer(
-            haste_rating, multiplier=new_multi, cat_form=player.cat_form
+            haste_rating, multiplier=new_multi, cat_form=not_bear
         )
         sim.update_swing_times(time, new_swing_timer)
         sim.haste_multiplier = new_multi
