@@ -1894,7 +1894,7 @@ class Simulation():
             tf_now = (
                 (self.player.energy < tf_energy_thresh)
                 and (self.player.tf_cd < 1e-9) and (not self.player.berserk)
-                and self.player.cat_form
+                and self.player.cat_form and (not self.player.ready_to_shift)
             )
 
             # If Lacerateweaving, then delay Tiger's Fury if Lacerate is due to
