@@ -802,6 +802,68 @@ class Simulation():
     #     # after the current Rip.
     #     return (new_roar_end >= rip_end + self.strategy['min_roar_offset'])
 
+    def should_bearweave(self, current_time, future_time=None):
+        """Determine whether the player should initiate a bearweave.
+
+        Arguments:
+            current_time (float): Current simulation time in seconds.
+            future_time (float): If supplied, then project player state in the
+                future and predict whether a bearweave should be initiated in
+                (future_time - current_time) seconds rather than right now.
+
+        Returns:
+            can_bearweave (float): Whether or not a a bearweave should be
+                initiated at the specified time.
+        """
+        if future_time is None:
+            future_time = current_time
+
+        # Calculate intermediate terms in bearweave decision tree
+        projected_energy = (
+            self.player.energy + 10 * (future_time - current_time)
+        )
+        furor_cap = min(20 * self.player.furor, 85)
+        rip_refresh_pending = (
+            self.rip_debuff and (self.player.combo_points == 5)
+            and (self.rip_end < self.fight_length - 10)
+        )
+        weave_end = future_time + 4.5 + 2 * self.latency
+
+        # Calculate maximum Energy level for initiating a weave
+        weave_energy = furor_cap - 30 - 20 * self.latency
+
+        # With 4/5 or 5/5 Furor, force 2-GCD bearweaves whenever possible
+        if self.player.furor > 3:
+            weave_energy -= 15
+
+            # Force a 3-GCD weave when stacking Lacerates for the first time
+            if self.strategy['lacerate_prio'] and (not self.lacerate_debuff):
+                weave_energy -= 15
+
+        # Bearweave decision tree
+        can_weave = (
+            self.strategy['bearweave'] and self.player.cat_form
+            and (projected_energy <= weave_energy)
+            and (not self.player.omen_proc)
+            and ((not rip_refresh_pending) or (self.rip_end >= weave_end))
+            and (not self.player.berserk)
+        )
+
+        if can_weave and (not self.strategy['lacerate_prio']):
+            can_weave = not self.tf_expected_before(current_time, weave_end)
+
+        # Also add an end of fight condition to make sure we can spend down our
+        # Energy post-bearweave before the encounter ends. Time to spend is
+        # given by weave_end plus 1 second per 42 Energy that we have at
+        # weave_end.
+        if can_weave:
+            energy_to_dump = projected_energy + (weave_end - future_time) * 10
+            can_weave = (
+                weave_end + energy_to_dump // 42 < self.fight_length
+            )
+
+        return can_weave
+
     def execute_rotation(self, time):
         """Execute the next player action in the DPS rotation according to the
         specified player strategy in the simulation.
@@ -862,6 +924,9 @@ class Simulation():
                 or ((self.player.rip_bonus > 0) and (not rip_refresh_soon))
             )
 
+            if self.strategy['mangle_idol_swap']:
+                swap_idols = swap_idols or self.mangle_idol.equipped
+
             if self.player.cat_form and (self.strategy['snek'] or swap_idols):
                 next_swing = time + new_timer
 
@@ -880,7 +945,16 @@ class Simulation():
 
             # Toggle between Rip and Shred Idols if configured to do so
             if swap_idols and self.player.cat_form:
-                if self.player.shred_bonus > 0:
+                if self.mangle_idol and self.mangle_idol.equipped:
+                    self.mangle_idol.equipped = False
+
+                    # Hack to re-use swapping logic below
+                    if self.strategy['idol_swap']:
+                        self.player.shred_bonus = rip_refresh_soon
+                    else:
+                        self.player.shred_bonus = self.rip_bonus
+
+                if self.player.shred_bonus:
                     self.player.shred_bonus = 0
                     self.player.rip_bonus = self.rip_bonus
                     log_str = 'equip Rip Idol'
@@ -1017,58 +1091,7 @@ class Simulation():
 
         # Allow for bearweaving if the next pending action is >= 4.5s away
         furor_cap = min(20 * self.player.furor, 85)
-        # weave_energy = min(furor_cap - 30 - 20 * self.latency, 42)
-        weave_energy = furor_cap - 30 - 20 * self.latency
-
-        # With 4/5 or 5/5 Furor, force 2-GCD bearweaves whenever possible
-        if self.player.furor > 3:
-            weave_energy -= 15
-
-            # Force a 3-GCD weave when stacking Lacerates for the first time
-            if self.strategy['lacerate_prio'] and (not self.lacerate_debuff):
-                weave_energy -= 15
-
-            # Remove the 2-GCD leeway restriction in situations where the Rip
-            # and Lacerate timers are synced
-            # weave_early = (
-            #     self.strategy['lacerate_prio'] and self.lacerate_debuff and
-            #     (self.lacerate_end < self.fight_length) and
-            #     (self.lacerate_end-time <= self.strategy['lacerate_time']+1.5)
-            #     and rip_refresh_pending and
-            #     (abs(self.lacerate_end - self.rip_end) < 3.0 + self.latency)
-            # )
-
-            # if weave_early and (self.rip_end < self.lacerate_end):
-            #     weave_early = (
-            #         self.lacerate_end - self.rip_end < 2.5 + 2 * self.latency
-            #     )
-
-            # if weave_early:
-            #     weave_energy += 15
-
-        weave_end = time + 4.5 + 2 * self.latency
-        bearweave_now = (
-            self.strategy['bearweave'] and (energy <= weave_energy)
-            and (not self.player.omen_proc)
-            # ((not pending_actions) or (pending_actions[0][0] >= weave_end))
-            and ((not rip_refresh_pending) or (self.rip_end >= weave_end))
-            # and (not self.tf_expected_before(time, weave_end))
-            # and (not self.params['tigers_fury'])
-            and (not self.player.berserk)
-        )
-
-        if bearweave_now and (not self.strategy['lacerate_prio']):
-            bearweave_now = not self.tf_expected_before(time, weave_end)
-
-        # Also add an end of fight condition to make sure we can spend down our
-        # Energy post-bearweave before the encounter ends. Time to spend is
-        # given by weave_end plus 1 second per 42 Energy that we have at
-        # weave_end.
-        if bearweave_now:
-            energy_to_dump = energy + (weave_end - time) * 10
-            bearweave_now = (
-                weave_end + energy_to_dump // 42 < self.fight_length
-            )
+        bearweave_now = self.should_bearweave(time)
 
         # If we're maintaining Lacerate, then allow for emergency bearweaves
         # if Lacerate is about to fall off even if the above conditions do not
@@ -1899,6 +1922,32 @@ class Simulation():
                 # else:
                 #     self.apply_tigers_fury(time)
                 self.apply_tigers_fury(time)
+
+            # If Mangle Idol weaving is configured and we just cast a Cat Form
+            # special ability, then bundle an Idol swap with the cast if we
+            # expect to bearweave on our next GCD.
+            mangle_bear_soon = (
+                (not self.strategy['lacerate_prio'])
+                # or (self.lacerate_debuff and (self.lacerate_stacks >= 4))
+            )
+
+            if ((self.player.gcd == 1.0) and self.strategy['bearweave']
+                    and self.strategy['mangle_idol_swap']
+                    and self.should_bearweave(time, future_time=time + 1.5)
+                    and mangle_bear_soon and (not self.mangle_idol.equipped)):
+                self.player.shred_bonus = 0
+                self.player.rip_bonus = 0
+                self.player.calc_damage_params(**self.params)
+                self.player.gcd = 1.5
+                self.update_swing_times(
+                    time + self.swing_timer, self.swing_timer, first_swing=True
+                )
+                self.mangle_idol.equipped = True
+
+                if self.log:
+                    self.combat_log.append(
+                        self.gen_log(time, 'Mangle Idol', 'equipped')
+                    )
 
             # Log current parameters
             times.append(time)
