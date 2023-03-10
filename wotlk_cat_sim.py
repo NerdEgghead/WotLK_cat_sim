@@ -882,7 +882,7 @@ class Simulation():
             # If daggerweaving, then GotW GCD is reset to 1.5 seconds
             # regardless of Spell Haste.
             if self.strategy['daggerweave']:
-                self.player.gcd = 1.5
+                self.player.gcd = 1.5 + self.latency
 
             # Reset swing timer based on equipped weapon speed
             next_swing = time + max(
@@ -940,6 +940,7 @@ class Simulation():
                 )
                 self.player.calc_damage_params(**self.params)
                 self.player.dagger_equipped = True
+                self.player.gcd = 1.5 + self.latency
 
             self.update_swing_times(next_swing, new_timer, first_swing=True)
 
@@ -964,6 +965,7 @@ class Simulation():
                     log_str = 'equip Shred Idol'
 
                 self.player.calc_damage_params(**self.params)
+                self.player.gcd = 1.5 + self.latency
 
                 if self.log:
                     self.player.combat_log[1] = log_str
@@ -1926,28 +1928,28 @@ class Simulation():
             # If Mangle Idol weaving is configured and we just cast a Cat Form
             # special ability, then bundle an Idol swap with the cast if we
             # expect to bearweave on our next GCD.
-            mangle_bear_soon = (
-                (not self.strategy['lacerate_prio'])
-                # or (self.lacerate_debuff and (self.lacerate_stacks >= 4))
-            )
+            # mangle_bear_soon = (
+            #     (not self.strategy['lacerate_prio'])
+            #     # or (self.lacerate_debuff and (self.lacerate_stacks >= 4))
+            # )
 
-            if ((self.player.gcd == 1.0) and self.strategy['bearweave']
-                    and self.strategy['mangle_idol_swap']
-                    and self.should_bearweave(time, future_time=time + 1.5)
-                    and mangle_bear_soon and (not self.mangle_idol.equipped)):
-                self.player.shred_bonus = 0
-                self.player.rip_bonus = 0
-                self.player.calc_damage_params(**self.params)
-                self.player.gcd = 1.5
-                self.update_swing_times(
-                    time + self.swing_timer, self.swing_timer, first_swing=True
-                )
-                self.mangle_idol.equipped = True
+            # if ((self.player.gcd == 1.0) and self.strategy['bearweave']
+            #         and self.strategy['mangle_idol_swap']
+            #         and self.should_bearweave(time, future_time=time + 1.5)
+            #         and mangle_bear_soon and (not self.mangle_idol.equipped)):
+            #     self.player.shred_bonus = 0
+            #     self.player.rip_bonus = 0
+            #     self.player.calc_damage_params(**self.params)
+            #     self.player.gcd = 1.5
+            #     self.update_swing_times(
+            #         time + self.swing_timer, self.swing_timer, first_swing=True
+            #     )
+            #     self.mangle_idol.equipped = True
 
-                if self.log:
-                    self.combat_log.append(
-                        self.gen_log(time, 'Mangle Idol', 'equipped')
-                    )
+            #     if self.log:
+            #         self.combat_log.append(
+            #             self.gen_log(time, 'Mangle Idol', 'equipped')
+            #         )
 
             # Log current parameters
             times.append(time)
