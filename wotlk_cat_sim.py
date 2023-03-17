@@ -1322,7 +1322,7 @@ class Simulation():
             # after pooling in order to save the Lacerate. Instead, it is
             # preferable to just Shred and bearweave early.
             next_cast_end = time + time_to_next_action + self.latency + 2.0
-            ignore_pooling = (
+            ignore_pooling = self.player.berserk or (
                 self.strategy['bearweave'] and self.strategy['lacerate_prio']
                 and self.lacerate_debuff
                 and (self.lacerate_end - 1.5 - self.latency <= next_cast_end)
