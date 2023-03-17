@@ -1828,6 +1828,7 @@ class Simulation():
                         mangle_next = (not lacerate_next) and (
                             (not self.mangle_debuff)
                             or (self.mangle_end < time + self.player.gcd + 3.0)
+                            or (time - self.player.last_shift < 1.5)
                         )
                     else:
                         mangle_next = (self.player.mangle_cd < self.player.gcd)
