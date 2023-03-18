@@ -42,7 +42,7 @@ class Player():
             natural_shapeshifter=3, intensity=0, potp=2, improved_mangle=0,
             ilotp=2, rip_glyph=True, shred_glyph=True, roar_glyph=False,
             berserk_glyph=False, weapon_speed=3.0, gotw_targets=25,
-            t8_2p=False, t8_4p=False, proc_trinkets=[], log=False
+            t8_2p=False, t8_4p=False, t9_2p=False, t9_4p=False, proc_trinkets=[], log=False
     ):
         """Initialize player with key damage parameters.
 
@@ -116,6 +116,14 @@ class Player():
             gotw_targets (int): Number of targets that will be buffed if the
                 player casts Gift of the Wild during combat. Used for
                 calculating Omen of Clarity proc chance. Defaults to 25.
+            t8_2p (bool): Whether the 2-piece T8 set bonus is used. Defaults
+                False.
+            t8_4p (bool): Whether the 4-piece T8 set bonus is used. Defaults
+                False.
+            t9_2p (bool): Whether the 2-piece T9 set bonus is used. Defaults
+                False.
+            t9_4p (bool): Whether the 4-piece T9 set bonus is used. Defaults
+                False.
             proc_trinkets (list of trinkets.ProcTrinket): If applicable, a list
                 of ProcTrinket objects modeling each on-hit or on-crit trinket
                 used by the player.
@@ -131,9 +139,13 @@ class Player():
         self.roar_fac = 0.3 + 0.03 * roar_glyph
         self.berserk_glyph = berserk_glyph
         self.mangle_glyph = mangle_glyph
-        self.rip_duration = 12 + 4 * rip_glyph + 4 * t7_2p
         self.shred_glyph = shred_glyph
+        self.rip_duration = 12 + 4 * rip_glyph + 4 * t7_2p
+        self.rake_duration = 9 + 3 * t9_2p
         self.lacerate_multi = 1 + 0.05 * t7_2p
+        self.lacerate_dot_multi = 1 + 0.05 * t9_2p
+        self.bite_crit_bonus = 0.25 + 0.05 * t9_4p
+        self.rip_crit_bonus = 0.05 * t9_4p
 
         # Set internal hit and expertise values, and derive total miss chance.
         self._hit_chance = hit_chance
@@ -791,6 +803,8 @@ class Player():
             for trinket in self.proc_trinkets:
                 if trinket.mangle_only:
                     trinket.check_for_proc(False, True)
+                if trinket.cat_mangle_only and self.cat_form:
+                    trinket.check_for_proc(False, True)
 
         return dmg, success
 
@@ -818,7 +832,7 @@ class Player():
         damage_done, miss, crit = sim_utils.calc_yellow_damage(
             self.bite_low[self.combo_points] + bonus_damage,
             self.bite_high[self.combo_points] + bonus_damage, self.miss_chance,
-            self.crit_chance + 0.25,
+            self.crit_chance + self.bite_crit_bonus,
             crit_multiplier=self.calc_crit_multiplier()
         )
 
