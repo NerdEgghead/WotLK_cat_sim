@@ -42,7 +42,8 @@ class Player():
             natural_shapeshifter=3, intensity=0, potp=2, improved_mangle=0,
             ilotp=2, rip_glyph=True, shred_glyph=True, roar_glyph=False,
             berserk_glyph=False, weapon_speed=3.0, gotw_targets=25,
-            t8_2p=False, t8_4p=False, t9_2p=False, t9_4p=False, proc_trinkets=[], log=False
+            t8_2p=False, t8_4p=False, t9_2p=False, t9_4p=False, 
+            t10_2p=False, t10_4p=False, proc_trinkets=[], log=False
     ):
         """Initialize player with key damage parameters.
 
@@ -143,7 +144,7 @@ class Player():
         self.rip_duration = 12 + 4 * rip_glyph + 4 * t7_2p
         self.rake_duration = 9 + 3 * t9_2p
         self.lacerate_multi = 1 + 0.05 * t7_2p
-        self.lacerate_dot_multi = 1 + 0.05 * t9_2p
+        self.lacerate_dot_multi = 1 + 0.05 * t9_2p + 0.2 * t10_2p
         self.bite_crit_bonus = 0.25 + 0.05 * t9_4p
         self.rip_crit_bonus = 0.05 * t9_4p
 
@@ -167,6 +168,8 @@ class Player():
         self.t6_bonus = t6_4p
         self.t8_2p_bonus = t8_2p
         self.t8_4p_bonus = t8_4p
+        self.t10_2p_bonus = t10_2p
+        self.t10_4p_bonus = t10_4p
         self.wolfshead = wolfshead
         self.meta = meta
         self.damage_multiplier = multiplier
@@ -399,7 +402,7 @@ class Player():
         self.rake_cost = 35. / (1 + self.berserk)
         self.mangle_cost = self._mangle_cost / (1 + self.berserk)
         self.bite_cost = 35. / (1 + self.berserk)
-        self.rip_cost = 30. / (1 + self.berserk)
+        self.rip_cost = 30. / (1 + self.berserk) - 10 * self.t10_2p_bonus
         self.roar_cost = 25. / (1 + self.berserk)
 
     def check_omen_proc(self, yellow=False):

@@ -1708,7 +1708,7 @@ class Simulation():
             # Check if a Rake tick happens at this time
             if self.rake_debuff and (time >= self.rake_ticks[0]):
                 dmg_done += self.apply_bleed_damage(
-                    self.rake_damage, 0, 'Rake', self.rake_sr_snapshot, time
+                    self.rake_damage, self.player.crit_chance, 'Rake', self.rake_sr_snapshot, time
                 )
                 self.rake_ticks.pop(0)
 
