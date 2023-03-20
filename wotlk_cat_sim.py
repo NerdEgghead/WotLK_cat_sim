@@ -713,7 +713,8 @@ class Simulation():
             * (1 + crit_mod)
         )
         rake_dpc = 1.3 * (
-            self.player.rake_hit * (1 + crit_mod) + 3 * self.player.rake_tick
+            self.player.rake_hit * (1 + crit_mod)
+            + (self.player.rake_duration / 3) * self.player.rake_tick
         )
         return rake_dpc / 35., shred_dpc / 42.
 
