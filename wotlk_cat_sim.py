@@ -1323,8 +1323,9 @@ class Simulation():
             #     self.player.rip_duration + 6 * self.player.shred_glyph
             # )
             # ignore_pooling = self.player.berserk or (
-            #     rip_refresh_pending and
-            #     (self.rip_end - self.rip_start < max_rip_dur - 1e-9)
+            #     self.rip_debuff and
+            #     (self.rip_end - self.rip_start < max_rip_dur - 1e-9) and
+            #     (time + time_to_next_action > self.rip_end - 2)
             # )
             ignore_pooling = self.player.berserk
 
