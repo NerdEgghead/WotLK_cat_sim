@@ -1316,6 +1316,18 @@ class Simulation():
 
             time_to_next_action = (self.player.shred_cost - excess_e) / 10.
 
+            # Also Shred rather than pooling for Rake/Rip if (a) Berserk is
+            # active, or (b) we have not yet maxed out our Glyph of Shred
+            # extensions.
+            # max_rip_dur = (
+            #     self.player.rip_duration + 6 * self.player.shred_glyph
+            # )
+            # ignore_pooling = self.player.berserk or (
+            #     rip_refresh_pending and
+            #     (self.rip_end - self.rip_start < max_rip_dur - 1e-9)
+            # )
+            ignore_pooling = self.player.berserk
+
             # When Lacerateweaving, there are scenarios where Lacerate is
             # synced with other pending actions. When this happens, pooling for
             # the pending action will inevitably lead to capping on Energy,
@@ -1323,7 +1335,7 @@ class Simulation():
             # after pooling in order to save the Lacerate. Instead, it is
             # preferable to just Shred and bearweave early.
             next_cast_end = time + time_to_next_action + self.latency + 2.0
-            ignore_pooling = self.player.berserk or (
+            ignore_pooling = ignore_pooling or (
                 self.strategy['bearweave'] and self.strategy['lacerate_prio']
                 and self.lacerate_debuff
                 and (self.lacerate_end - 1.5 - self.latency <= next_cast_end)
