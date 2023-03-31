@@ -1027,6 +1027,25 @@ class Simulation():
             rake_dpe, shred_dpe = self.calc_builder_dpe()
             rake_now = (rake_dpe > shred_dpe)
 
+        # Additionally, don't Rake if there is insufficient time to max out
+        # our available Glyph of Shred extensions before Rip falls off.
+        if rake_now and self.rip_debuff:
+            rip_dur = self.rip_end - self.rip_start
+            max_rip_dur = self.player.rip_duration + 6*self.player.shred_glyph
+            remaining_extensions = (max_rip_dur - rip_dur) / 2
+            energy_for_shreds = (
+                energy - self.player.rake_cost - 30
+                + (self.rip_start + max_rip_dur - time) * 10
+                + 60*self.tf_expected_before(time, self.rip_start+max_rip_dur)
+            )
+            max_shreds_possible = min(
+                energy_for_shreds / 42., self.rip_end - (time + 1.0)
+            )
+            rake_now = (
+                (remaining_extensions < 1e-9)
+                or (max_shreds_possible > remaining_extensions)
+            )
+
         # Disable Energy pooling for Rake in weaving rotations, since these
         # rotations prioritize weave cpm over Rake uptime.
         pool_for_rake = (
