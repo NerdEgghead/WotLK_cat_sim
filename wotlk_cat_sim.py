@@ -1027,6 +1027,12 @@ class Simulation():
             rake_dpe, shred_dpe = self.calc_builder_dpe()
             rake_now = (rake_dpe > shred_dpe)
 
+        # Disable Energy pooling for Rake in weaving rotations, since these
+        # rotations prioritize weave cpm over Rake uptime.
+        pool_for_rake = (
+            not (self.strategy['bearweave'] or self.strategy['flowershift'])
+        )
+
         # Berserk algorithm: time Berserk for just after a Tiger's Fury
         # *unless* we'll lose Berserk uptime by waiting for Tiger's Fury to
         # come off cooldown. The latter exception is necessary for
@@ -1075,9 +1081,9 @@ class Simulation():
             rip_refresh_pending = True
         if self.rake_debuff and (self.rake_end < self.fight_length - 9):
             if self.berserk_expected_at(time, self.rake_end):
-                pending_actions.append((self.rake_end, 17.5))
+                pending_actions.append((self.rake_end, 17.5 * pool_for_rake))
             else:
-                pending_actions.append((self.rake_end, 35))
+                pending_actions.append((self.rake_end, 35 * pool_for_rake))
         if self.mangle_debuff and (self.mangle_end < self.fight_length - 1):
             base_cost = self.player._mangle_cost
             if self.berserk_expected_at(time, self.mangle_end):
