@@ -714,7 +714,8 @@ class Simulation():
             * (1 + crit_mod)
         )
         rake_dpc = 1.3 * (
-            self.player.rake_hit * (1 + crit_mod) + 3 * self.player.rake_tick
+            self.player.rake_hit * (1 + crit_mod)
+            + (self.player.rake_duration / 3) * self.player.rake_tick
         )
         return rake_dpc / 35., shred_dpc / 42.
 
@@ -1027,6 +1028,31 @@ class Simulation():
             rake_dpe, shred_dpe = self.calc_builder_dpe()
             rake_now = (rake_dpe > shred_dpe)
 
+        # Additionally, don't Rake if there is insufficient time to max out
+        # our available Glyph of Shred extensions before Rip falls off.
+        if rake_now and self.rip_debuff:
+            rip_dur = self.rip_end - self.rip_start
+            max_rip_dur = self.player.rip_duration + 6*self.player.shred_glyph
+            remaining_extensions = (max_rip_dur - rip_dur) / 2
+            energy_for_shreds = (
+                energy - self.player.rake_cost - 30
+                + (self.rip_start + max_rip_dur - time) * 10
+                + 60*self.tf_expected_before(time, self.rip_start+max_rip_dur)
+            )
+            max_shreds_possible = min(
+                energy_for_shreds / 42., self.rip_end - (time + 1.0)
+            )
+            rake_now = (
+                (remaining_extensions < 1e-9)
+                or (max_shreds_possible > remaining_extensions)
+            )
+
+        # Disable Energy pooling for Rake in weaving rotations, since these
+        # rotations prioritize weave cpm over Rake uptime.
+        pool_for_rake = (
+            not (self.strategy['bearweave'] or self.strategy['flowershift'])
+        )
+
         # Berserk algorithm: time Berserk for just after a Tiger's Fury
         # *unless* we'll lose Berserk uptime by waiting for Tiger's Fury to
         # come off cooldown. The latter exception is necessary for
@@ -1075,9 +1101,9 @@ class Simulation():
             rip_refresh_pending = True
         if self.rake_debuff and (self.rake_end < self.fight_length - 9):
             if self.berserk_expected_at(time, self.rake_end):
-                pending_actions.append((self.rake_end, 17.5))
+                pending_actions.append((self.rake_end, 17.5 * pool_for_rake))
             else:
-                pending_actions.append((self.rake_end, 35))
+                pending_actions.append((self.rake_end, 35 * pool_for_rake))
         if self.mangle_debuff and (self.mangle_end < self.fight_length - 1):
             base_cost = self.player._mangle_cost
             if self.berserk_expected_at(time, self.mangle_end):
@@ -1316,6 +1342,19 @@ class Simulation():
 
             time_to_next_action = (self.player.shred_cost - excess_e) / 10.
 
+            # Also Shred rather than pooling for Rake/Rip if (a) Berserk is
+            # active, or (b) we have not yet maxed out our Glyph of Shred
+            # extensions.
+            # max_rip_dur = (
+            #     self.player.rip_duration + 6 * self.player.shred_glyph
+            # )
+            # ignore_pooling = self.player.berserk or (
+            #     self.rip_debuff and
+            #     (self.rip_end - self.rip_start < max_rip_dur - 1e-9) and
+            #     (time + time_to_next_action > self.rip_end - 2)
+            # )
+            ignore_pooling = self.player.berserk
+
             # When Lacerateweaving, there are scenarios where Lacerate is
             # synced with other pending actions. When this happens, pooling for
             # the pending action will inevitably lead to capping on Energy,
@@ -1323,7 +1362,7 @@ class Simulation():
             # after pooling in order to save the Lacerate. Instead, it is
             # preferable to just Shred and bearweave early.
             next_cast_end = time + time_to_next_action + self.latency + 2.0
-            ignore_pooling = self.player.berserk or (
+            ignore_pooling = ignore_pooling or (
                 self.strategy['bearweave'] and self.strategy['lacerate_prio']
                 and self.lacerate_debuff
                 and (self.lacerate_end - 1.5 - self.latency <= next_cast_end)
