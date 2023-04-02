@@ -358,6 +358,7 @@ class Simulation():
             self.rake_end = time + self.player.rake_duration
             self.rake_ticks = list(np.arange(time + 3, self.rake_end + 1e-9, 3))
             self.rake_damage = self.player.rake_tick
+            self.rake_crit_chance = self.player.crit_chance
             self.rake_sr_snapshot = self.player.savage_roar
 
         return damage_done
@@ -1709,7 +1710,7 @@ class Simulation():
             if self.rake_debuff and (time >= self.rake_ticks[0]):
                 dmg_done += self.apply_bleed_damage(
                     self.rake_damage,
-                    self.player.crit_chance * self.player.t10_4p_bonus,
+                    self.rake_crit_chance * self.player.t10_4p_bonus,
                     'Rake',
                     self.rake_sr_snapshot,
                     time

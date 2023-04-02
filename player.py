@@ -143,8 +143,8 @@ class Player():
         self.shred_glyph = shred_glyph
         self.rip_duration = 12 + 4 * rip_glyph + 4 * t7_2p
         self.rake_duration = 9 + 3 * t9_2p
-        self.lacerate_multi = 1 + 0.05 * t7_2p
-        self.lacerate_dot_multi = 1 + 0.05 * t9_2p + 0.2 * t10_2p
+        self.lacerate_multi = (1 + 0.05 * t7_2p) * (1 + 0.2 * t10_2p)
+        self.lacerate_dot_multi = (1 + 0.05 * t9_2p) * (1 + 0.2 * t10_2p)
         self.bite_crit_bonus = 0.25 + 0.05 * t9_4p
         self.rip_crit_bonus = 0.05 * t9_4p
 
@@ -402,7 +402,7 @@ class Player():
         self.rake_cost = 35. / (1 + self.berserk)
         self.mangle_cost = self._mangle_cost / (1 + self.berserk)
         self.bite_cost = 35. / (1 + self.berserk)
-        self.rip_cost = 30. / (1 + self.berserk) - 10 * self.t10_2p_bonus
+        self.rip_cost = (30 - 10 * self.t10_2p_bonus) / (1 + self.berserk)
         self.roar_cost = 25. / (1 + self.berserk)
 
     def check_omen_proc(self, yellow=False):
