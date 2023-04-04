@@ -258,8 +258,10 @@ encounter_details = dbc.Col(
                  'label': 'Blood Frenzy / Savage Combat',
                  'value': 'blood_frenzy'
              },
+             {'label': "Curse of Elements / Earth and Moon / Ebon Plaguebringer",
+              'value': 'curse_of_elements'},
          ],
-         value=['gift_of_arthas', 'sunder', 'faerie_fire', 'blood_frenzy'],
+         value=['gift_of_arthas', 'sunder', 'faerie_fire', 'blood_frenzy', 'curse_of_elements'],
          id='boss_debuffs'
      ),
      html.Br(),
@@ -271,8 +273,9 @@ encounter_details = dbc.Col(
                  'value': 'jotc'
              },
              {'label': 'Judgment of Wisdom', 'value': 'jow'},
+             {'label': 'Misery / Improved Fearie Fire', 'value': 'misery'},
          ],
-         value=['jotc', 'jow'],
+         value=['jotc', 'jow', 'misery'],
          id='stat_debuffs',
      ),
      html.Br(),
@@ -1415,7 +1418,7 @@ def process_trinkets(
 
 
 def create_player(
-        buffed_agility, buffed_attack_power, buffed_hit, buffed_crit,
+        buffed_agility, buffed_attack_power, buffed_hit, buffed_spell_hit, buffed_crit,
         buffed_weapon_damage, haste_rating, expertise_rating, armor_pen_rating,
         buffed_mana_pool, buffed_int, buffed_spirit, buffed_mp5, weapon_speed,
         unleashed_rage, kings, raven_idol, other_buffs, stat_debuffs,
@@ -1452,6 +1455,7 @@ def create_player(
         + (28 * ('be_chain' in other_buffs) + 40 * bool(raven_idol)) / 45.91
     )
     encounter_hit = buffed_hit
+    encounter_spell_hit = (buffed_spell_hit + 3 * ('misery' in stat_debuffs))
     encounter_mp5 = (
         buffed_mp5 + 0.01 * buffed_mana_pool * ('replenishment' in other_buffs)
     )
@@ -1462,13 +1466,15 @@ def create_player(
         (1 + 0.02 * int(naturalist))
         * (1 + 0.03 * ('sanc_aura' in other_buffs))
     )
+    spell_damage_multiplier = (1 + 0.03 * ('sanc_aura' in other_buffs))
     shred_bonus = 203 * ('shred_idol' in bonuses)
     rip_bonus = 21 * ('rip_idol' in bonuses)
 
     # Create and return a corresponding Player object
     player = player_class.Player(
         attack_power=buffed_attack_power, ap_mod=ap_mod,
-        agility=buffed_agility, hit_chance=encounter_hit / 100,
+        agility=buffed_agility, hit_chance=encounter_hit / 100, 
+        spell_hit_chance=encounter_spell_hit / 100,
         expertise_rating=expertise_rating, crit_chance=encounter_crit / 100,
         swing_timer=buffed_swing_timer, mana=buffed_mana_pool,
         intellect=buffed_int, spirit=buffed_spirit, mp5=encounter_mp5,
@@ -1480,6 +1486,7 @@ def create_player(
         natural_shapeshifter=int(natural_shapeshifter),
         ilotp=int(ilotp), weapon_speed=weapon_speed,
         bonus_damage=encounter_weapon_damage, multiplier=damage_multiplier,
+        spell_damage_multiplier=spell_damage_multiplier,
         jow='jow' in stat_debuffs, armor_pen_rating=armor_pen_rating,
         t6_2p='t6_2p' in bonuses, t6_4p='t6_4p' in bonuses,
         t7_2p='t7_2p' in bonuses, t8_2p='t8_2p' in bonuses,
@@ -1501,10 +1508,10 @@ def create_player(
 
 
 def apply_buffs(
-        unbuffed_ap, unbuffed_strength, unbuffed_agi, unbuffed_hit,
-        unbuffed_crit, unbuffed_arp, unbuffed_mana, unbuffed_int,
-        unbuffed_spirit, unbuffed_mp5, weapon_damage, raid_buffs, consumables,
-        imp_motw
+        unbuffed_ap, unbuffed_strength, unbuffed_agi, unbuffed_hit, 
+        unbuffed_spell_hit, unbuffed_crit, unbuffed_arp, unbuffed_mana, 
+        unbuffed_int, unbuffed_spirit, unbuffed_mp5, weapon_damage, 
+        raid_buffs, consumables, imp_motw
 ):
     """Takes in unbuffed player stats, and turns them into buffed stats based
     on specified consumables and raid buffs. This function should only be
@@ -1550,6 +1557,10 @@ def apply_buffs(
         unbuffed_hit + 1 * ('heroic_presence' in raid_buffs)
         + 40 / 32.79 * ('hit_food' in consumables)
     )
+    buffed_spell_hit = (
+        unbuffed_spell_hit + 1 * ('heroic_presence' in raid_buffs) \
+            + 40 / 26.23 * ('hit_food' in consumables)
+    )
     buffed_mana_pool = raw_mana_unbuffed + buffed_int * 15
     buffed_mp5 = unbuffed_mp5 + 110 * ('wisdom' in raid_buffs)
     buffed_weapon_damage = (
@@ -1565,6 +1576,7 @@ def apply_buffs(
         'attackPower': buffed_attack_power,
         'crit': buffed_crit,
         'hit': buffed_hit,
+        'spellHit': buffed_spell_hit,
         'weaponDamage': buffed_weapon_damage,
         'mana': buffed_mana_pool,
         'mp5': buffed_mp5,
@@ -1886,9 +1898,9 @@ def compute(
     if not buffs_present:
         input_stats.update(apply_buffs(
             input_stats['attackPower'], input_stats['strength'],
-            input_stats['agility'], input_stats['hit'], input_stats['crit'],
-            input_stats.get('armorPenRating', 0), input_stats['mana'],
-            input_stats['intellect'], input_stats['spirit'],
+            input_stats['agility'], input_stats['hit'], input_stats["spellHit"],
+            input_stats['crit'], input_stats.get('armorPenRating', 0), 
+            input_stats['mana'], input_stats['intellect'], input_stats['spirit'],
             input_stats.get('mp5', 0), input_stats.get('weaponDamage', 0),
             raid_buffs, consumables,imp_motw
         ))
@@ -1911,7 +1923,7 @@ def compute(
     # Create Player object based on raid buffed stat inputs and talents
     player, ap_mod, stat_mod, haste_multiplier = create_player(
         input_stats['agility'], input_stats['attackPower'], input_stats['hit'],
-        input_stats['crit'], input_stats.get('weaponDamage', 0),
+        input_stats['spellHit'], input_stats['crit'], input_stats.get('weaponDamage', 0),
         input_stats.get('hasteRating', 0),
         input_stats.get('expertiseRating', 0),
         input_stats.get('armorPenRating', 0),input_stats['mana'],
