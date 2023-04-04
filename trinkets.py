@@ -325,13 +325,14 @@ class Bloodlust(ActivatedTrinket):
                 fight execution.
         """
         old_multi = sim.haste_multiplier
+        not_bear = player.cat_form or sim.strategy['flowershift']
         haste_rating = sim_utils.calc_haste_rating(
-            sim.swing_timer, multiplier=old_multi, cat_form=player.cat_form
+            sim.swing_timer, multiplier=old_multi, cat_form=not_bear
         )
         multi_fac = 1./1.3 if self.active else 1.3
         new_multi = old_multi * multi_fac
         new_swing_timer = sim_utils.calc_swing_timer(
-            haste_rating, multiplier=new_multi, cat_form=player.cat_form
+            haste_rating, multiplier=new_multi, cat_form=not_bear
         )
         sim.update_swing_times(time, new_swing_timer)
         sim.haste_multiplier = new_multi
@@ -505,6 +506,53 @@ class ProcTrinket(Trinket):
         """Set trinket to fresh inactive state with no cooldown remaining."""
         Trinket.reset(self)
         self.proc_happened = False
+
+
+class IdolOfTheCorruptor(ProcTrinket):
+    """Custom class to model the Mangle proc from Idol of the Corruptor, which
+    has different proc rates in Cat Form vs. Dire Bear Form and which can be
+    dynamically unequipped and re-equipped in combat as an advanced tactic."""
+
+    def __init__(self, stat_mod, ap_mod):
+        """Initialize Idol with default state set to "equipped" with Cat Form
+        proc rate.
+
+        Arguments:
+            stat_mod (float): Multiplicative scaling factor for primary stats
+                from talents and raid buffs.
+            ap_mod (float): Multiplicative scaling factor for Attack Power in
+                Cat Form from talents and raid buffs.
+        """
+        agi_gain = 162. * stat_mod
+        ProcTrinket.__init__(
+            self, ['agility', 'attack_power', 'crit_chance'],
+            np.array([agi_gain, agi_gain * ap_mod, agi_gain / 83.33 / 100.]),
+            'Primal Wrath', 1.0, 12, 0, mangle_only=True
+        )
+        self.equipped = True
+
+    def update(self, time, player, sim):
+        """Adjust Idol proc chance based on whether it is currently equipped
+        and the player's current form, then call normal Trinket update loop.
+
+        Arguments:
+            time (float): Simulation time, in seconds.
+            player (player.Player): Player object whose attributes will be
+                modified by the Idol proc.
+            sim (wotlk_cat_sim.Simulation): Simulation object controlling the
+                fight execution.
+
+        Returns:
+            damage_done (float): Any instant damage that is dealt if the
+                proc is activated at the specified time. Always 0 for Idol of
+                the Corruptor.
+        """
+        if self.equipped:
+            self.chance_on_hit = 1.0 if player.cat_form else 0.5
+        else:
+            self.chance_on_hit = 0.0
+
+        return ProcTrinket.update(self, time, player, sim)
 
 
 class StackingProcTrinket(ProcTrinket):
