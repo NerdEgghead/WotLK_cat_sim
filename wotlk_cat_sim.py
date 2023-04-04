@@ -161,6 +161,7 @@ class Simulation():
     default_strategy = {
         'min_combos_for_rip': 5,
         'use_rake': False,
+        'use_faerie_fire': True,
         'use_bite': True,
         'bite_time': 8.0,
         'min_combos_for_bite': 5,
@@ -336,6 +337,19 @@ class Simulation():
 
         return damage_done
 
+    def faerie_fire(self, time):
+        """Instruct the Player to Faerie_fire, and perform related bookkeeping.
+
+        Arguments:
+            time (float): Current simulation time in seconds.
+
+        Returns:
+            damage_done (float): always 0
+        """
+        damage_done, success = self.player.faerie_fire()
+
+        return damage_done
+    
     def lacerate(self, time):
         """Instruct the Player to Lacerate, and perform related bookkeeping.
 
@@ -916,6 +930,13 @@ class Simulation():
             rake_dpe, shred_dpe = self.calc_builder_dpe()
             rake_now = (rake_dpe > shred_dpe)
 
+        faerie_fire_now = (
+            self.strategy['use_faerie_fire']
+            and (not self.player.omen_proc)
+            and (self.player.faerie_fire_cd < 1e-9)
+            and (energy <= 80)
+        )
+        
         # Berserk algorithm: time Berserk for just after a Tiger's Fury
         # *unless* we'll lose Berserk uptime by waiting for Tiger's Fury to
         # come off cooldown. The latter exception is necessary for
@@ -1226,6 +1247,9 @@ class Simulation():
             if energy >= self.player.bite_cost:
                 return self.player.bite()
             time_to_next_action = (self.player.bite_cost - energy) / 10.
+        elif faerie_fire_now:
+            return self.faerie_fire(time)
+            time_to_next_action = 0.0
         elif rake_now:
             if (energy >= self.player.rake_cost) or self.player.omen_proc:
                 return self.rake(time)
@@ -1590,6 +1614,7 @@ class Simulation():
             self.player.berserk_cd = max(0.0, self.player.berserk_cd - delta_t)
             self.player.enrage_cd = max(0.0, self.player.enrage_cd - delta_t)
             self.player.mangle_cd = max(0.0, self.player.mangle_cd - delta_t)
+            self.player.faerie_fire_cd = max(0.0, self.player.faerie_fire_cd - delta_t)
 
             if (self.player.five_second_rule
                     and (time - self.player.last_shift >= 5)):

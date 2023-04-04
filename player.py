@@ -378,6 +378,7 @@ class Player():
         self.enrage = False
         self.enrage_cd = 0.0
         self.mangle_cd = 0.0
+        self.faerie_fire_cd = 0.0
         self.savage_roar = False
         self.dagger_equipped = False
         self.set_ability_costs()
@@ -744,6 +745,20 @@ class Player():
 
         return damage_done, success
 
+    def faerie_fire(self):
+        """Execute a Faerie Fire.
+
+        Returns:
+            damage_done (float): Always 0
+            success (bool): Whether the Rake landed successfully.
+        """
+        damage_done = 0.0
+        success = True
+        self.omen_proc = True
+        self.faerie_fire_cd = 6.0
+        
+        return damage_done, success
+    
     def rake(self, mangle_debuff):
         """Execute a Rake.
 

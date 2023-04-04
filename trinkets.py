@@ -1221,4 +1221,19 @@ trinket_library = {
             'proc_rate': 0.35,
         },
     },
+    'banner_of_victory': {
+        'type': 'proc',
+        'passive_stats': {
+            'armor_pen_rating': 84,
+        },
+        'active_stats': {
+            'stat_name': 'attack_power',
+            'stat_increment': 1008,
+            'proc_name': 'banner_of_victory',
+            'proc_duration': 10,
+            'cooldown': 45,
+            'proc_type': 'chance_on_hit',
+            'proc_rate': 0.35,
+        },
+    },
 }
