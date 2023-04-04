@@ -362,19 +362,6 @@ class Simulation():
 
         return damage_done
 
-    def faerie_fire(self, time):
-        """Instruct the Player to Faerie_fire, and perform related bookkeeping.
-
-        Arguments:
-            time (float): Current simulation time in seconds.
-
-        Returns:
-            damage_done (float): always 0
-        """
-        damage_done, success = self.player.faerie_fire()
-
-        return damage_done
-    
     def lacerate(self, time):
         """Instruct the Player to Lacerate, and perform related bookkeeping.
 
@@ -829,7 +816,6 @@ class Simulation():
             can_bearweave (float): Whether or not a a bearweave should be
                 initiated at the specified time.
         """
-
         if future_time is None:
             future_time = current_time
 
