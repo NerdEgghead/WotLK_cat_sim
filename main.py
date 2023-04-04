@@ -2104,7 +2104,7 @@ def disable_options(
 
     # Disable bearweave and flowershift in UI given recent Blizzard changes
     flowershift_options['disabled'] = True
-    bearweave_options['disabled'] = True
+    #bearweave_options['disabled'] = True
 
     return (
         bool(bearweave), bool(biteweave), 'berserk' in binary_talents,

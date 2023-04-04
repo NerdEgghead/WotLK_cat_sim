@@ -322,6 +322,7 @@ class Player():
         lacerate_multi = bear_multi * self.lacerate_multi
         self.lacerate_hit = (88 + 0.01 * bear_ap) * lacerate_multi
         self.lacerate_tick = (64+0.01*bear_ap) * bear_multi / armor_multiplier
+        self.faerie_fire_damage = bear_ap*0.15 + 1
 
         # Adjust damage values for Gift of Arthas
         if not gift_of_arthas:
@@ -1027,4 +1028,12 @@ class Player():
         if self.log:
             self.gen_log('Faerie Fire (Feral)', '', False, False, False)
 
-        return 0.0
+        damage_done = 0.0
+        
+        if not self.cat_form:
+            damage_done, miss, crit = sim_utils.calc_yellow_damage(
+                self.faerie_fire_damage, self.faerie_fire_damage, self.miss_chance, self.crit_chance - 0.04,
+                crit_multiplier=self.calc_crit_multiplier()
+            )
+
+        return damage_done

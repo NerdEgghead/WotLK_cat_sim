@@ -816,9 +816,22 @@ class Simulation():
             can_bearweave (float): Whether or not a a bearweave should be
                 initiated at the specified time.
         """
+        """Player Energy
+
+        T=0 Bearform
+        T=1.5 BearGCD1
+        T=3 Catform
+        t=4 CatGCD
+        
+        + 1.5s for every extra bearGCD
+        """
+
         if future_time is None:
             future_time = current_time
 
+        # BearGCD
+        BearGCD = 1    
+        
         # Calculate intermediate terms in bearweave decision tree
         projected_energy = (
             self.player.energy + 10 * (future_time - current_time)
@@ -828,18 +841,12 @@ class Simulation():
             self.rip_debuff and (self.player.combo_points == 5)
             and (self.rip_end < self.fight_length - 10)
         )
-        weave_end = future_time + 4.5 + 2 * self.latency
+        weave_end = future_time + 4.5 * self.latency
 
         # Calculate maximum Energy level for initiating a weave
-        weave_energy = furor_cap - 30 - 20 * self.latency
-
-        # With 4/5 or 5/5 Furor, force 2-GCD bearweaves whenever possible
-        if self.player.furor > 3:
-            weave_energy -= 15
-
-            # Force a 3-GCD weave when stacking Lacerates for the first time
-            if self.strategy['lacerate_prio'] and (not self.lacerate_debuff):
-                weave_energy -= 15
+        weave_energy = furor_cap - 15 -15*BearGCD - 2 * self.latency
+        
+        enrage_cd = max(self.player.enrage_cd - (future_time - current_time), 0.0)
 
         # Bearweave decision tree
         can_weave = (
@@ -848,6 +855,8 @@ class Simulation():
             and (not self.player.omen_proc)
             and ((not rip_refresh_pending) or (self.rip_end >= weave_end))
             and (not self.player.berserk)
+            and (enrage_cd < 1e-9)
+            and self.player.faerie_fire_cd > (future_time - current_time) + 3.0
         )
 
         if can_weave and (not self.strategy['lacerate_prio']):
@@ -1125,6 +1134,8 @@ class Simulation():
                 pending_actions.append((self.roar_end, 12.5))
             else:
                 pending_actions.append((self.roar_end, 25))
+        if self.player.faerie_fire_cd > 0:
+            pending_actions.append((time + self.player.faerie_fire_cd, 0))
 
         pending_actions.sort()
 
@@ -1212,12 +1223,13 @@ class Simulation():
             # Energy leeway to spend an additional GCD in Dire Bear Form.
             shift_now = (
                 (energy + 15 + 10 * self.latency > furor_cap)
-                or (rip_refresh_pending and (self.rip_end < time + 3.0))
+                or (rip_refresh_pending and (self.rip_end < time + 1.0))
                 or self.player.berserk
+                or self.player.omen_proc
             )
             shift_next = (
                 (energy + 30 + 10 * self.latency > furor_cap)
-                or (rip_refresh_pending and (self.rip_end < time + 4.5))
+                or (rip_refresh_pending and (self.rip_end < time + 2.5))
                 or self.player.berserk
             )
 
@@ -1261,6 +1273,8 @@ class Simulation():
 
             if emergency_lacerate and (self.player.rage >= 13):
                 return self.lacerate(time)
+            elif ff_now:
+                return self.player.faerie_fire()
             elif shift_now:
                 # If we are resetting our swing timer using Albino Snake or a
                 # duplicate weapon swap, then do an additional check here to
@@ -1295,11 +1309,11 @@ class Simulation():
                 time_to_next_action = self.swing_times[0] - time
         elif emergency_bearweave:
             self.player.ready_to_shift = True
-        elif ff_now:
-            return self.player.faerie_fire()
         elif berserk_now:
             self.apply_berserk(time)
             return 0.0
+        elif ff_now:
+            return self.player.faerie_fire()
         elif roar_now: # or pool_for_roar:
             # If we have leeway to do so, don't Roar right away and instead
             # pool Energy to reduce how much we clip the buff
