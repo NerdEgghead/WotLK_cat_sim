@@ -134,9 +134,8 @@ stat_input = dbc.Col([
             {'label': 'Hyperspeed Accelerators', 'value': 'engi_gloves'},
         ],
         value=[
-            'shred_idol', 'rip_idol', 'mangle_idol', 'rip_glyph',
-            'shred_glyph', 'roar_glyph', 't8_2p', 'meta', 'berserking',
-            'engi_gloves'
+            'shred_idol', 'mangle_idol', 'rip_glyph', 'shred_glyph',
+            'roar_glyph', 't8_2p', 'meta', 'berserking', 'engi_gloves'
         ],
         id='bonuses'
     ),
@@ -328,7 +327,7 @@ encounter_details = dbc.Col(
                  {'label': '4', 'value': 4},
                  {'label': '5', 'value': 5},
              ],
-             value='0', id='feral_aggression',
+             value=4, id='feral_aggression',
              style={
                  'width': '20%', 'display': 'inline-block',
                  'marginBottom': '2.5%', 'marginRight': '5%'
@@ -369,7 +368,7 @@ encounter_details = dbc.Col(
                  {'label': '2', 'value': 2},
                  {'label': '3', 'value': 3},
              ],
-             value=2, id='potp',
+             value='0', id='potp',
              style={
                  'width': '20%', 'display': 'inline-block',
                  'marginBottom': '2.5%', 'marginRight': '5%'
@@ -454,7 +453,7 @@ encounter_details = dbc.Col(
                  {'label': '4', 'value': 4},
                  {'label': '5', 'value': 5},
              ],
-             value=5, id='furor',
+             value=3, id='furor',
              style={
                  'width': '20%', 'display': 'inline-block',
                  'marginBottom': '2.5%', 'marginRight': '5%'
@@ -713,7 +712,7 @@ iteration_input = dbc.Col([
     ),
     dbc.Checklist(
         options=[{'label': ' enable bearweaving', 'value': 'bearweave'}],
-        value=['bearweave'], id='bearweave'
+        value=[], id='bearweave'
     ),
     dbc.Collapse(
         [
@@ -2103,10 +2102,9 @@ def disable_options(
         'label': ' enable flowershifting', 'value': 'flowershift'
     }
 
-    if bearweave:
-        flowershift_options['disabled'] = True
-    if flowershift:
-        bearweave_options['disabled'] = True
+    # Disable bearweave and flowershift in UI given recent Blizzard changes
+    flowershift_options['disabled'] = True
+    bearweave_options['disabled'] = True
 
     return (
         bool(bearweave), bool(biteweave), 'berserk' in binary_talents,

@@ -378,6 +378,7 @@ class Player():
         self.enrage = False
         self.enrage_cd = 0.0
         self.mangle_cd = 0.0
+        self.faerie_fire_cd = 0.0
         self.savage_roar = False
         self.dagger_equipped = False
         self.set_ability_costs()
@@ -387,8 +388,8 @@ class Player():
 
         for cast_type in [
             'Melee', 'Mangle (Cat)', 'Rake', 'Shred', 'Savage Roar', 'Rip',
-            'Ferocious Bite', 'Shift (Bear)', 'Maul', 'Mangle (Bear)',
-            'Lacerate', 'Shift (Cat)', 'Gift of the Wild'
+            'Ferocious Bite', 'Faerie Fire (Feral)', 'Shift (Bear)', 'Maul',
+            'Mangle (Bear)', 'Lacerate', 'Shift (Cat)', 'Gift of the Wild'
         ]:
             self.dmg_breakdown[cast_type] = {'casts': 0, 'damage': 0.0}
 
@@ -1009,3 +1010,21 @@ class Player():
         # Log the cast
         if self.log:
             self.gen_log('Gift of the Wild', '', False, False, False)
+
+    def faerie_fire(self):
+        """Cast Faerie Fire (Feral) for a guaranteed Clearcasting proc.
+
+        Returns:
+            damage_done (float): Damage done by the Faerie Fire cast. Always 0
+                at present since only Cat Form casts are being modeled, but can
+                be modified to return non-zero damage for Dire Bear Form casts.
+        """
+        self.gcd = 1.0
+        self.omen_proc = True
+        self.faerie_fire_cd = 6.0
+        self.dmg_breakdown['Faerie Fire (Feral)']['casts'] += 1
+
+        if self.log:
+            self.gen_log('Faerie Fire (Feral)', '', False, False, False)
+
+        return 0.0

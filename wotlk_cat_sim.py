@@ -1084,6 +1084,17 @@ class Simulation():
             (not self.player.savage_roar) or self.clip_roar(time)
         )
 
+        # Faerie Fire on cooldown for Omen procs. Each second of FF delay is
+        # worth ~7 Energy, so it is okay to waste up to 7 Energy to cap when
+        # determining whether to cast it vs. dump Energy first. That puts the
+        # Energy threshold for FF usage as 107 minus 10 for the Clearcasted
+        # special minus 10 for the FF GCD = 87 Energy.
+        ff_now = (
+            (self.player.faerie_fire_cd < 1e-9)
+            and (not self.player.omen_proc)
+            and (energy < 87)
+        )
+
         # First figure out how much Energy we must float in order to be able
         # to refresh our buffs/debuffs as soon as they fall off
         pending_actions = []
@@ -1284,6 +1295,8 @@ class Simulation():
                 time_to_next_action = self.swing_times[0] - time
         elif emergency_bearweave:
             self.player.ready_to_shift = True
+        elif ff_now:
+            return self.player.faerie_fire()
         elif berserk_now:
             self.apply_berserk(time)
             return 0.0
@@ -1393,6 +1406,9 @@ class Simulation():
             next_action = min(
                 next_action, self.lacerate_end - 1.5 - 3 * self.latency
             )
+
+        # Schedule an action when Faerie Fire (Feral) is off cooldown next.
+        next_action = min(next_action, time + self.player.faerie_fire_cd)
 
         self.next_action = next_action + self.latency
 
@@ -1653,6 +1669,7 @@ class Simulation():
         # Pre-proc Clearcasting if requested
         if self.strategy['preproc_omen'] and self.player.omen:
             self.player.omen_proc = True
+            self.player.faerie_fire_cd = 5.0
 
         # If Idol swapping, then start fight with Mangle or Rip Idol equipped
         if self.strategy['mangle_idol_swap']:
@@ -1696,6 +1713,9 @@ class Simulation():
             self.player.berserk_cd = max(0.0, self.player.berserk_cd - delta_t)
             self.player.enrage_cd = max(0.0, self.player.enrage_cd - delta_t)
             self.player.mangle_cd = max(0.0, self.player.mangle_cd - delta_t)
+            self.player.faerie_fire_cd = max(
+                0.0, self.player.faerie_fire_cd - delta_t
+            )
 
             if (self.player.five_second_rule
                     and (time - self.player.last_shift >= 5)):
