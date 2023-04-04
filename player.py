@@ -746,20 +746,6 @@ class Player():
 
         return damage_done, success
 
-    def faerie_fire(self):
-        """Execute a Faerie Fire.
-
-        Returns:
-            damage_done (float): Always 0
-            success (bool): Whether the Rake landed successfully.
-        """
-        damage_done = 0.0
-        success = True
-        self.omen_proc = True
-        self.faerie_fire_cd = 6.0
-        
-        return damage_done, success
-    
     def rake(self, mangle_debuff):
         """Execute a Rake.
 
