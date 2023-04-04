@@ -161,7 +161,6 @@ class Simulation():
     default_strategy = {
         'min_combos_for_rip': 5,
         'use_rake': False,
-        'use_faerie_fire': True,
         'use_bite': True,
         'bite_time': 8.0,
         'min_combos_for_bite': 5,
@@ -830,15 +829,6 @@ class Simulation():
             can_bearweave (float): Whether or not a a bearweave should be
                 initiated at the specified time.
         """
-        """Player Energy
-
-        T=0 Bearform
-        T=1.5 BearGCD1
-        T=3 Catform
-        t=4 CatGCD
-        
-        + 1.5s for every extra bearGCD
-        """
 
         if future_time is None:
             future_time = current_time
@@ -1049,13 +1039,6 @@ class Simulation():
         if rake_now:
             rake_dpe, shred_dpe = self.calc_builder_dpe()
             rake_now = (rake_dpe > shred_dpe)
-
-        faerie_fire_now = (
-            self.strategy['use_faerie_fire']
-            and (not self.player.omen_proc)
-            and (self.player.faerie_fire_cd < 1e-9)
-            and (energy <= 80)
-        )
         
         # Additionally, don't Rake if there is insufficient time to max out
         # our available Glyph of Shred extensions before Rip falls off.
@@ -1362,9 +1345,6 @@ class Simulation():
             if energy >= self.player.bite_cost:
                 return self.player.bite()
             time_to_next_action = (self.player.bite_cost - energy) / 10.
-        elif faerie_fire_now:
-            return self.faerie_fire(time)
-            time_to_next_action = 0.0
         elif rake_now:
             if (energy >= self.player.rake_cost) or self.player.omen_proc:
                 return self.rake(time)
@@ -1752,9 +1732,6 @@ class Simulation():
             self.player.enrage_cd = max(0.0, self.player.enrage_cd - delta_t)
             self.player.mangle_cd = max(0.0, self.player.mangle_cd - delta_t)
             self.player.faerie_fire_cd = max(0.0, self.player.faerie_fire_cd - delta_t)
-            self.player.faerie_fire_cd = max(
-                0.0, self.player.faerie_fire_cd - delta_t
-            )
 
             if (self.player.five_second_rule
                     and (time - self.player.last_shift >= 5)):

@@ -679,10 +679,6 @@ iteration_input = dbc.Col([
         value=['use_rake'], id='use_rake'
     ),
     dbc.Checklist(
-        options=[{'label': ' use Faerie Fire', 'value': 'use_faerie_fire'}],
-        value=['use_faerie_fire'], id='use_faerie_fire'
-    ),
-    dbc.Checklist(
         options=[{'label': ' use Mangle over Shred', 'value': 'mangle_spam'}],
         value=[], id='mangle_spam'
     ),
@@ -1784,7 +1780,6 @@ def plot_new_trajectory(sim, show_whites):
     State('cd_delay', 'value'),
     State('min_roar_offset', 'value'),
     State('use_rake', 'value'),
-    State('use_faerie_fire', 'value'),
     State('mangle_spam', 'value'),
     State('use_biteweave', 'value'),
     State('bite_model', 'value'),
@@ -1814,7 +1809,7 @@ def compute(
         predatory_instincts, improved_mangle, furor, naturalist,
         natural_shapeshifter, ilotp, fight_length, boss_armor,
         boss_debuffs, cooldowns, rip_cp, bite_cp, cd_delay,
-        min_roar_offset, use_rake, use_faerie_fire, mangle_spam, use_biteweave, bite_model,
+        min_roar_offset, use_rake, mangle_spam, use_biteweave, bite_model,
         bite_time, bear_mangle, prepop_berserk, preproc_omen, bearweave,
         berserk_bite_thresh, lacerate_prio, lacerate_time, powerbear, snek,
         flowershift, gotw_targets, daggerweave, dagger_ep_loss, num_replicates,
@@ -2040,7 +2035,7 @@ def compute(
     sim = ccs.Simulation(
         player, fight_length + 1e-9, 0.001 * latency, boss_armor=boss_armor,
         min_combos_for_rip=rip_combos, min_combos_for_bite=int(bite_cp),
-        mangle_spam=bool(mangle_spam), use_rake=bool(use_rake), use_faerie_fire=bool(use_faerie_fire), use_bite=bite,
+        mangle_spam=bool(mangle_spam), use_rake=bool(use_rake), use_bite=bite,
         bite_time=bite_time, bear_mangle=bool(bear_mangle),
         use_berserk='berserk' in binary_talents,
         prepop_berserk=bool(prepop_berserk), preproc_omen=bool(preproc_omen),
