@@ -172,6 +172,7 @@ class Simulation():
         'preproc_omen': False,
         'bearweave': False,
         'berserk_bite_thresh': 100,
+        'berserk_ff_thresh': 87, 
         'lacerate_prio': False,
         'lacerate_time': 10.0,
         'powerbear': False,
@@ -1090,10 +1091,13 @@ class Simulation():
         # determining whether to cast it vs. dump Energy first. That puts the
         # Energy threshold for FF usage as 107 minus 10 for the Clearcasted
         # special minus 10 for the FF GCD = 87 Energy.
+        ff_energy_threshold = (
+            self.strategy['berserk_ff_thresh'] if self.player.berserk else 87
+        )
         ff_now = (
             (self.player.faerie_fire_cd < 1e-9)
             and (not self.player.omen_proc)
-            and (energy < 87)
+            and (energy < ff_energy_threshold)
         )
 
         # First figure out how much Energy we must float in order to be able
@@ -1670,7 +1674,7 @@ class Simulation():
         # Pre-proc Clearcasting if requested
         if self.strategy['preproc_omen'] and self.player.omen:
             self.player.omen_proc = True
-            self.player.faerie_fire_cd = 5.0
+            self.player.faerie_fire_cd = 5.0 - self.player.berserk
 
         # If Idol swapping, then start fight with Mangle or Rip Idol equipped
         if self.strategy['mangle_idol_swap']:
