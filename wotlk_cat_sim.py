@@ -2206,6 +2206,14 @@ class Simulation():
         if param == 'agility':
             self.player.attack_power += self.player.ap_mod * increment
             self.player.crit_chance += increment / 83.33 / 100.
+        
+        # For Hit chance increments, also augment Spell Hit chance
+        if param == 'hit_chance':
+            self.player.spell_hit_chance += increment * 32.79 / 26.23
+
+        # For Crit chance increments, also augment Spell Crit chance
+        if param == 'crit_chance':
+            self.player.spell_crit_chance += increment
 
         # Calculate DPS
         dps_vals = self.run_replicates(num_replicates)
@@ -2220,6 +2228,12 @@ class Simulation():
         if param == 'agility':
             self.player.attack_power -= self.player.ap_mod * increment
             self.player.crit_chance -= increment / 83.33 / 100.
+
+        if param == 'hit_chance':
+            self.player.spell_hit_chance -= increment * 32.79 / 26.23
+
+        if param == 'crit_chance':
+            self.player.spell_crit_chance -= increment
 
         return avg_dps - base_dps
 
@@ -2267,6 +2281,8 @@ class Simulation():
 
         # For hit, we reduce miss chance by 2% if well below hit cap, and
         # increase miss chance by 2% when already capped or close.
+        # Assumption made here is that the player should only be concerned
+        # with the melee hit
         sign = 1 - 2 * int(
             self.player.miss_chance - self.player.dodge_chance > 0.02
         )
