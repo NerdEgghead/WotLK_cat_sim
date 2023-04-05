@@ -179,10 +179,15 @@ buffs_1 = dbc.Col(
                       'value': 'unleashed_rage'
                   },
                   {'label': 'Arcane Intellect', 'value': 'ai'},
-                  {'label': 'Prayer of Spirit', 'value': 'spirit'}],
+                  {'label': 'Prayer of Spirit', 'value': 'spirit'},
+                  {
+                        'label': 'Moonkin Aura / Elemental Oath',
+                        'value': 'moonkin_aura'
+                  }
+         ],
          value=[
              'kings', 'might', 'wisdom', 'motw', 'str_totem', 'unleashed_rage',
-             'ai', 'heroic_presence'
+             'ai', 'heroic_presence', 'moonkin_aura'
          ],
          id='raid_buffs'
      ),
@@ -1567,7 +1572,8 @@ def apply_buffs(
         raw_crit_unbuffed + buffed_agi / 83.33 + added_crit_rating / 45.91
     )
     buffed_spell_crit = (
-        raw_spell_crit_unbuffed + buffed_int / 166.67 + added_crit_rating / 45.91
+        raw_spell_crit_unbuffed + buffed_int / 166.67 
+        + added_crit_rating / 45.91 + 5 * ('moonkin_aura' in raid_buffs)
     )
     buffed_hit = (
         unbuffed_hit + 1 * ('heroic_presence' in raid_buffs)
