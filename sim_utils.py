@@ -76,7 +76,7 @@ def calc_yellow_damage(
 def calc_spell_damage(
     low_end, high_end, miss_chance, crit_chance, crit_multiplier=1.5
 ):
-    """Execute 2-roll table for a melee spell.
+    """Execute 2-roll table for a spell and adjust for resistances.
 
     Arguments:
         low_end (float): Low end base damage of the ability.
