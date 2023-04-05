@@ -51,7 +51,7 @@ class Player():
             ap_mod (float): Total multiplier for Attack Power in Cat Form.
             agility (int): Fully raid buffed Agility attribute.
             hit_chance (float): Chance to hit as a fraction.
-            spell_hit_chance (float): Chance for spells (farie fire feral) 
+            spell_hit_chance (float): Chance for spells (faerie fire feral) 
                 to hit as a fraction.
             expertise_rating (int): Player's Expertise Rating stat.
             crit_chance (float): Fully raid buffed crit chance as a fraction.
@@ -1043,7 +1043,8 @@ class Player():
         self.dmg_breakdown['Faerie Fire (Bear)']['casts'] += 1
         miss = (np.random.rand() < self.spell_miss_chance)
         damage_on_hit = self.faerie_fire_hit
-        self.gen_log('Faerie Fire (Bear)', damage_on_hit, miss, False, False)
+        if self.log:
+            self.gen_log('Faerie Fire (Bear)', damage_on_hit, miss, False, False)
         if not miss:
             return damage_on_hit
         else:
