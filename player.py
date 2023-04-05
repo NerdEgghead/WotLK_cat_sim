@@ -33,9 +33,9 @@ class Player():
 
     def __init__(
             self, attack_power, ap_mod, agility, hit_chance, spell_hit_chance, 
-            expertise_rating, crit_chance, armor_pen_rating, swing_timer, mana, intellect,
-            spirit, mp5, jow=False, rune=True, t6_2p=False, t6_4p=False,
-            t7_2p=False, wolfshead=True, mangle_glyph=False, meta=False,
+            expertise_rating, crit_chance, spell_crit_chance, armor_pen_rating, 
+            swing_timer, mana, intellect, spirit, mp5, jow=False, rune=True, t6_2p=False,
+            t6_4p=False, t7_2p=False, wolfshead=True, mangle_glyph=False, meta=False,
             bonus_damage=0, shred_bonus=0, rip_bonus=0, debuff_ap=0, multiplier=1.1, 
             spell_damage_multiplier=1.0, omen=True, primal_gore=True, feral_aggression=0,
             predatory_instincts=3, savage_fury=2, furor=3,
@@ -55,6 +55,8 @@ class Player():
                 to hit as a fraction.
             expertise_rating (int): Player's Expertise Rating stat.
             crit_chance (float): Fully raid buffed crit chance as a fraction.
+            spell_crit_chance (float): Fully raid buffed spell crit chance 
+                as a fraction.
             armor_pen_rating (int): Armor penetration rating from gear. Boss
                 armor debuffs are handled by Simulation objects as they are not
                 properties of the player character.
@@ -155,6 +157,7 @@ class Player():
         self.expertise_rating = expertise_rating
 
         self.crit_chance = crit_chance - 0.048
+        self.spell_crit_chance = spell_crit_chance
         self.armor_pen_rating = armor_pen_rating
         self.swing_timer = swing_timer
         self.mana_pool = mana
@@ -214,6 +217,10 @@ class Player():
         if self.cat_form:
             crit_multiplier *= (1.0 + round(self.predatory_instincts / 30, 2))
         return crit_multiplier
+    
+    def calc_spell_crit_multiplier(self):
+        spell_crit_multiplier = 1.5 * (1.0 + self.meta * 0.03)
+        return spell_crit_multiplier
 
     def set_mana_regen(self):
         """Calculate and store mana regeneration rates based on specified regen
@@ -1041,11 +1048,11 @@ class Player():
             return 0.0
 
         self.dmg_breakdown['Faerie Fire (Bear)']['casts'] += 1
-        miss = (np.random.rand() < self.spell_miss_chance)
-        damage_on_hit = self.faerie_fire_hit
+        # Perform Monte Carlo for Bear Faerie Fire
+        damage_done, miss, crit = sim_utils.calc_yellow_damage(
+            self.faerie_fire_hit, self.faerie_fire_hit, self.spell_miss_chance, 
+            self.spell_crit_chance, crit_multiplier=self.calc_spell_crit_multiplier()
+        )
         if self.log:
-            self.gen_log('Faerie Fire (Bear)', damage_on_hit, miss, False, False)
-        if not miss:
-            return damage_on_hit
-        else:
-            return 0.0
+            self.gen_log('Faerie Fire (Bear)', damage_done, miss, crit, False)
+        return damage_done

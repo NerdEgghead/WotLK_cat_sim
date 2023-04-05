@@ -273,9 +273,12 @@ encounter_details = dbc.Col(
                  'value': 'jotc'
              },
              {'label': 'Judgment of Wisdom', 'value': 'jow'},
-             {'label': 'Misery / Improved Fearie Fire', 'value': 'misery'},
+             {'label': 'Misery / Improved Faerie Fire', 'value': 'misery'},
+             {'label': 'Shadow Mastery / Improved Scorch / Winter\'s Chill',
+              'value': 'shadow_mastery'
+             },
          ],
-         value=['jotc', 'jow', 'misery'],
+         value=['jotc', 'jow', 'misery', 'shadow_mastery'],
          id='stat_debuffs',
      ),
      html.Br(),
@@ -1419,9 +1422,9 @@ def process_trinkets(
 
 def create_player(
         buffed_agility, buffed_attack_power, buffed_hit, buffed_spell_hit, buffed_crit,
-        buffed_weapon_damage, haste_rating, expertise_rating, armor_pen_rating,
-        buffed_mana_pool, buffed_int, buffed_spirit, buffed_mp5, weapon_speed,
-        unleashed_rage, kings, raven_idol, other_buffs, stat_debuffs,
+        buffed_spell_crit, buffed_weapon_damage, haste_rating, expertise_rating, 
+        armor_pen_rating, buffed_mana_pool, buffed_int, buffed_spirit, buffed_mp5, 
+        weapon_speed, unleashed_rage, kings, raven_idol, other_buffs, stat_debuffs,
         cooldowns, bonuses, binary_talents, naturalist, feral_aggression,
         savage_fury, potp, predatory_instincts, improved_mangle, imp_motw, furor,
         natural_shapeshifter, ilotp, potion, gotw_targets
@@ -1454,6 +1457,11 @@ def create_player(
         buffed_crit + 3 * ('jotc' in stat_debuffs)
         + (28 * ('be_chain' in other_buffs) + 40 * bool(raven_idol)) / 45.91
     )
+    encounter_spell_crit = (
+        buffed_spell_crit + 3 * ('jotc' in stat_debuffs)
+        + 5 * ('shadow_mastery' in stat_debuffs)
+        + (28 * ('be_chain' in other_buffs) + 40 * bool(raven_idol)) / 45.91
+    )
     encounter_hit = buffed_hit
     encounter_spell_hit = (buffed_spell_hit + 3 * ('misery' in stat_debuffs))
     encounter_mp5 = (
@@ -1474,6 +1482,7 @@ def create_player(
     player = player_class.Player(
         attack_power=buffed_attack_power, ap_mod=ap_mod,
         agility=buffed_agility, hit_chance=encounter_hit / 100, 
+        spell_crit_chance=encounter_spell_crit / 100,
         spell_hit_chance=encounter_spell_hit / 100,
         expertise_rating=expertise_rating, crit_chance=encounter_crit / 100,
         swing_timer=buffed_swing_timer, mana=buffed_mana_pool,
@@ -1509,9 +1518,9 @@ def create_player(
 
 def apply_buffs(
         unbuffed_ap, unbuffed_strength, unbuffed_agi, unbuffed_hit, 
-        unbuffed_spell_hit, unbuffed_crit, unbuffed_arp, unbuffed_mana, 
-        unbuffed_int, unbuffed_spirit, unbuffed_mp5, weapon_damage, 
-        raid_buffs, consumables, imp_motw
+        unbuffed_spell_hit, unbuffed_crit, unbuffed_spell_crit,
+        unbuffed_arp, unbuffed_mana, unbuffed_int, unbuffed_spirit, 
+        unbuffed_mp5, weapon_damage, raid_buffs, consumables, imp_motw
 ):
     """Takes in unbuffed player stats, and turns them into buffed stats based
     on specified consumables and raid buffs. This function should only be
@@ -1521,6 +1530,7 @@ def apply_buffs(
     # Determine "raw" AP, crit, and mana not from Str/Agi/Int
     raw_ap_unbuffed = unbuffed_ap / 1.1 - 2 * unbuffed_strength - unbuffed_agi
     raw_crit_unbuffed = unbuffed_crit - unbuffed_agi / 83.33
+    raw_spell_crit_unbuffed = unbuffed_spell_crit - unbuffed_int / 166.67
     raw_mana_unbuffed = unbuffed_mana - 15 * unbuffed_int
 
     # Augment all base stats based on specified buffs
@@ -1553,6 +1563,9 @@ def apply_buffs(
     buffed_crit = (
         raw_crit_unbuffed + buffed_agi / 83.33 + added_crit_rating / 45.91
     )
+    buffed_spell_crit = (
+        raw_spell_crit_unbuffed + buffed_int / 166.67 + added_crit_rating / 45.91
+    )
     buffed_hit = (
         unbuffed_hit + 1 * ('heroic_presence' in raid_buffs)
         + 40 / 32.79 * ('hit_food' in consumables)
@@ -1575,6 +1588,7 @@ def apply_buffs(
         'spirit': buffed_spirit,
         'attackPower': buffed_attack_power,
         'crit': buffed_crit,
+        'spellCrit': buffed_spell_crit,
         'hit': buffed_hit,
         'spellHit': buffed_spell_hit,
         'weaponDamage': buffed_weapon_damage,
@@ -1899,7 +1913,7 @@ def compute(
         input_stats.update(apply_buffs(
             input_stats['attackPower'], input_stats['strength'],
             input_stats['agility'], input_stats['hit'], input_stats["spellHit"],
-            input_stats['crit'], input_stats.get('armorPenRating', 0), 
+            input_stats['crit'], input_stats['spellCrit'], input_stats.get('armorPenRating', 0), 
             input_stats['mana'], input_stats['intellect'], input_stats['spirit'],
             input_stats.get('mp5', 0), input_stats.get('weaponDamage', 0),
             raid_buffs, consumables,imp_motw
@@ -1923,7 +1937,8 @@ def compute(
     # Create Player object based on raid buffed stat inputs and talents
     player, ap_mod, stat_mod, haste_multiplier = create_player(
         input_stats['agility'], input_stats['attackPower'], input_stats['hit'],
-        input_stats['spellHit'], input_stats['crit'], input_stats.get('weaponDamage', 0),
+        input_stats['spellHit'], input_stats['crit'], input_stats['spellCrit'],
+        input_stats.get('weaponDamage', 0),
         input_stats.get('hasteRating', 0),
         input_stats.get('expertiseRating', 0),
         input_stats.get('armorPenRating', 0),input_stats['mana'],
