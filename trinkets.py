@@ -1182,8 +1182,8 @@ trinket_library = {
             'attack_power': 251,
         },
         'active_stats': {
-            'stat_name': 'crit_chance',
-            'stat_increment': 692./45.91/100,
+            'stat_name': ['crit_chance', 'spell_crit_chance'],
+            'stat_increment': np.array([692./45.91/100, 692./45.91/100]),
             'proc_name': 'Dark Matter',
             'proc_duration': 10,
             'cooldown': 45,

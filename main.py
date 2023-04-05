@@ -1383,19 +1383,6 @@ def process_trinkets(
         if active_stats['stat_name'] == 'Strength':
             active_stats['stat_name'] = 'attack_power'
             active_stats['stat_increment'] *= 2 * stat_mod * ap_mod
-        if active_stats['stat_name'] == 'crit_chance':
-            active_stats['stat_name'] = ['crit_chance', 'spell_crit_chance']
-            cirt_increment = active_stats['stat_increment']
-            active_stats['stat_increment'] = np.array([
-                cirt_increment, cirt_increment
-            ])
-        if active_stats['stat_name'] == 'hit_chance':
-            active_stats['stat_name'] = ['hit_chance', 'spell_hit_chance']
-            hit_increment = active_stats['stat_increment']
-            active_stats['stat_increment'] = np.array([
-                hit_increment, hit_increment
-            ])
-
 
         if trinket_params['type'] == 'activated':
             # If this is the second trinket slot and the first trinket was also
