@@ -1052,7 +1052,7 @@ class Player():
         # Perform Monte Carlo for Bear Faerie Fire
         # Further modification is needed here to account for partial resistance
         # May also need to check for enrage
-        damage_done, miss, crit = sim_utils.calc_yellow_damage(
+        damage_done, miss, crit = sim_utils.calc_spell_damage(
             self.faerie_fire_hit, self.faerie_fire_hit, self.spell_miss_chance, 
             self.spell_crit_chance, crit_multiplier=self.calc_spell_crit_multiplier()
         )
