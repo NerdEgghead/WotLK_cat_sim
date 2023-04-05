@@ -258,8 +258,10 @@ encounter_details = dbc.Col(
                  'label': 'Blood Frenzy / Savage Combat',
                  'value': 'blood_frenzy'
              },
-             {'label': "Curse of Elements / Earth and Moon / Ebon Plaguebringer",
-              'value': 'curse_of_elements'},
+             {
+                'label': "Curse of Elements / Earth and Moon / Ebon Plaguebringer",
+                'value': 'curse_of_elements'
+             },
          ],
          value=['gift_of_arthas', 'sunder', 'faerie_fire', 'blood_frenzy', 'curse_of_elements'],
          id='boss_debuffs'
@@ -274,8 +276,9 @@ encounter_details = dbc.Col(
              },
              {'label': 'Judgment of Wisdom', 'value': 'jow'},
              {'label': 'Misery / Improved Faerie Fire', 'value': 'misery'},
-             {'label': 'Shadow Mastery / Improved Scorch / Winter\'s Chill',
-              'value': 'shadow_mastery'
+             {
+                 'label': 'Shadow Mastery / Improved Scorch / Winter\'s Chill',
+                 'value': 'shadow_mastery'
              },
          ],
          value=['jotc', 'jow', 'misery', 'shadow_mastery'],
