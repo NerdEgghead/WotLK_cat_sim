@@ -1065,7 +1065,8 @@ class Simulation():
         )
         berserk_now = (
             self.strategy['use_berserk'] and (self.player.berserk_cd < 1e-9)
-            and (not wait_for_tf)
+            and (not wait_for_tf) and self.rip_debuff
+            and (not self.player.omen_proc)
         )
 
         # Additionally, for Lacerateweave rotation, postpone the final Berserk
