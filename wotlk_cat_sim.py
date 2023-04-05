@@ -155,6 +155,7 @@ class Simulation():
         'faerie_fire': True,
         'blood_frenzy': False,
         'shattering_throw': False,
+        'curse_of_elements': True,
     }
 
     # Default parameters specifying the player execution strategy
