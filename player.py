@@ -157,6 +157,7 @@ class Player():
         self.expertise_rating = expertise_rating
 
         self.crit_chance = crit_chance - 0.048
+        # Assume no spell crit suppression for now.
         self.spell_crit_chance = spell_crit_chance
         self.armor_pen_rating = armor_pen_rating
         self.swing_timer = swing_timer
@@ -1049,6 +1050,8 @@ class Player():
 
         self.dmg_breakdown['Faerie Fire (Bear)']['casts'] += 1
         # Perform Monte Carlo for Bear Faerie Fire
+        # Further modification is needed here to account for partial resistance
+        # May also need to check for enrage
         damage_done, miss, crit = sim_utils.calc_yellow_damage(
             self.faerie_fire_hit, self.faerie_fire_hit, self.spell_miss_chance, 
             self.spell_crit_chance, crit_multiplier=self.calc_spell_crit_multiplier()
