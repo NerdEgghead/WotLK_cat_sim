@@ -1049,13 +1049,13 @@ class Player():
             return 0.0
 
         self.dmg_breakdown['Faerie Fire (Bear)']['casts'] += 1
-        # Perform Monte Carlo for Bear Faerie Fire
-        # Further modification is needed here to account for partial resistance
-        # May also need to check for enrage
+        # Perform spell damage calculation for Bear Faerie Fire
         damage_done, miss, crit = sim_utils.calc_spell_damage(
             self.faerie_fire_hit, self.faerie_fire_hit, self.spell_miss_chance, 
             self.spell_crit_chance, crit_multiplier=self.calc_spell_crit_multiplier()
         )
+        if self.enrage:
+            damage_done *= 1.15
         if self.log:
             self.gen_log('Faerie Fire (Bear)', damage_done, miss, crit, False)
         return damage_done
