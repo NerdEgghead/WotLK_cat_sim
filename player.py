@@ -21,6 +21,15 @@ class Player():
         self.calc_miss_chance()
 
     @property
+    def spell_hit_chance(self):
+        return self._spell_hit_chance
+    
+    @spell_hit_chance.setter
+    def spell_hit_chance(self, value):
+        self._spell_hit_chance = value
+        self.calc_spell_miss_chance()
+
+    @property
     def expertise_rating(self):
         return self._expertise_rating
 
@@ -210,7 +219,11 @@ class Player():
             (8. - miss_reduction) + (6.5 - dodge_reduction)
         )
         self.dodge_chance = 0.01 * (6.5 - dodge_reduction)
-        spell_miss_reduction = min(self.spell_hit_chance * 100, 17.0)
+
+    def calc_spell_miss_chance(self):
+        """Update spell miss chance when a change to the player's spell
+        hit percent occurs."""
+        spell_miss_reduction = min(self._spell_hit_chance * 100, 17.0)
         self.spell_miss_chance = 0.01 * (17.0 - spell_miss_reduction)
 
     def calc_crit_multiplier(self):
