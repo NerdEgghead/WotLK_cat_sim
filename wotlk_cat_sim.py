@@ -1097,7 +1097,8 @@ class Simulation():
         )
         ff_now = (
             (self.player.faerie_fire_cd < 1e-9) and (not self.player.omen_proc)
-            and (energy < ff_energy_threshold) and (not rip_now)
+            and (energy < ff_energy_threshold)
+            and ((not rip_now) or (energy < self.player.rip_cost))
         )
 
         # First figure out how much Energy we must float in order to be able
