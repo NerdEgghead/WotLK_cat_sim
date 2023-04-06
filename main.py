@@ -549,7 +549,7 @@ iteration_input = dbc.Col([
     dbc.InputGroup(
         [
             dbc.InputGroupAddon('Number of replicates:', addon_type='prepend'),
-            dbc.Input(value=67000, type='number', id='num_replicates')
+            dbc.Input(value=150000, type='number', id='num_replicates')
         ],
         style={'width': '50%'}
     ),

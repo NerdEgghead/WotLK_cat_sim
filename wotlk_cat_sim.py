@@ -1096,9 +1096,8 @@ class Simulation():
             self.strategy['berserk_ff_thresh'] if self.player.berserk else 87
         )
         ff_now = (
-            (self.player.faerie_fire_cd < 1e-9)
-            and (not self.player.omen_proc)
-            and (energy < ff_energy_threshold)
+            (self.player.faerie_fire_cd < 1e-9) and (not self.player.omen_proc)
+            and (energy < ff_energy_threshold) and (not rip_now)
         )
 
         # First figure out how much Energy we must float in order to be able
