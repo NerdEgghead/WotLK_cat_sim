@@ -1061,7 +1061,6 @@ class Player():
                 self.gen_log('Faerie Fire (Cat)', '', False, False, False)
             return 0.0
 
-        self.dmg_breakdown['Faerie Fire (Bear)']['casts'] += 1
         # Perform spell damage calculation for Bear Faerie Fire
         damage_done, miss, crit = sim_utils.calc_spell_damage(
             self.faerie_fire_hit, self.faerie_fire_hit, self.spell_miss_chance, 
@@ -1069,6 +1068,8 @@ class Player():
         )
         if self.enrage:
             damage_done *= 1.15
+        self.dmg_breakdown['Faerie Fire (Bear)']['casts'] += 1    
+        self.dmg_breakdown['Faerie Fire (Bear)']['damage'] += damage_done  
         if self.log:
             self.gen_log('Faerie Fire (Bear)', damage_done, miss, crit, False)
         return damage_done
