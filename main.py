@@ -616,11 +616,23 @@ iteration_input = dbc.Col([
                 'Targeted offset in Rip/Roar timings:', addon_type='prepend'
             ),
             dbc.Input(
-                value=20, min=0, step=1, type='number', id='min_roar_offset'
+                value=24, min=0, step=1, type='number', id='min_roar_offset'
             ),
             dbc.InputGroupAddon('seconds', addon_type='append')
         ],
         style={'width': '65%', 'marginBottom': '1.5%'}
+    ),
+    dbc.InputGroup(
+        [
+            dbc.InputGroupAddon(
+                'Rip leeway for determining Roar clips:', addon_type='prepend'
+            ),
+            dbc.Input(
+                value=3, min=0, step=1, type='number', id='roar_clip_leeway'
+            ),
+            dbc.InputGroupAddon('seconds', addon_type='append')
+        ],
+        style={'width': '67%', 'marginBottom': '1.5%'}
     ),
     dbc.InputGroup(
         [
@@ -1818,6 +1830,7 @@ def plot_new_trajectory(sim, show_whites):
     State('bite_cp', 'value'),
     State('cd_delay', 'value'),
     State('min_roar_offset', 'value'),
+    State('roar_clip_leeway', 'value'),
     State('use_rake', 'value'),
     State('mangle_spam', 'value'),
     State('use_biteweave', 'value'),
@@ -1849,11 +1862,12 @@ def compute(
         predatory_instincts, improved_mangle, furor, naturalist,
         natural_shapeshifter, ilotp, fight_length, boss_armor,
         boss_debuffs, cooldowns, rip_cp, bite_cp, cd_delay,
-        min_roar_offset, use_rake, mangle_spam, use_biteweave, bite_model,
-        bite_time, bear_mangle, prepop_berserk, preproc_omen, bearweave,
-        berserk_bite_thresh, berserk_ff_thresh, lacerate_prio, lacerate_time,
-        powerbear, snek, flowershift, gotw_targets, daggerweave,
-        dagger_ep_loss, num_replicates, latency, epic_gems, show_whites
+        min_roar_offset, roar_clip_leeway, use_rake, mangle_spam,
+        use_biteweave, bite_model, bite_time, bear_mangle, prepop_berserk,
+        preproc_omen, bearweave, berserk_bite_thresh, berserk_ff_thresh,
+        lacerate_prio, lacerate_time, powerbear, snek, flowershift,
+        gotw_targets, daggerweave, dagger_ep_loss, num_replicates, latency,
+        epic_gems, show_whites
 ):
     ctx = dash.callback_context
 
@@ -2085,9 +2099,9 @@ def compute(
         lacerate_time=lacerate_time, powerbear=bool(powerbear),
         snek=bool(snek) and bool(bearweave), flowershift=bool(flowershift),
         daggerweave=bool(daggerweave), dagger_ep_loss=dagger_ep_loss,
-        min_roar_offset=min_roar_offset, trinkets=trinket_list,
-        haste_multiplier=haste_multiplier, hot_uptime=hot_uptime / 100.,
-        mangle_idol=mangle_idol
+        min_roar_offset=min_roar_offset, roar_clip_leeway=roar_clip_leeway,
+        trinkets=trinket_list, haste_multiplier=haste_multiplier,
+        hot_uptime=hot_uptime / 100., mangle_idol=mangle_idol
     )
     sim.set_active_debuffs(boss_debuffs)
     player.calc_damage_params(**sim.params)

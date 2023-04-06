@@ -172,11 +172,12 @@ class Simulation():
         'preproc_omen': False,
         'bearweave': False,
         'berserk_bite_thresh': 100,
-        'berserk_ff_thresh': 87, 
+        'berserk_ff_thresh': 87,
         'lacerate_prio': False,
         'lacerate_time': 10.0,
         'powerbear': False,
         'min_roar_offset': 10.0,
+        'roar_clip_leeway': 0.0,
         'snek': False,
         'idol_swap': False,
         'flowershift': False,
@@ -738,11 +739,14 @@ class Simulation():
         # If the existing Roar already falls off well after the existing Roar,
         # then no need to clip.
         # if self.roar_end >= rip_end + self.strategy['min_roar_offset']:
-        if self.roar_end > rip_end:
+        if self.roar_end > rip_end + self.strategy['roar_clip_leeway']:
             return False
 
         # Calculate when Roar would end if we cast it now.
-        new_roar_dur = self.player.roar_durations[self.player.combo_points] + 8 * self.player.t8_4p_bonus
+        new_roar_dur = (
+            self.player.roar_durations[self.player.combo_points]
+            + 8 * self.player.t8_4p_bonus
+        )
         new_roar_end = time + new_roar_dur
 
         # Clip as soon as we have enough CPs for the new Roar to expire well
