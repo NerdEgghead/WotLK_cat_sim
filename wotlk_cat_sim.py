@@ -641,67 +641,6 @@ class Simulation():
 
         return ripcost, bitecost, srcost
 
-    def should_rip(self, time, future_time=None):
-        """Determine whether Rip will tick enough times between the specified
-        cast time and the end of the fight for it to be worth casting over
-        Ferocious Bite.
-
-        Arguments:
-            time (float): Current simulation time, in seconds.
-            future_time (float): If supplied, then project this calculation for
-                a future point in time rather than right now. In this case, a
-                minimum Energy Bite will be assumed, rather than the player's
-                current Energy.
-
-        Returns:
-            should_rip (bool): True if Rip will provide higher DPE than Bite
-                given the expected number of ticks.
-        """
-        if future_time is None:
-            future_time = time
-            bite_spend = max(
-                min(self.player.energy, self.player.bite_cost + 30),
-                self.player.bite_cost + 10 * self.latency
-            )
-            bite_cost = self.player.bite_cost
-            bite_cp = self.player.combo_points
-            rip_cost = self.player.rip_cost
-            rip_cp = self.player.combo_points
-        else:
-            bite_spend = 35
-            bite_cost = 35
-            bite_cp = self.strategy['min_combos_for_bite']
-            rip_cost = 30
-            rip_cp = self.strategy['min_combos_for_rip']
-
-        # Rip DPE calculation
-        max_rip_dur = self.player.rip_duration + 6 * self.player.shred_glyph
-        rip_dur = min(max_rip_dur, self.fight_length - future_time)
-        num_rip_ticks = rip_dur // 2 # floored integer division here
-        crit_factor = self.player.calc_crit_multiplier() - 1
-        rip_crit_chance = self.player.crit_chance + self.player.rip_crit_bonus
-        avg_rip_tick = self.player.rip_tick[rip_cp] * 1.3 * (
-            1 + crit_factor * rip_crit_chance * self.player.primal_gore
-        )
-        rip_dpe = avg_rip_tick * num_rip_ticks / rip_cost
-
-        # Bite DPE calculation
-        bite_base_dmg = 0.5 * (
-            self.player.bite_low[bite_cp] + self.player.bite_high[bite_cp]
-        )
-        bite_bonus_dmg = (
-            (bite_spend - bite_cost) * (9.4 + self.player.attack_power / 410.)
-            * self.player.bite_multiplier
-        )
-        bite_crit_chance = (
-            self.player.crit_chance + self.player.bite_crit_bonus
-        )
-        bite_dpe = (bite_base_dmg + bite_bonus_dmg) / bite_spend * (
-            1 + crit_factor * bite_crit_chance
-        )
-
-        return (rip_dpe > bite_dpe)
-
     def calc_allowed_rip_downtime(self, time):
         """Determine how many seconds of Rip uptime can be lost in exchange for
         a Ferocious Bite cast without losing damage. This calculation is used
@@ -780,7 +719,87 @@ class Simulation():
             self.player.rake_hit * (1 + crit_mod)
             + (self.player.rake_duration / 3) * self.player.rake_tick
         )
-        return rake_dpc / 35., shred_dpc / 42.
+        return rake_dpc/self.player.rake_cost, shred_dpc/self.player.shred_cost
+
+    def bite_over_rip(self, refresh_time, future_refresh=False):
+        """Determine whether Rip will tick enough times between the specified
+        cast time and the end of the fight for it to be worth casting over
+        Ferocious Bite.
+
+        Arguments:
+            refresh_time (float): Time of potential Rip cast, in seconds.
+            future_refresh (bool): If True, then refresh_time is interpreted as
+                a future point in time rather than right now. In this case, a
+                minimum Energy Bite will be assumed, rather than using the
+                player's current Energy. Defaults False.
+
+        Returns:
+            should_bite (bool): True if Bite will provide higher DPE than Rip
+                given the expected number of ticks.
+        """
+        rip_dpe, bite_dpe = self.calc_spender_dpe(
+            refresh_time, future_refresh=future_refresh
+        )
+        return (bite_dpe > rip_dpe)
+
+    def calc_spender_dpe(self, refresh_time, future_refresh=False):
+        """Calculate damage-per-Energy of Rip vs. Ferocious Bite at the
+        specified Rip cast time.
+
+        Arguments:
+            refresh_time (float): Time of potential Rip cast, in seconds.
+            future_refresh (bool): If True, then refresh_time is interpreted as
+                a future point in time rather than right now. In this case, a
+                minimum Energy Bite will be assumed, rather than using the
+                player's current Energy. Defaults False.
+
+        Returns:
+            rip_dpe (float): Average DPE of a Rip cast at refresh_time.
+            bite_dpe (float): Average DPE of a Bite cast at refresh_time.
+        """
+        if future_refresh:
+            bite_spend = 35
+            bite_cost = 35
+            bite_cp = self.strategy['min_combos_for_bite']
+            rip_cost = 30
+            rip_cp = self.strategy['min_combos_for_rip']
+        else:
+            bite_cost = 0 if self.player.omen_proc else self.player.bite_cost
+            bite_spend = max(
+                min(self.player.energy, bite_cost + 30),
+                bite_cost + 10 * self.latency
+            )
+            bite_cp = self.player.combo_points
+            rip_cost = self.player.rip_cost
+            rip_cp = self.player.combo_points
+
+        # Rip DPE calculation
+        max_rip_dur = self.player.rip_duration + 6 * self.player.shred_glyph
+        rip_dur = min(max_rip_dur, self.fight_length - refresh_time)
+        num_rip_ticks = rip_dur // 2 # floored integer division here
+        crit_factor = self.player.calc_crit_multiplier() - 1
+        rip_crit_chance = self.player.crit_chance + self.player.rip_crit_bonus
+        avg_rip_tick = self.player.rip_tick[rip_cp] * 1.3 * (
+            1 + crit_factor * rip_crit_chance * self.player.primal_gore
+        )
+        rip_dpe = avg_rip_tick * num_rip_ticks / rip_cost
+
+        # Bite DPE calculation
+        bite_base_dmg = 0.5 * (
+            self.player.bite_low[bite_cp] + self.player.bite_high[bite_cp]
+        )
+        bite_bonus_dmg = (
+            (bite_spend - bite_cost) * (9.4 + self.player.attack_power / 410.)
+            * self.player.bite_multiplier
+        )
+        bite_crit_chance = (
+            self.player.crit_chance + self.player.bite_crit_bonus
+        )
+        bite_dpe = (bite_base_dmg + bite_bonus_dmg) / bite_spend * (
+            1 + crit_factor * bite_crit_chance
+        )
+
+        return rip_dpe, bite_dpe
 
     def clip_roar(self, time):
         """Determine whether to clip a currently active Savage Roar in order to
@@ -1045,7 +1064,7 @@ class Simulation():
         bite_cp = self.strategy['min_combos_for_bite']
 
         # block_rip_now prevents Rip usage too close to fight end
-        block_rip_now = (cp < rip_cp) or (not self.should_rip(time))
+        block_rip_now = (cp < rip_cp) or self.bite_over_rip(time)
         rip_now = (
             (cp >= rip_cp) and (not self.rip_debuff)
             and (not self.player.omen_proc)
@@ -1054,7 +1073,7 @@ class Simulation():
         # Likewise, block_rip_next prios Bite usage if the *current* Rip will
         # expire too close to fight end.
         block_rip_next = self.rip_debuff and (
-            not self.should_rip(time, future_time=self.rip_end)
+            self.bite_over_rip(self.rip_end, future_refresh=True)
         )
         bite_at_end = (cp >= bite_cp) and (block_rip_now or block_rip_next)
 
@@ -1068,10 +1087,26 @@ class Simulation():
             (cp >= bite_cp) and self.rip_debuff and self.player.savage_roar
             and self.strategy['use_bite'] and self.can_bite(time)
         )
-        bite_now = (
-            (bite_before_rip or bite_at_end) and (not self.player.omen_proc)
-            # and (energy < 42)
-        )
+        # bite_now = (
+        #     (bite_before_rip or bite_at_end) and (not self.player.omen_proc)
+        #     # and (energy < 42)
+        # )
+        bite_now = bite_before_rip or bite_at_end
+
+        if bite_now and self.player.omen_proc:
+            # _, shred_dpe = self.calc_builder_dpe()
+            # _, bite_dpe = self.calc_spender_dpe(time)
+            # bite_energy_drain = min(energy, 30)
+            # effective_bite_cost = (
+            #     bite_energy_drain +
+            #     (self.player.shred_cost - self.player.bite_cost)
+            # )
+            # effective_bite_dpe = (
+            #     (bite_dpe*bite_energy_drain - shred_dpe*self.player.shred_cost)
+            #     / effective_bite_cost
+            # )
+            # bite_now = (effective_bite_dpe > shred_dpe)
+            bite_now = False
 
         # During Berserk, we additionally add an Energy constraint on Bite
         # usage to maximize the total Energy expenditure we can get.
