@@ -1087,11 +1087,7 @@ class Simulation():
             (cp >= bite_cp) and self.rip_debuff and self.player.savage_roar
             and self.strategy['use_bite'] and self.can_bite(time)
         )
-        # bite_now = (
-        #     (bite_before_rip or bite_at_end) and (not self.player.omen_proc)
-        #     # and (energy < 42)
-        # )
-        bite_now = bite_before_rip or bite_at_end
+        bite_now = (bite_before_rip or bite_at_end) and (energy < 67)
 
         if bite_now and self.player.omen_proc:
             # _, shred_dpe = self.calc_builder_dpe()
