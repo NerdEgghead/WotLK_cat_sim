@@ -792,8 +792,8 @@ class Simulation():
             (bite_spend - bite_cost) * (9.4 + self.player.attack_power / 410.)
             * self.player.bite_multiplier
         )
-        bite_crit_chance = (
-            self.player.crit_chance + self.player.bite_crit_bonus
+        bite_crit_chance = min(
+            1.0, self.player.crit_chance + self.player.bite_crit_bonus
         )
         bite_dpe = (bite_base_dmg + bite_bonus_dmg) / bite_spend * (
             1 + crit_factor * bite_crit_chance
