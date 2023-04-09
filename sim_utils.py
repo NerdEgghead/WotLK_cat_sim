@@ -73,6 +73,37 @@ def calc_yellow_damage(
         return crit_multiplier * base_dmg, False, True
     return base_dmg, False, False
 
+def calc_spell_damage(
+    low_end, high_end, miss_chance, crit_chance, crit_multiplier=1.5
+):
+    """Execute 2-roll table for a spell and adjust for resistances.
+
+    Arguments:
+        low_end (float): Low end base damage of the ability.
+        high_end (float): High end base damage of the ability.
+        miss_chance (float): Probability that the ability is avoided.
+        crit_chance (float): Probability of a critical strike.
+        crit_multiplier (float): Damage multiplier on crits.
+            Defaults to 1.5.
+
+    Returns:
+        damage_done (float): Damage done by the ability.
+        miss (bool): True if the attack was avoided.
+        crit (bool): True if the attack was a critical strike.
+    """
+    base_dmg, miss, crit = calc_yellow_damage(low_end, high_end, 
+        miss_chance, crit_chance, crit_multiplier)
+    # Adjust for resistances, hard coded for pure level based resist
+    if not miss:
+        resist_roll = np.random.rand()
+        if resist_roll < 0.55:
+            base_dmg *= 1.0
+        elif resist_roll < 0.85:
+            base_dmg *= 0.9
+        else:
+            base_dmg *= 0.8
+    return base_dmg, miss, crit
+
 
 def piecewise_eval(t_fine, times, values):
     """Evaluate a piecewise constant function on a finer time mesh.

@@ -21,6 +21,15 @@ class Player():
         self.calc_miss_chance()
 
     @property
+    def spell_hit_chance(self):
+        return self._spell_hit_chance
+    
+    @spell_hit_chance.setter
+    def spell_hit_chance(self, value):
+        self._spell_hit_chance = value
+        self.calc_spell_miss_chance()
+
+    @property
     def expertise_rating(self):
         return self._expertise_rating
 
@@ -32,12 +41,12 @@ class Player():
     roar_durations = {1: 14.0, 2: 19.0, 3: 24.0, 4: 29.0, 5: 34.0}
 
     def __init__(
-            self, attack_power, ap_mod, agility, hit_chance, expertise_rating,
-            crit_chance, armor_pen_rating, swing_timer, mana, intellect,
-            spirit, mp5, jow=False, rune=True, t6_2p=False, t6_4p=False,
-            t7_2p=False, wolfshead=True, mangle_glyph=False, meta=False,
-            bonus_damage=0, shred_bonus=0, rip_bonus=0, debuff_ap=0,
-            multiplier=1.1, omen=True, primal_gore=True, feral_aggression=0,
+            self, attack_power, ap_mod, agility, hit_chance, spell_hit_chance, 
+            expertise_rating, crit_chance, spell_crit_chance, armor_pen_rating, 
+            swing_timer, mana, intellect, spirit, mp5, jow=False, rune=True, t6_2p=False,
+            t6_4p=False, t7_2p=False, wolfshead=True, mangle_glyph=False, meta=False,
+            bonus_damage=0, shred_bonus=0, rip_bonus=0, debuff_ap=0, multiplier=1.1, 
+            spell_damage_multiplier=1.0, omen=True, primal_gore=True, feral_aggression=0,
             predatory_instincts=3, savage_fury=2, furor=3,
             natural_shapeshifter=3, intensity=0, potp=2, improved_mangle=0,
             ilotp=2, rip_glyph=True, shred_glyph=True, roar_glyph=False,
@@ -52,8 +61,12 @@ class Player():
             ap_mod (float): Total multiplier for Attack Power in Cat Form.
             agility (int): Fully raid buffed Agility attribute.
             hit_chance (float): Chance to hit as a fraction.
+            spell_hit_chance (float): Chance for spells (faerie fire feral) 
+                to hit as a fraction.
             expertise_rating (int): Player's Expertise Rating stat.
             crit_chance (float): Fully raid buffed crit chance as a fraction.
+            spell_crit_chance (float): Fully raid buffed spell crit chance 
+                as a fraction.
             armor_pen_rating (int): Armor penetration rating from gear. Boss
                 armor debuffs are handled by Simulation objects as they are not
                 properties of the player character.
@@ -150,9 +163,12 @@ class Player():
 
         # Set internal hit and expertise values, and derive total miss chance.
         self._hit_chance = hit_chance
+        self.spell_hit_chance = spell_hit_chance
         self.expertise_rating = expertise_rating
 
         self.crit_chance = crit_chance - 0.048
+        # Assume no spell crit suppression for now.
+        self.spell_crit_chance = spell_crit_chance
         self.armor_pen_rating = armor_pen_rating
         self.swing_timer = swing_timer
         self.mana_pool = mana
@@ -173,6 +189,7 @@ class Player():
         self.wolfshead = wolfshead
         self.meta = meta
         self.damage_multiplier = multiplier
+        self.spell_damage_multiplier = spell_damage_multiplier
         self.omen = omen
         self.primal_gore = primal_gore
         self.feral_aggression = feral_aggression
@@ -206,11 +223,21 @@ class Player():
         )
         self.dodge_chance = 0.01 * (6.5 - dodge_reduction)
 
+    def calc_spell_miss_chance(self):
+        """Update spell miss chance when a change to the player's spell
+        hit percent occurs."""
+        spell_miss_reduction = min(self._spell_hit_chance * 100, 17.0)
+        self.spell_miss_chance = 0.01 * (17.0 - spell_miss_reduction)
+
     def calc_crit_multiplier(self):
         crit_multiplier = 2.0 * (1.0 + self.meta * 0.03)
         if self.cat_form:
             crit_multiplier *= (1.0 + round(self.predatory_instincts / 30, 2))
         return crit_multiplier
+    
+    def calc_spell_crit_multiplier(self):
+        spell_crit_multiplier = 1.5 * (1.0 + self.meta * 0.03)
+        return spell_crit_multiplier
 
     def set_mana_regen(self):
         """Calculate and store mana regeneration rates based on specified regen
@@ -236,7 +263,7 @@ class Player():
 
     def calc_damage_params(
             self, gift_of_arthas, boss_armor, sunder, faerie_fire,
-            blood_frenzy, shattering_throw, tigers_fury=False
+            blood_frenzy, curse_of_elements, shattering_throw, tigers_fury=False
     ):
         """Calculate high and low end damage of all abilities as a function of
         specified boss debuffs."""
@@ -326,6 +353,10 @@ class Player():
         self.lacerate_hit = (88 + 0.01 * bear_ap) * lacerate_multi
         self.lacerate_tick = (64+0.01*bear_ap) * bear_multi / armor_multiplier
 
+        # Bear Faerie Fire damage calculations
+        self.faerie_fire_hit = (0.15 * bear_ap + 1.) * (1 + 0.13 * curse_of_elements) \
+                                    * self.spell_damage_multiplier
+
         # Adjust damage values for Gift of Arthas
         if not gift_of_arthas:
             return
@@ -381,6 +412,7 @@ class Player():
         self.enrage = False
         self.enrage_cd = 0.0
         self.mangle_cd = 0.0
+        self.faerie_fire_cd = 0.0
         self.savage_roar = False
         self.dagger_equipped = False
         self.set_ability_costs()
@@ -390,8 +422,9 @@ class Player():
 
         for cast_type in [
             'Melee', 'Mangle (Cat)', 'Rake', 'Shred', 'Savage Roar', 'Rip',
-            'Ferocious Bite', 'Shift (Bear)', 'Maul', 'Mangle (Bear)',
-            'Lacerate', 'Shift (Cat)', 'Gift of the Wild'
+            'Ferocious Bite', 'Faerie Fire (Cat)', 'Shift (Bear)', 'Maul',
+            'Mangle (Bear)', 'Lacerate', 'Shift (Cat)', 'Gift of the Wild',
+            'Faerie Fire (Bear)'
         ]:
             self.dmg_breakdown[cast_type] = {'casts': 0, 'damage': 0.0}
 
@@ -1012,3 +1045,34 @@ class Player():
         # Log the cast
         if self.log:
             self.gen_log('Gift of the Wild', '', False, False, False)
+
+    def faerie_fire(self):
+        """Cast Faerie Fire (Feral) for a guaranteed Clearcasting proc.
+
+        Returns:
+            damage_done (float): Damage done by the Faerie Fire cast. Always 0
+                at present since only Cat Form casts are being modeled, but can
+                be modified to return non-zero damage for Dire Bear Form casts.
+        """
+        self.gcd = 1.0
+        self.omen_proc = True
+        self.faerie_fire_cd = 6.0
+
+        if self.cat_form:
+            self.dmg_breakdown['Faerie Fire (Cat)']['casts'] += 1
+            if self.log:
+                self.gen_log('Faerie Fire (Cat)', '', False, False, False)
+            return 0.0
+
+        # Perform spell damage calculation for Bear Faerie Fire
+        damage_done, miss, crit = sim_utils.calc_spell_damage(
+            self.faerie_fire_hit, self.faerie_fire_hit, self.spell_miss_chance, 
+            self.spell_crit_chance, crit_multiplier=self.calc_spell_crit_multiplier()
+        )
+        if self.enrage:
+            damage_done *= 1.15
+        self.dmg_breakdown['Faerie Fire (Bear)']['casts'] += 1    
+        self.dmg_breakdown['Faerie Fire (Bear)']['damage'] += damage_done  
+        if self.log:
+            self.gen_log('Faerie Fire (Bear)', damage_done, miss, crit, False)
+        return damage_done

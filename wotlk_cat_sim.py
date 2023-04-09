@@ -155,6 +155,7 @@ class Simulation():
         'faerie_fire': True,
         'blood_frenzy': False,
         'shattering_throw': False,
+        'curse_of_elements': True,
     }
 
     # Default parameters specifying the player execution strategy
@@ -171,10 +172,12 @@ class Simulation():
         'preproc_omen': False,
         'bearweave': False,
         'berserk_bite_thresh': 100,
+        'berserk_ff_thresh': 87,
         'lacerate_prio': False,
         'lacerate_time': 10.0,
         'powerbear': False,
         'min_roar_offset': 10.0,
+        'roar_clip_leeway': 0.0,
         'snek': False,
         'idol_swap': False,
         'flowershift': False,
@@ -717,7 +720,87 @@ class Simulation():
             self.player.rake_hit * (1 + crit_mod)
             + (self.player.rake_duration / 3) * self.player.rake_tick
         )
-        return rake_dpc / 35., shred_dpc / 42.
+        return rake_dpc/self.player.rake_cost, shred_dpc/self.player.shred_cost
+
+    def bite_over_rip(self, refresh_time, future_refresh=False):
+        """Determine whether Rip will tick enough times between the specified
+        cast time and the end of the fight for it to be worth casting over
+        Ferocious Bite.
+
+        Arguments:
+            refresh_time (float): Time of potential Rip cast, in seconds.
+            future_refresh (bool): If True, then refresh_time is interpreted as
+                a future point in time rather than right now. In this case, a
+                minimum Energy Bite will be assumed, rather than using the
+                player's current Energy. Defaults False.
+
+        Returns:
+            should_bite (bool): True if Bite will provide higher DPE than Rip
+                given the expected number of ticks.
+        """
+        rip_dpe, bite_dpe = self.calc_spender_dpe(
+            refresh_time, future_refresh=future_refresh
+        )
+        return (bite_dpe > rip_dpe)
+
+    def calc_spender_dpe(self, refresh_time, future_refresh=False):
+        """Calculate damage-per-Energy of Rip vs. Ferocious Bite at the
+        specified Rip cast time.
+
+        Arguments:
+            refresh_time (float): Time of potential Rip cast, in seconds.
+            future_refresh (bool): If True, then refresh_time is interpreted as
+                a future point in time rather than right now. In this case, a
+                minimum Energy Bite will be assumed, rather than using the
+                player's current Energy. Defaults False.
+
+        Returns:
+            rip_dpe (float): Average DPE of a Rip cast at refresh_time.
+            bite_dpe (float): Average DPE of a Bite cast at refresh_time.
+        """
+        if future_refresh:
+            bite_spend = 35
+            bite_cost = 35
+            bite_cp = self.strategy['min_combos_for_bite']
+            rip_cost = 30
+            rip_cp = self.strategy['min_combos_for_rip']
+        else:
+            bite_cost = 0 if self.player.omen_proc else self.player.bite_cost
+            bite_spend = max(
+                min(self.player.energy, bite_cost + 30),
+                bite_cost + 10 * self.latency
+            )
+            bite_cp = self.player.combo_points
+            rip_cost = self.player.rip_cost
+            rip_cp = self.player.combo_points
+
+        # Rip DPE calculation
+        max_rip_dur = self.player.rip_duration + 6 * self.player.shred_glyph
+        rip_dur = min(max_rip_dur, self.fight_length - refresh_time)
+        num_rip_ticks = rip_dur // 2 # floored integer division here
+        crit_factor = self.player.calc_crit_multiplier() - 1
+        rip_crit_chance = self.player.crit_chance + self.player.rip_crit_bonus
+        avg_rip_tick = self.player.rip_tick[rip_cp] * 1.3 * (
+            1 + crit_factor * rip_crit_chance * self.player.primal_gore
+        )
+        rip_dpe = avg_rip_tick * num_rip_ticks / rip_cost
+
+        # Bite DPE calculation
+        bite_base_dmg = 0.5 * (
+            self.player.bite_low[bite_cp] + self.player.bite_high[bite_cp]
+        )
+        bite_bonus_dmg = (
+            (bite_spend - bite_cost) * (9.4 + self.player.attack_power / 410.)
+            * self.player.bite_multiplier
+        )
+        bite_crit_chance = min(
+            1.0, self.player.crit_chance + self.player.bite_crit_bonus
+        )
+        bite_dpe = (bite_base_dmg + bite_bonus_dmg) / bite_spend * (
+            1 + crit_factor * bite_crit_chance
+        )
+
+        return rip_dpe, bite_dpe
 
     def clip_roar(self, time):
         """Determine whether to clip a currently active Savage Roar in order to
@@ -737,11 +820,14 @@ class Simulation():
         # If the existing Roar already falls off well after the existing Roar,
         # then no need to clip.
         # if self.roar_end >= rip_end + self.strategy['min_roar_offset']:
-        if self.roar_end > rip_end:
+        if self.roar_end > rip_end + self.strategy['roar_clip_leeway']:
             return False
 
         # Calculate when Roar would end if we cast it now.
-        new_roar_dur = self.player.roar_durations[self.player.combo_points] + 8 * self.player.t8_4p_bonus
+        new_roar_dur = (
+            self.player.roar_durations[self.player.combo_points]
+            + 8 * self.player.t8_4p_bonus
+        )
         new_roar_end = time + new_roar_dur
 
         # Clip as soon as we have enough CPs for the new Roar to expire well
@@ -978,23 +1064,19 @@ class Simulation():
         rip_cp = self.strategy['min_combos_for_rip']
         bite_cp = self.strategy['min_combos_for_bite']
 
-        # 10/6/21 - Added logic to not cast Rip if we're near the end of the
-        # fight.
-        end_thresh = 10
-        # end_thresh = self.calc_allowed_rip_downtime(time)
+        # block_rip_now prevents Rip usage too close to fight end
+        block_rip_now = (cp < rip_cp) or self.bite_over_rip(time)
         rip_now = (
             (cp >= rip_cp) and (not self.rip_debuff)
-            and (self.fight_length - time >= end_thresh)
             and (not self.player.omen_proc)
+            and (not block_rip_now)
         )
-        bite_at_end = (
-            (cp >= bite_cp)
-            and ((self.fight_length - time < end_thresh) or (
-                    self.rip_debuff and
-                    (self.fight_length - self.rip_end < end_thresh)
-                )
-            )
+        # Likewise, block_rip_next prios Bite usage if the *current* Rip will
+        # expire too close to fight end.
+        block_rip_next = self.rip_debuff and (
+            self.bite_over_rip(self.rip_end, future_refresh=True)
         )
+        bite_at_end = (cp >= bite_cp) and (block_rip_now or block_rip_next)
 
         mangle_now = (
             (not rip_now) and (not self.mangle_debuff)
@@ -1006,10 +1088,22 @@ class Simulation():
             (cp >= bite_cp) and self.rip_debuff and self.player.savage_roar
             and self.strategy['use_bite'] and self.can_bite(time)
         )
-        bite_now = (
-            (bite_before_rip or bite_at_end) and (not self.player.omen_proc)
-            # and (energy < 42)
-        )
+        bite_now = (bite_before_rip or bite_at_end) and (energy < 67)
+
+        if bite_now and self.player.omen_proc:
+            # _, shred_dpe = self.calc_builder_dpe()
+            # _, bite_dpe = self.calc_spender_dpe(time)
+            # bite_energy_drain = min(energy, 30)
+            # effective_bite_cost = (
+            #     bite_energy_drain +
+            #     (self.player.shred_cost - self.player.bite_cost)
+            # )
+            # effective_bite_dpe = (
+            #     (bite_dpe*bite_energy_drain - shred_dpe*self.player.shred_cost)
+            #     / effective_bite_cost
+            # )
+            # bite_now = (effective_bite_dpe > shred_dpe)
+            bite_now = False
 
         # During Berserk, we additionally add an Energy constraint on Bite
         # usage to maximize the total Energy expenditure we can get.
@@ -1064,7 +1158,8 @@ class Simulation():
         )
         berserk_now = (
             self.strategy['use_berserk'] and (self.player.berserk_cd < 1e-9)
-            and (not wait_for_tf)
+            and (not wait_for_tf) and self.rip_debuff
+            and (not self.player.omen_proc)
         )
 
         # Additionally, for Lacerateweave rotation, postpone the final Berserk
@@ -1085,13 +1180,26 @@ class Simulation():
             (not self.player.savage_roar) or self.clip_roar(time)
         )
 
+        # Faerie Fire on cooldown for Omen procs. Each second of FF delay is
+        # worth ~7 Energy, so it is okay to waste up to 7 Energy to cap when
+        # determining whether to cast it vs. dump Energy first. That puts the
+        # Energy threshold for FF usage as 107 minus 10 for the Clearcasted
+        # special minus 10 for the FF GCD = 87 Energy.
+        ff_energy_threshold = (
+            self.strategy['berserk_ff_thresh'] if self.player.berserk else 87
+        )
+        ff_now = (
+            (self.player.faerie_fire_cd < 1e-9) and (not self.player.omen_proc)
+            and (energy < ff_energy_threshold)
+            and ((not rip_now) or (energy < self.player.rip_cost))
+        )
+
         # First figure out how much Energy we must float in order to be able
         # to refresh our buffs/debuffs as soon as they fall off
         pending_actions = []
         rip_refresh_pending = False
 
-        if (self.rip_debuff and (cp == 5)
-                and (self.rip_end < self.fight_length - end_thresh)):
+        if (self.rip_debuff and (cp == rip_cp) and (not block_rip_next)):
             if self.berserk_expected_at(time, self.rip_end):
                 rip_cost = 15
             else:
@@ -1285,6 +1393,8 @@ class Simulation():
                 time_to_next_action = self.swing_times[0] - time
         elif emergency_bearweave:
             self.player.ready_to_shift = True
+        elif ff_now:
+            return self.player.faerie_fire()
         elif berserk_now:
             self.apply_berserk(time)
             return 0.0
@@ -1394,6 +1504,9 @@ class Simulation():
             next_action = min(
                 next_action, self.lacerate_end - 1.5 - 3 * self.latency
             )
+
+        # Schedule an action when Faerie Fire (Feral) is off cooldown next.
+        next_action = min(next_action, time + self.player.faerie_fire_cd)
 
         self.next_action = next_action + self.latency
 
@@ -1654,6 +1767,7 @@ class Simulation():
         # Pre-proc Clearcasting if requested
         if self.strategy['preproc_omen'] and self.player.omen:
             self.player.omen_proc = True
+            self.player.faerie_fire_cd = 5.0 - self.player.berserk
 
         # If Idol swapping, then start fight with Mangle or Rip Idol equipped
         if self.strategy['mangle_idol_swap']:
@@ -1697,6 +1811,9 @@ class Simulation():
             self.player.berserk_cd = max(0.0, self.player.berserk_cd - delta_t)
             self.player.enrage_cd = max(0.0, self.player.enrage_cd - delta_t)
             self.player.mangle_cd = max(0.0, self.player.mangle_cd - delta_t)
+            self.player.faerie_fire_cd = max(
+                0.0, self.player.faerie_fire_cd - delta_t
+            )
 
             if (self.player.five_second_rule
                     and (time - self.player.last_shift >= 5)):
@@ -2186,6 +2303,14 @@ class Simulation():
         if param == 'agility':
             self.player.attack_power += self.player.ap_mod * increment
             self.player.crit_chance += increment / 83.33 / 100.
+        
+        # For Hit chance increments, also augment Spell Hit chance
+        if param == 'hit_chance':
+            self.player.spell_hit_chance += increment * 32.79 / 26.23
+
+        # For Crit chance increments, also augment Spell Crit chance
+        if param == 'crit_chance':
+            self.player.spell_crit_chance += increment
 
         # Calculate DPS
         dps_vals = self.run_replicates(num_replicates)
@@ -2200,6 +2325,12 @@ class Simulation():
         if param == 'agility':
             self.player.attack_power -= self.player.ap_mod * increment
             self.player.crit_chance -= increment / 83.33 / 100.
+
+        if param == 'hit_chance':
+            self.player.spell_hit_chance -= increment * 32.79 / 26.23
+
+        if param == 'crit_chance':
+            self.player.spell_crit_chance -= increment
 
         return avg_dps - base_dps
 
@@ -2247,6 +2378,8 @@ class Simulation():
 
         # For hit, we reduce miss chance by 2% if well below hit cap, and
         # increase miss chance by 2% when already capped or close.
+        # Assumption made here is that the player should only be concerned
+        # with the melee hit
         sign = 1 - 2 * int(
             self.player.miss_chance - self.player.dodge_chance > 0.02
         )

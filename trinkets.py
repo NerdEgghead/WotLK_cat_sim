@@ -835,6 +835,7 @@ trinket_library = {
         'type': 'activated',
         'passive_stats': {
             'hit_chance': 55./32.79/100,
+            'spell_hit_chance': 55./26.23/100,
         },
         'active_stats': {
             'stat_name': 'attack_power',
@@ -887,6 +888,7 @@ trinket_library = {
         'type': 'activated',
         'passive_stats': {
             'crit_chance': 84./45.91/100,
+            'spell_crit_chance': 84./45.91/100,
         },
         'active_stats': {
             'stat_name': 'attack_power',
@@ -900,6 +902,7 @@ trinket_library = {
         'type': 'proc',
         'passive_stats': {
             'crit_chance': 74./45.91/100,
+            'spell_crit_chance': 74./45.91/100,
         },
         'active_stats': {
             'stat_name': 'haste_rating',
@@ -915,6 +918,7 @@ trinket_library = {
         'type': 'proc',
         'passive_stats': {
             'crit_chance': 84./45.91/100,
+            'spell_crit_chance': 84./45.91/100,
         },
         'active_stats': {
             'stat_name': 'attack_power',
@@ -975,6 +979,7 @@ trinket_library = {
         'type': 'instant_damage',
         'passive_stats': {
             'crit_chance': 85./45.91/100,
+            'spell_crit_chance': 85./45.91/100,
         },
         'active_stats': {
             'stat_name': 'none',
@@ -990,6 +995,7 @@ trinket_library = {
         'type': 'instant_damage',
         'passive_stats': {
             'crit_chance': 84./45.91/100,
+            'spell_crit_chance': 84./45.91/100,
         },
         'active_stats': {
             'stat_name': 'none',
@@ -1020,6 +1026,7 @@ trinket_library = {
         'type': 'instant_damage',
         'passive_stats': {
             'crit_chance': 95./45.91/100,
+            'spell_crit_chance': 95./45.91/100,
         },
         'active_stats': {
             'stat_name': 'none',
@@ -1066,6 +1073,7 @@ trinket_library = {
         'type': 'proc',
         'passive_stats': {
             'hit_chance': 83./32.79/100,
+            'spell_hit_chance': 83./26.23/100,
         },
         'active_stats': {
             'stat_name': 'armor_pen_rating',
@@ -1096,6 +1104,7 @@ trinket_library = {
         'type': 'refreshing_proc',
         'passive_stats': {
             'hit_chance': 20./32.79/100,
+            'spell_hit_chance': 20./26.23/100,
             'attack_power': 84,
         },
         'active_stats': {
@@ -1113,6 +1122,7 @@ trinket_library = {
         'passive_stats': {
             'attack_power': 100,
             'crit_chance': 50./45.91/100,
+            'spell_crit_chance': 50./45.91/100,
         },
     },
     'bns': {
@@ -1172,8 +1182,8 @@ trinket_library = {
             'attack_power': 251,
         },
         'active_stats': {
-            'stat_name': 'crit_chance',
-            'stat_increment': 692./45.91/100,
+            'stat_name': ['crit_chance', 'spell_crit_chance'],
+            'stat_increment': np.array([692./45.91/100, 692./45.91/100]),
             'proc_name': 'Dark Matter',
             'proc_duration': 10,
             'cooldown': 45,
@@ -1185,6 +1195,7 @@ trinket_library = {
         'type': 'proc',
         'passive_stats': {
             'crit_chance': 115./45.91/100,
+            'spell_crit_chance': 115./45.91/100,
         },
         'active_stats': {
             'stat_name': 'armor_pen_rating',
@@ -1200,6 +1211,7 @@ trinket_library = {
         'type': 'proc',
         'passive_stats': {
             'hit_chance': 100./32.79/100,
+            'spell_hit_chance': 100./26.23/100,
         },
         'active_stats': {
             'stat_name': 'attack_power',
@@ -1215,6 +1227,7 @@ trinket_library = {
         'type': 'proc',
         'passive_stats': {
             'hit_chance': 114./32.79/100,
+            'spell_hit_chance': 114./26.23/100,
         },
         'active_stats': {
             'stat_name': 'attack_power',
@@ -1230,6 +1243,7 @@ trinket_library = {
         'type': 'activated',
         'passive_stats': {
             'crit_chance': 114./45.91/100,
+            'spell_crit_chance': 114./45.91/100,
         },
         'active_stats': {
             'stat_name': 'attack_power',
