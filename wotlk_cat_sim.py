@@ -904,20 +904,25 @@ class Simulation():
         """
         if future_time is None:
             future_time = current_time
+            
+        # Calculate intermediate terms in bearweave decision tree
+        #Some leeway terms to increase bearweave CPM with clear tradeoff
+        energy_munch = 0 #How much energy we are willing to intentionally cap to accomodate additional manglefires
+        ff_leeway = 0 #This will allow bearweaves that will delay FF CD by up to set amount
 
         # Calculate intermediate terms in bearweave decision tree
         projected_energy = (
             self.player.energy + 10 * (future_time - current_time)
         )
-        furor_cap = min(20 * self.player.furor, 85)
+        furor_cap = min(20 * self.player.furor, 75) #Max e cap is 75 because of cat GCD + 1 for consuming omen that we procced in bear
         rip_refresh_pending = (
             self.rip_debuff and (self.player.combo_points == 5)
             and (self.rip_end < self.fight_length - 10)
         )
-        weave_end = future_time + 4.5 + 2 * self.latency
+        weave_end = future_time + 6.5 + 2 * self.latency #Bear, mangle, FF, cat, shred is 6.5s of weave
 
         # Calculate maximum Energy level for initiating a weave
-        weave_energy = furor_cap - 30 - 20 * self.latency
+        weave_energy = furor_cap + energy_munch - 40 - 20 * self.latency
 
         # With 4/5 or 5/5 Furor, force 2-GCD bearweaves whenever possible
         if self.player.furor > 3:
@@ -934,6 +939,7 @@ class Simulation():
             and (not self.player.omen_proc)
             and ((not rip_refresh_pending) or (self.rip_end >= weave_end))
             and (not self.player.berserk)
+            and (self.player.faerie_fire_cd >= 3 - ff_leeway - 1 * self.latency)
         )
 
         if can_weave and (not self.strategy['lacerate_prio']):
@@ -1226,7 +1232,7 @@ class Simulation():
         pending_actions.sort()
 
         # Allow for bearweaving if the next pending action is >= 4.5s away
-        furor_cap = min(20 * self.player.furor, 85)
+        furor_cap = min(20 * self.player.furor, 75)
         bearweave_now = self.should_bearweave(time)
 
         # If we're maintaining Lacerate, then allow for emergency bearweaves
@@ -1320,6 +1326,8 @@ class Simulation():
 
             if self.strategy['powerbear']:
                 powerbear_now = (not shift_now) and (self.player.rage < 10)
+            elif ff_now and (self.swing_times[0] - time) > 0.2 : #Delay FF by up to 0.2s in bear form for auto attack before FF
+                return self.player.faerie_fire()
             else:
                 powerbear_now = False
                 shift_now = shift_now or (self.player.rage < 10)
@@ -1386,8 +1394,8 @@ class Simulation():
                 return self.lacerate(time)
             elif (self.player.rage >= 15) and (self.player.mangle_cd < 1e-9):
                 return self.mangle(time)
-            elif self.player.rage >= 13:
-                return self.lacerate(time)
+            #elif self.player.rage >= 13:  #We never lacerate anymore
+             #   return self.lacerate(time)
             else:
                 time_to_next_action = self.swing_times[0] - time
         elif emergency_bearweave:
@@ -1949,7 +1957,7 @@ class Simulation():
                     # Dire Bear Form once the GCD expires, then only Maul if we
                     # will be left with enough Rage to cast Mangle or Lacerate
                     # on that global.
-                    furor_cap = min(20 * self.player.furor, 85)
+                    furor_cap = min(20 * self.player.furor, 75)
                     rip_refresh_pending = (
                         self.rip_debuff
                         and (self.rip_end < self.fight_length - 10)
@@ -2005,7 +2013,7 @@ class Simulation():
                     else:
                         maul_rage_thresh = 10
 
-                    if self.player.rage >= maul_rage_thresh:
+                    if self.player.rage >= maul_rage_thresh and not self.player.omen_proc: #gonna block this if omen
                         dmg_done += self.player.maul(self.mangle_debuff)
                     else:
                         dmg_done += self.player.swing()
