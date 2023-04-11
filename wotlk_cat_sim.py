@@ -1198,7 +1198,8 @@ class Simulation():
         rip_refresh_pending = False
 
         if (self.rip_debuff and (cp == rip_cp) and (not block_rip_next)):
-            pending_actions.append((self.rip_end, self.player.rip_cost))
+            rip_cost = self.player.rip_cost
+            pending_actions.append((self.rip_end, rip_cost))
             rip_refresh_pending = True
         if self.rake_debuff and (self.rake_end < self.fight_length - 9):
             if self.berserk_expected_at(time, self.rake_end):
