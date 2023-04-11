@@ -630,7 +630,7 @@ class Simulation():
             srcost (float): Energy cost of a Savage Roar refresh.
         """
         rip_end = time if (not self.rip_debuff) else self.rip_end
-        ripcost = 15 if self.berserk_expected_at(time, rip_end) else 30
+        ripcost = 15 if self.berserk_expected_at(time, rip_end) else self.player.rip_cost
 
         if self.player.energy >= self.player.bite_cost:
             bitecost = min(self.player.bite_cost + 30, self.player.energy)
@@ -718,7 +718,7 @@ class Simulation():
         )
         rake_dpc = 1.3 * (
             self.player.rake_hit * (1 + crit_mod)
-            + (self.player.rake_duration / 3) * self.player.rake_tick
+            + (self.player.rake_duration / 3) * self.player.rake_tick * (1 + crit_mod * self.player.t10_4p_bonus)
         )
         return rake_dpc/self.player.rake_cost, shred_dpc/self.player.shred_cost
 
@@ -762,7 +762,7 @@ class Simulation():
             bite_spend = 35
             bite_cost = 35
             bite_cp = self.strategy['min_combos_for_bite']
-            rip_cost = 30
+            rip_cost = self.player.rip_cost
             rip_cp = self.strategy['min_combos_for_rip']
         else:
             bite_cost = 0 if self.player.omen_proc else self.player.bite_cost
@@ -1203,7 +1203,7 @@ class Simulation():
             if self.berserk_expected_at(time, self.rip_end):
                 rip_cost = 15
             else:
-                rip_cost = 30
+                rip_cost = self.player.rip_cost
 
             pending_actions.append((self.rip_end, rip_cost))
             rip_refresh_pending = True
