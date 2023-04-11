@@ -629,8 +629,6 @@ class Simulation():
             bitecost (float): Energy cost of a current Ferocious Bite cast.
             srcost (float): Energy cost of a Savage Roar refresh.
         """
-        rip_end = time if (not self.rip_debuff) else self.rip_end
-        ripcost = 15 if self.berserk_expected_at(time, rip_end) else self.player.rip_cost
 
         if self.player.energy >= self.player.bite_cost:
             bitecost = min(self.player.bite_cost + 30, self.player.energy)
@@ -640,7 +638,7 @@ class Simulation():
         sr_end = time if (not self.player.savage_roar) else self.roar_end
         srcost = 12.5 if self.berserk_expected_at(time, sr_end) else 25
 
-        return ripcost, bitecost, srcost
+        return self.player.rip_cost, bitecost, srcost
 
     def calc_allowed_rip_downtime(self, time):
         """Determine how many seconds of Rip uptime can be lost in exchange for
