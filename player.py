@@ -181,6 +181,7 @@ class Player():
         self.shred_bonus = shred_bonus
         self.rip_bonus = rip_bonus
         self._mangle_cost = 40 - 5 * t6_2p - 2 * improved_mangle
+        self._rip_cost = 30 - 10 * self.t10_2p_bonus
         self.t6_bonus = t6_4p
         self.t8_2p_bonus = t8_2p
         self.t8_4p_bonus = t8_4p
@@ -435,7 +436,7 @@ class Player():
         self.rake_cost = 35. / (1 + self.berserk)
         self.mangle_cost = self._mangle_cost / (1 + self.berserk)
         self.bite_cost = 35. / (1 + self.berserk)
-        self.rip_cost = (30 - 10 * self.t10_2p_bonus) / (1 + self.berserk)
+        self.rip_cost = self._rip_cost / (1 + self.berserk)
         self.roar_cost = 25. / (1 + self.berserk)
 
     def check_omen_proc(self, yellow=False):
