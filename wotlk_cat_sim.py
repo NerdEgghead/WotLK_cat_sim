@@ -1766,7 +1766,7 @@ class Simulation():
         # Pre-proc Clearcasting if requested
         if self.strategy['preproc_omen'] and self.player.omen:
             self.player.omen_proc = True
-            self.player.faerie_fire_cd = 5.0 - self.player.berserk
+            # self.player.faerie_fire_cd = 5.0 - self.player.berserk
 
         # If Idol swapping, then start fight with Mangle or Rip Idol equipped
         if self.strategy['mangle_idol_swap']:
