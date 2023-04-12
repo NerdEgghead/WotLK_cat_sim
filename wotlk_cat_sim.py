@@ -926,12 +926,12 @@ class Simulation():
         weave_energy = furor_cap + energy_munch - 40 - 20 * self.latency
 
         # With 4/5 or 5/5 Furor, force 2-GCD bearweaves whenever possible
-        if self.player.furor > 3:
-            weave_energy -= 15
+        # if self.player.furor > 3:
+        #     weave_energy -= 15
 
-            # Force a 3-GCD weave when stacking Lacerates for the first time
-            if self.strategy['lacerate_prio'] and (not self.lacerate_debuff):
-                weave_energy -= 15
+        #     # Force a 3-GCD weave when stacking Lacerates for the first time
+        #     if self.strategy['lacerate_prio'] and (not self.lacerate_debuff):
+        #         weave_energy -= 15
 
         # Bearweave decision tree
         can_weave = (
