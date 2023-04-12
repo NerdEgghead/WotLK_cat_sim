@@ -987,6 +987,28 @@ iteration_input = dbc.Col([
             value='comet_trail'
         )),
     ]),
+    dbc.InputGroup(
+        [
+            dbc.InputGroupAddon('Put \'proc\' trinkets on ICD', 
+                addon_type='prepend'),
+            dbc.Input(
+                value=0.0, min=0.0, step=0.5, type='number', 
+                id='trinket_icd_precombat',
+            ),
+            dbc.InputGroupAddon(
+                'seconds before combat', addon_type='append'
+            ),
+        ],
+        style={'width': '73%', 'marginBottom': '1.5%', 'marginTop': '1.5%'},
+        id="trinket_icd_group"
+    ),
+    dbc.Tooltip(
+        """Putting a trinket on ICD (internal cooldown) will prevent the trinket
+         from activating until its cooldown has ended. This can be useful when
+         attempting to line up trinket procs with other combat effects. Typically
+         done by equipping trinkets before combat.""",
+         target="trinket_icd_group"
+    ),
     html.Div(
         'Make sure not to include passive trinket stats in the sim input.',
         style={
@@ -1348,7 +1370,7 @@ app.layout = html.Div([
 # Helper functions used in master callback
 def process_trinkets(
         trinket_1, trinket_2, player, ap_mod, stat_mod, haste_multiplier,
-        cd_delay
+        cd_delay, trinket_icd_precombat
 ):
     proc_trinkets = []
     all_trinkets = []
@@ -1439,13 +1461,13 @@ def process_trinkets(
                 active_stats['yellow_chance_on_hit'] = ppm/60.
 
             if trinket_params['type'] == 'instant_damage':
-                trinket_obj = trinkets.InstantDamageProc(**active_stats)
+                trinket_obj = trinkets.InstantDamageProc(**active_stats, icd_precombat=trinket_icd_precombat)
             elif trinket_params['type'] == 'refreshing_proc':
                 trinket_obj = trinkets.RefreshingProcTrinket(**active_stats)
             elif trinket_params['type'] == 'stacking_proc':
-                trinket_obj = trinkets.StackingProcTrinket(**active_stats)
+                trinket_obj = trinkets.StackingProcTrinket(**active_stats, icd_precombat=trinket_icd_precombat)
             else:
-                trinket_obj = trinkets.ProcTrinket(**active_stats)
+                trinket_obj = trinkets.ProcTrinket(**active_stats, icd_precombat=trinket_icd_precombat)
 
             all_trinkets.append(trinket_obj)
             proc_trinkets.append(all_trinkets[-1])
@@ -1832,6 +1854,7 @@ def plot_new_trajectory(sim, show_whites):
     State('rip_cp', 'value'),
     State('bite_cp', 'value'),
     State('cd_delay', 'value'),
+    State('trinket_icd_precombat', 'value'),
     State('min_roar_offset', 'value'),
     State('roar_clip_leeway', 'value'),
     State('use_rake', 'value'),
@@ -1864,7 +1887,7 @@ def compute(
         binary_talents, feral_aggression, savage_fury, potp,
         predatory_instincts, improved_mangle, furor, naturalist,
         natural_shapeshifter, ilotp, fight_length, boss_armor,
-        boss_debuffs, cooldowns, rip_cp, bite_cp, cd_delay,
+        boss_debuffs, cooldowns, rip_cp, bite_cp, cd_delay, trinket_icd_precombat,
         min_roar_offset, roar_clip_leeway, use_rake, mangle_spam,
         use_biteweave, bite_model, bite_time, bear_mangle, prepop_berserk,
         preproc_omen, bearweave, berserk_bite_thresh, berserk_ff_thresh,
@@ -1992,7 +2015,7 @@ def compute(
     # Process trinkets
     trinket_list = process_trinkets(
         trinket_1, trinket_2, player, ap_mod, stat_mod, haste_multiplier,
-        cd_delay
+        cd_delay, trinket_icd_precombat
     )
 
     # Default output is just the buffed player stats with no further calcs
