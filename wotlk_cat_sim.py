@@ -361,6 +361,7 @@ class Simulation():
             self.rake_end = time + self.player.rake_duration
             self.rake_ticks = list(np.arange(time + 3, self.rake_end + 1e-9, 3))
             self.rake_damage = self.player.rake_tick
+            self.rake_crit_chance = self.player.crit_chance
             self.rake_sr_snapshot = self.player.savage_roar
 
         return damage_done
@@ -629,7 +630,7 @@ class Simulation():
             srcost (float): Energy cost of a Savage Roar refresh.
         """
         rip_end = time if (not self.rip_debuff) else self.rip_end
-        ripcost = 15 if self.berserk_expected_at(time, rip_end) else 30
+        ripcost = self.player._rip_cost / 2 if self.berserk_expected_at(time, rip_end) else self.player._rip_cost
 
         if self.player.energy >= self.player.bite_cost:
             bitecost = min(self.player.bite_cost + 30, self.player.energy)
@@ -717,7 +718,7 @@ class Simulation():
         )
         rake_dpc = 1.3 * (
             self.player.rake_hit * (1 + crit_mod)
-            + (self.player.rake_duration / 3) * self.player.rake_tick
+            + (self.player.rake_duration / 3) * self.player.rake_tick * (1 + crit_mod * self.player.t10_4p_bonus)
         )
         return rake_dpc/self.player.rake_cost, shred_dpc/self.player.shred_cost
 
@@ -761,7 +762,7 @@ class Simulation():
             bite_spend = 35
             bite_cost = 35
             bite_cp = self.strategy['min_combos_for_bite']
-            rip_cost = 30
+            rip_cost = self.player._rip_cost
             rip_cp = self.strategy['min_combos_for_rip']
         else:
             bite_cost = 0 if self.player.omen_proc else self.player.bite_cost
@@ -1199,11 +1200,7 @@ class Simulation():
         rip_refresh_pending = False
 
         if (self.rip_debuff and (cp == rip_cp) and (not block_rip_next)):
-            if self.berserk_expected_at(time, self.rip_end):
-                rip_cost = 15
-            else:
-                rip_cost = 30
-
+            rip_cost = self.player._rip_cost / 2 if self.berserk_expected_at(time, self.rip_end) else self.player._rip_cost
             pending_actions.append((self.rip_end, rip_cost))
             rip_refresh_pending = True
         if self.rake_debuff and (self.rake_end < self.fight_length - 9):
@@ -1864,7 +1861,11 @@ class Simulation():
             # Check if a Rake tick happens at this time
             if self.rake_debuff and (time >= self.rake_ticks[0]):
                 dmg_done += self.apply_bleed_damage(
-                    self.rake_damage, 0, 'Rake', self.rake_sr_snapshot, time
+                    self.rake_damage,
+                    self.rake_crit_chance * self.player.t10_4p_bonus,
+                    'Rake',
+                    self.rake_sr_snapshot,
+                    time
                 )
                 self.rake_ticks.pop(0)
 
