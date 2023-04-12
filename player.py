@@ -181,12 +181,12 @@ class Player():
         self.shred_bonus = shred_bonus
         self.rip_bonus = rip_bonus
         self._mangle_cost = 40 - 5 * t6_2p - 2 * improved_mangle
-        self._rip_cost = 30 - 10 * self.t10_2p_bonus
         self.t6_bonus = t6_4p
         self.t8_2p_bonus = t8_2p
         self.t8_4p_bonus = t8_4p
         self.t10_2p_bonus = t10_2p
         self.t10_4p_bonus = t10_4p
+        self._rip_cost = 30 - 10 * self.t10_2p_bonus
         self.wolfshead = wolfshead
         self.meta = meta
         self.damage_multiplier = multiplier
