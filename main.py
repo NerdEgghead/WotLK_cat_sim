@@ -761,7 +761,7 @@ iteration_input = dbc.Col([
                     'label': ' prioritize Lacerate maintenance over Mangle',
                     'value': 'lacerate_prio'
                 }],
-                value=['lacerate_prio'], id='lacerate_prio',
+                value=[], id='lacerate_prio',
                 style={'marginTop': '1%', 'marginLeft': '5%'}
             ),
             dbc.Collapse(
@@ -2150,6 +2150,7 @@ def compute(
     Output('empirical_options', 'is_open'),
     Output('lacerate_options', 'is_open'),
     Output('bearweave', 'options'),
+    Output('lacerate_prio', 'options'),
     Output('flowershift', 'options'),
     Output('flowershift_options', 'is_open'),
     Output('dagger_options', 'is_open'),
@@ -2168,16 +2169,21 @@ def disable_options(
     flowershift_options = {
         'label': ' enable flowershifting', 'value': 'flowershift'
     }
+    lacerate_options = {
+        'label': ' prioritize Lacerate maintenance over Mangle',
+        'value': 'lacerate_prio'
+    }
 
-    # Disable bearweave and flowershift in UI given recent Blizzard changes
+    # Disable Lacerateweave and flowershift in UI given recent Blizzard changes
     flowershift_options['disabled'] = True
-    bearweave_options['disabled'] = True
+    bearweave_options['disabled'] = False
+    lacerate_options['disabled'] = True
 
     return (
         bool(bearweave), bool(biteweave), 'berserk' in binary_talents,
         'omen' in binary_talents, bite_model == 'empirical',
-        bool(lacerate_prio), [bearweave_options], [flowershift_options],
-        bool(flowershift), bool(daggerweave)
+        bool(lacerate_prio), [bearweave_options], [lacerate_options],
+        [flowershift_options], bool(flowershift), bool(daggerweave)
     )
 
 
