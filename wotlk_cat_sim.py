@@ -817,10 +817,14 @@ class Simulation():
         max_rip_dur = self.player.rip_duration + 6 * self.player.shred_glyph
         rip_end = self.rip_start + max_rip_dur
 
-        # If the existing Roar already falls off well after the existing Roar,
+        # If the existing Roar already falls off well after the existing Rip,
         # then no need to clip.
-        # if self.roar_end >= rip_end + self.strategy['min_roar_offset']:
         if self.roar_end > rip_end + self.strategy['roar_clip_leeway']:
+            return False
+
+        # If the existing Roar already covers us to the end of the fight, then
+        # no need to clip.
+        if self.roar_end >= self.fight_length:
             return False
 
         # Calculate when Roar would end if we cast it now.
