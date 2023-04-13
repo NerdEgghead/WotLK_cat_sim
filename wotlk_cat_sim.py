@@ -1209,6 +1209,7 @@ class Simulation():
         #     (self.player.faerie_fire_cd < 1.0)
         #     and (next_ff_energy < ff_energy_threshold)
         #     and (not self.player.omen_proc)
+        #     and ((not self.rip_debuff) or (self.rip_end - time > 1.0))
         # )
         wait_for_ff = False
 
