@@ -1340,8 +1340,6 @@ class Simulation():
 
             if self.strategy['powerbear']:
                 powerbear_now = (not shift_now) and (self.player.rage < 10)
-            elif ff_now and (self.swing_times[0] - time) > 0.2 : #Delay FF by up to 0.2s in bear form for auto attack before FF
-                return self.player.faerie_fire()
             else:
                 powerbear_now = False
                 shift_now = shift_now or (self.player.rage < 10)
@@ -1380,6 +1378,8 @@ class Simulation():
 
             if emergency_lacerate and (self.player.rage >= 13):
                 return self.lacerate(time)
+            elif ff_now and (self.swing_times[0] - time) > 0.2 : #Delay FF by up to 0.2s in bear form for auto attack before FF
+                return self.player.faerie_fire()
             elif shift_now:
                 # If we are resetting our swing timer using Albino Snake or a
                 # duplicate weapon swap, then do an additional check here to
