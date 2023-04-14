@@ -1384,9 +1384,18 @@ class Simulation():
                 time_to_dump = 3.0 + self.latency + energy_to_dump // 42
                 shift_now = (time + time_to_dump >= self.fight_length)
 
+            # Due to the new Feral changes, Faerie Fire takes priority over
+            # anything else in Dire Bear Form if it is off cooldown. The only
+            # exception is to wait slightly for an extra Maul before casting it
+            # to burn any remaining Rage, since we won't be able to Maul again
+            # once Omen is procced in order to save the proc for a Shred.
+            bearie_fire_now = ff_now and (
+                (self.swing_times[0] - time > 0.2) or (self.player.rage < 10)
+            )
+
             if emergency_lacerate and (self.player.rage >= 13):
                 return self.lacerate(time)
-            elif ff_now and (self.swing_times[0] - time) > 0.2 : #Delay FF by up to 0.2s in bear form for auto attack before FF
+            elif bearie_fire_now:
                 return self.player.faerie_fire()
             elif shift_now:
                 # If we are resetting our swing timer using Albino Snake or a
