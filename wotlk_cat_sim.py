@@ -894,73 +894,81 @@ class Simulation():
     #     # after the current Rip.
     #     return (new_roar_end >= rip_end + self.strategy['min_roar_offset'])
 
-    def should_bearweave(self, current_time, future_time=None):
+    def should_bearweave(self, time, rip_refresh_pending, ff_leeway=1.0):
         """Determine whether the player should initiate a bearweave.
 
         Arguments:
-            current_time (float): Current simulation time in seconds.
-            future_time (float): If supplied, then project player state in the
-                future and predict whether a bearweave should be initiated in
-                (future_time - current_time) seconds rather than right now.
+            time (float): Current simulation time in seconds.
+            rip_refresh_pending (bool): Whether or not an existing Rip is
+                currently ticking and will need to be re-applied when it falls
+                off.
+            ff_leeway (float): Maximum tolerated delay on Faerie Fire when
+                trying to fit in a weave. Defaults to 1 second.
 
         Returns:
             can_bearweave (float): Whether or not a a bearweave should be
                 initiated at the specified time.
         """
-        if future_time is None:
-            future_time = current_time
-            
-        # Calculate intermediate terms in bearweave decision tree
-        #Some leeway terms to increase bearweave CPM with clear tradeoff
-        energy_munch = 0 #How much energy we are willing to intentionally cap to accomodate additional manglefires
-        ff_leeway = 0 #This will allow bearweaves that will delay FF CD by up to set amount
-
-        # Calculate intermediate terms in bearweave decision tree
-        projected_energy = (
-            self.player.energy + 10 * (future_time - current_time)
-        )
-        furor_cap = min(20 * self.player.furor, 75) #Max e cap is 75 because of cat GCD + 1 for consuming omen that we procced in bear
-        rip_refresh_pending = (
-            self.rip_debuff and (self.player.combo_points == 5)
-            and (self.rip_end < self.fight_length - 10)
-        )
-        weave_end = future_time + 6.5 + 2 * self.latency #Bear, mangle, FF, cat, shred is 6.5s of weave
-
-        # Calculate maximum Energy level for initiating a weave
-        weave_energy = furor_cap + energy_munch - 40 - 20 * self.latency
-
-        # With 4/5 or 5/5 Furor, force 2-GCD bearweaves whenever possible
-        # if self.player.furor > 3:
-        #     weave_energy -= 15
-
-        #     # Force a 3-GCD weave when stacking Lacerates for the first time
-        #     if self.strategy['lacerate_prio'] and (not self.lacerate_debuff):
-        #         weave_energy -= 15
-
-        # Bearweave decision tree
+        # First check basic conditions for any type of bearweave, and return
+        # False if these are not met. All weave sequences involve 2 1.5 second
+        # shapeshift GCDs (both delayed by latency), 1 Mangle (Bear) cast,
+        # 1 Faerie Fire cast (either in cat or bear), and 1 Cat Form GCD to
+        # spend the Omen proc, and therefore take 6.5 seconds + 2 * latency to
+        # execute.
+        weave_end = time + 6.5 + 2 * self.latency
         can_weave = (
             self.strategy['bearweave'] and self.player.cat_form
-            and (projected_energy <= weave_energy)
-            and (not self.player.omen_proc)
+            and (not self.player.omen_proc) and (not self.player.berserk)
             and ((not rip_refresh_pending) or (self.rip_end >= weave_end))
-            and (not self.player.berserk)
-            and (self.player.faerie_fire_cd >= 3 - ff_leeway - 1 * self.latency)
         )
 
         if can_weave and (not self.strategy['lacerate_prio']):
-            can_weave = not self.tf_expected_before(current_time, weave_end)
+            can_weave = not self.tf_expected_before(time, weave_end)
 
         # Also add an end of fight condition to make sure we can spend down our
         # Energy post-bearweave before the encounter ends. Time to spend is
         # given by weave_end plus 1 second per 42 Energy that we have at
         # weave_end.
         if can_weave:
-            energy_to_dump = projected_energy + (weave_end - future_time) * 10
+            energy_to_dump = self.player.energy + (weave_end - time) * 10
             can_weave = (
                 weave_end + energy_to_dump // 42 < self.fight_length
             )
 
-        return can_weave
+        if not can_weave:
+            return False
+
+        # Now we check for conditions that allow for initiating one of two
+        # "flavors" of bearweaves: either a single-GCD Mangleweave or a two-GCD
+        # Mangle + Faerie Fire weave. These have different leeway constraints
+        # due to their differing lengths.
+
+        # Start with the simple Mangleweave. Here we FF in Cat Form after
+        # exiting the weave, so the maximum Energy cap is 65 when shifting back
+        # into cat (15 for Cat Form GCD, 10 for FF GCD, 10 to spend the Omen).
+        # The FF cast will happen 4.5 + 2 * latency seconds after initiation.
+        mangleweave_furor_cap = min(20 * self.player.furor, 65)
+        mangleweave_energy = mangleweave_furor_cap - 30 - 20 * self.latency
+        ff_cd = self.player.faerie_fire_cd
+        can_mangleweave = (
+            (self.player.energy <= mangleweave_energy)
+            and (ff_cd >= 4.5 + 2 * self.latency - ff_leeway)
+        )
+
+        # Now check the "Manglefire" sequence. Here we FF in Dire Bear Form
+        # *before* exiting the weave, so the maximum Energy cap is 75 when
+        # shifting back into cat (15 for Cat Form GCD and 10 to spend the Omen
+        # proc).The FF cast will nominally happen 3 + latency seconds after
+        # initiation, with possible additional small delays to wait for a Maul
+        # before casting FF.
+        manglefire_furor_cap = min(20 * self.player.furor, 75)
+        manglefire_energy = manglefire_furor_cap - 40 - 20 * self.latency
+        can_manglefire = (
+            (self.player.energy <= manglefire_energy)
+            and (ff_cd >= 3.0 + self.latency - ff_leeway)
+        )
+
+        return (can_mangleweave or can_manglefire)
 
     def execute_rotation(self, time):
         """Execute the next player action in the DPS rotation according to the
@@ -1247,7 +1255,7 @@ class Simulation():
 
         # Allow for bearweaving if the next pending action is >= 4.5s away
         furor_cap = min(20 * self.player.furor, 75)
-        bearweave_now = self.should_bearweave(time)
+        bearweave_now = self.should_bearweave(time, rip_refresh_pending)
 
         # If we're maintaining Lacerate, then allow for emergency bearweaves
         # if Lacerate is about to fall off even if the above conditions do not
