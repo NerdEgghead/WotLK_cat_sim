@@ -712,11 +712,11 @@ class Simulation():
         """
         crit_factor = self.player.calc_crit_multiplier() - 1
         crit_mod = crit_factor * self.player.crit_chance
-        shred_dpc = (
+        shred_dpc = (1 + self.player.roar_fac) * (
             0.5 * (self.player.shred_low + self.player.shred_high) * 1.3
             * (1 + crit_mod)
         )
-        rake_dpc = 1.3 * (
+        rake_dpc = 1.3 * (1 + self.player.roar_fac) * (
             self.player.rake_hit * (1 + crit_mod)
             + (self.player.rake_duration / 3) * self.player.rake_tick * (1 + crit_mod * self.player.t10_4p_bonus)
         )
@@ -1389,9 +1389,33 @@ class Simulation():
             # exception is to wait slightly for an extra Maul before casting it
             # to burn any remaining Rage, since we won't be able to Maul again
             # once Omen is procced in order to save the proc for a Shred.
-            bearie_fire_now = ff_now and (
-                (self.swing_times[0] - time > 0.2) or (self.player.rage < 10)
-            )
+            # bearie_fire_now = ff_now and (
+            #     (self.swing_times[0] - time > 0.2) or (self.player.rage < 10)
+            # )
+            bearie_fire_now = ff_now
+
+            if bearie_fire_now and (self.player.rage >= 10):
+                # maul_dpc = self.player.calc_maul_dmg_gain(self.mangle_debuff)
+                # ff_delay_cost = 7. * self.calc_builder_dpe()[1]
+                # allowed_delay = maul_dpc / ff_delay_cost
+                # print(allowed_delay, maul_dpc, ff_delay_cost)
+                # allowed_delay = 0.3
+                # bearie_fire_now = (
+                #     self.swing_times[0] - time + self.latency > allowed_delay
+                # )
+                delayed_shift_time = (
+                    self.swing_times[0] + 1.0 + 2 * self.latency
+                )
+                rip_conflict = (
+                    rip_refresh_pending
+                    and (self.rip_end < delayed_shift_time + 2.5)
+                )
+                can_delay_ff = (
+                    (energy + 10 * (delayed_shift_time - time) <= furor_cap)
+                    and (not rip_conflict)
+                    and (self.swing_times[0] + self.latency - time < 1.0)
+                )
+                bearie_fire_now = not can_delay_ff
 
             if emergency_lacerate and (self.player.rage >= 13):
                 return self.lacerate(time)

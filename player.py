@@ -374,6 +374,39 @@ class Player():
             for cp in range(1, 6):
                 bite_damage[cp] += 8 * armor_multiplier
 
+    def calc_maul_dmg_gain(self, mangle_debuff):
+        """Calculate how much damage a Maul adds over a bear auto-attack on
+        average given current player stats.
+
+        Arguments:
+            mangle_debuff (bool): Whether the Mangle/Trauma debuff is currently
+                active.
+
+        Returns:
+            maul_damage_gain (float): Average damage gain from replacing an
+                auto-attack with a Maul.
+        """
+        base_auto_dmg = 0.5 * (self.white_bear_low + self.white_bear_high)
+        crit_multi = self.calc_crit_multiplier()
+        bear_crit_chance = self.crit_chance - 0.04
+        white_crit_cap = 1. - self.miss_chance - 0.24
+        white_attack_table_multiplier = (
+            1. - self.miss_chance
+            + (crit_multi - 1.) * min(bear_crit_chance, white_crit_cap)
+            - 0.24 * 0.25
+        )
+        avg_auto_dmg = base_auto_dmg * white_attack_table_multiplier
+
+        base_maul_dmg = (
+            0.5 * (self.maul_low + self.maul_high) * (1. + 0.3 * mangle_debuff)
+        )
+        yellow_attack_table_multiplier = (
+            (1 - self.miss_chance) * (1 + (crit_multi - 1) * bear_crit_chance)
+        )
+        avg_maul_dmg = base_maul_dmg * yellow_attack_table_multiplier
+
+        return (avg_maul_dmg - avg_auto_dmg) * (1 + 0.15 * self.enrage)
+
     def update_spell_gcd(self, haste_rating, multiplier=None):
         """Update GCD length for Gift of the Wild when player Spell Haste is
         modified.
