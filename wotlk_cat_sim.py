@@ -1212,6 +1212,23 @@ class Simulation():
             and ((not rip_now) or (energy < self.player.rip_cost))
         )
 
+        # Also add an end of fight condition to make sure we can spend down our
+        # Energy post-FF before the encounter ends. Time to spend is
+        # given by 1 second for FF GCD  plus 1 second for Clearcast Shred plus
+        # 1 second per 42 Energy that we have after that Clearcast Shred.
+        if ff_now:
+            max_shreds_without_ff = (
+                (energy + (self.fight_length - time) * 10)
+                // self.player.shred_cost # floored integer division here
+            )
+            num_shreds_without_ff = min(
+                max_shreds_without_ff, int(self.fight_length - time) + 1
+            )
+            num_shreds_with_ff = min(
+                max_shreds_without_ff + 1, int(self.fight_length - time)
+            )
+            ff_now = (num_shreds_with_ff > num_shreds_without_ff)
+
         # Additionally, block Shred and Rake casts if FF is coming off CD in
         # less than a second (and we won't Energy cap by pooling).
         next_ff_energy = (
