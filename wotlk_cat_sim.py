@@ -184,6 +184,7 @@ class Simulation():
         'daggerweave': False,
         'dagger_ep_loss': 1461,
         'mangle_idol_swap': False,
+        'max_ff_delay': 1.0,
     }
 
     def __init__(
@@ -894,7 +895,7 @@ class Simulation():
     #     # after the current Rip.
     #     return (new_roar_end >= rip_end + self.strategy['min_roar_offset'])
 
-    def should_bearweave(self, time, rip_refresh_pending, ff_leeway=1.0):
+    def should_bearweave(self, time, rip_refresh_pending, ff_leeway=None):
         """Determine whether the player should initiate a bearweave.
 
         Arguments:
@@ -903,12 +904,16 @@ class Simulation():
                 currently ticking and will need to be re-applied when it falls
                 off.
             ff_leeway (float): Maximum tolerated delay on Faerie Fire when
-                trying to fit in a weave. Defaults to 1 second.
+                trying to fit in a weave. Defaults to stored value in the
+                strategy dictionary.
 
         Returns:
             can_bearweave (float): Whether or not a a bearweave should be
                 initiated at the specified time.
         """
+        if ff_leeway is None:
+            ff_leeway = self.strategy['max_ff_delay']
+
         # First check basic conditions for any type of bearweave, and return
         # False if these are not met. All weave sequences involve 2 1.5 second
         # shapeshift GCDs (both delayed by latency), 1 Mangle (Bear) cast,
@@ -1234,13 +1239,12 @@ class Simulation():
         next_ff_energy = (
             energy + 10 * (self.player.faerie_fire_cd + self.latency)
         )
-        # wait_for_ff = (
-        #     (self.player.faerie_fire_cd < 1.0)
-        #     and (next_ff_energy < ff_energy_threshold)
-        #     and (not self.player.omen_proc)
-        #     and ((not self.rip_debuff) or (self.rip_end - time > 1.0))
-        # )
-        wait_for_ff = False
+        wait_for_ff = (
+            (self.player.faerie_fire_cd < 1.0 - self.strategy['max_ff_delay'])
+            and (next_ff_energy < ff_energy_threshold)
+            and (not self.player.omen_proc)
+            and ((not self.rip_debuff) or (self.rip_end - time > 1.0))
+        )
 
         # First figure out how much Energy we must float in order to be able
         # to refresh our buffs/debuffs as soon as they fall off
@@ -1406,20 +1410,9 @@ class Simulation():
             # exception is to wait slightly for an extra Maul before casting it
             # to burn any remaining Rage, since we won't be able to Maul again
             # once Omen is procced in order to save the proc for a Shred.
-            # bearie_fire_now = ff_now and (
-            #     (self.swing_times[0] - time > 0.2) or (self.player.rage < 10)
-            # )
             bearie_fire_now = ff_now
 
             if bearie_fire_now and (self.player.rage >= 10):
-                # maul_dpc = self.player.calc_maul_dmg_gain(self.mangle_debuff)
-                # ff_delay_cost = 7. * self.calc_builder_dpe()[1]
-                # allowed_delay = maul_dpc / ff_delay_cost
-                # print(allowed_delay, maul_dpc, ff_delay_cost)
-                # allowed_delay = 0.3
-                # bearie_fire_now = (
-                #     self.swing_times[0] - time + self.latency > allowed_delay
-                # )
                 delayed_shift_time = (
                     self.swing_times[0] + 1.0 + 2 * self.latency
                 )
@@ -1427,10 +1420,11 @@ class Simulation():
                     rip_refresh_pending
                     and (self.rip_end < delayed_shift_time + 2.5)
                 )
+                max_ff_delay = self.strategy['max_ff_delay']
                 can_delay_ff = (
                     (energy + 10 * (delayed_shift_time - time) <= furor_cap)
                     and (not rip_conflict)
-                    and (self.swing_times[0] + self.latency - time < 1.0)
+                    and (self.swing_times[0]+self.latency-time < max_ff_delay)
                 )
                 bearie_fire_now = not can_delay_ff
 

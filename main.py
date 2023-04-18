@@ -646,7 +646,20 @@ iteration_input = dbc.Col([
                 value=15, min=0, step=1, type='number', id='berserk_ff_thresh'
             ),
         ],
-        style={'width': '67%'}
+        style={'width': '67%', 'marginBottom': '1.5%'}
+    ),
+    dbc.InputGroup(
+        [
+            dbc.InputGroupAddon(
+                'Max allowed FF delay to fit in damage casts:',
+                addon_type='prepend'
+            ),
+            dbc.Input(
+                value=0.7, min=0, step=0.1, type='number', id='max_ff_delay'
+            ),
+            dbc.InputGroupAddon('seconds', addon_type='append')
+        ],
+        style={'width': '75%'}
     ),
     html.Br(),
     dbc.Checklist(
@@ -1845,6 +1858,7 @@ def plot_new_trajectory(sim, show_whites):
     State('bearweave', 'value'),
     State('berserk_bite_thresh', 'value'),
     State('berserk_ff_thresh', 'value'),
+    State('max_ff_delay', 'value'),
     State('lacerate_prio', 'value'),
     State('lacerate_time', 'value'),
     State('powerbear', 'value'),
@@ -1868,9 +1882,9 @@ def compute(
         min_roar_offset, roar_clip_leeway, use_rake, mangle_spam,
         use_biteweave, bite_model, bite_time, bear_mangle, prepop_berserk,
         preproc_omen, bearweave, berserk_bite_thresh, berserk_ff_thresh,
-        lacerate_prio, lacerate_time, powerbear, snek, flowershift,
-        gotw_targets, daggerweave, dagger_ep_loss, num_replicates, latency,
-        epic_gems, show_whites
+        max_ff_delay, lacerate_prio, lacerate_time, powerbear, snek,
+        flowershift, gotw_targets, daggerweave, dagger_ep_loss, num_replicates,
+        latency, epic_gems, show_whites
 ):
     ctx = dash.callback_context
 
@@ -2098,13 +2112,14 @@ def compute(
         use_berserk='berserk' in binary_talents,
         prepop_berserk=bool(prepop_berserk), preproc_omen=bool(preproc_omen),
         bearweave=bool(bearweave), berserk_bite_thresh=berserk_bite_thresh,
-        berserk_ff_thresh=berserk_ff_thresh, lacerate_prio=bool(lacerate_prio),
-        lacerate_time=lacerate_time, powerbear=bool(powerbear),
-        snek=bool(snek) and bool(bearweave), flowershift=bool(flowershift),
-        daggerweave=bool(daggerweave), dagger_ep_loss=dagger_ep_loss,
-        min_roar_offset=min_roar_offset, roar_clip_leeway=roar_clip_leeway,
-        trinkets=trinket_list, haste_multiplier=haste_multiplier,
-        hot_uptime=hot_uptime / 100., mangle_idol=mangle_idol
+        berserk_ff_thresh=berserk_ff_thresh, max_ff_delay=max_ff_delay,
+        lacerate_prio=bool(lacerate_prio), lacerate_time=lacerate_time,
+        powerbear=bool(powerbear), snek=bool(snek) and bool(bearweave),
+        flowershift=bool(flowershift), daggerweave=bool(daggerweave),
+        dagger_ep_loss=dagger_ep_loss, min_roar_offset=min_roar_offset,
+        roar_clip_leeway=roar_clip_leeway, trinkets=trinket_list,
+        haste_multiplier=haste_multiplier, hot_uptime=hot_uptime / 100.,
+        mangle_idol=mangle_idol
     )
     sim.set_active_debuffs(boss_debuffs)
     player.calc_damage_params(**sim.params)
