@@ -1002,8 +1002,14 @@ iteration_input = dbc.Col([
     ]),
     html.Div([
         dbc.Row([
-            dbc.Col(dcc.Markdown('Put trinket on ICD'), id="trinket_icd_text_1"),
-            dbc.Col(dcc.Markdown('Put trinket on ICD'), id="trinket_icd_text_2"),
+            dbc.Col(
+                dcc.Markdown('Put trinket on ICD (ignored if 0)'),
+                id="trinket_icd_text_1"
+            ),
+            dbc.Col(
+                dcc.Markdown('Put trinket on ICD (ignored if 0)'),
+                id="trinket_icd_text_2"
+            ),
         ], style={'marginTop': '1.5%', 'marginBottom': '-2%'}),
         dbc.Row([
             dbc.Col(dbc.InputGroup(
