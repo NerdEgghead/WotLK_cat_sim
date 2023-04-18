@@ -407,7 +407,8 @@ class ProcTrinket(Trinket):
     def __init__(
         self, stat_name, stat_increment, proc_name, chance_on_hit,
         proc_duration, cooldown, chance_on_crit=0.0, yellow_chance_on_hit=None,
-        mangle_only=False, cat_mangle_only=False, shred_only=False, periodic_only=False
+        mangle_only=False, cat_mangle_only=False, shred_only=False, periodic_only=False,
+        icd_precombat=0.0
     ):
         """Initialize a generic proc trinket with key parameters.
 
@@ -441,7 +442,11 @@ class ProcTrinket(Trinket):
                 able to proc exclusively on the Shred ability. Defaults False.
             periodic_only (bool): If True, then designate this trinket as being
                 able to proc exclusively on periodic damage. Defaults False.
+            icd_precombat (float): Optional time (in seconds) of resetting the
+                trinket's internal cooldown before the fight. For example, 
+                equipping trinkets before pull. Defaults to 0.0.
         """
+        self.icd_precombat = icd_precombat
         Trinket.__init__(
             self, stat_name, stat_increment, proc_name, proc_duration,
             cooldown
@@ -505,6 +510,8 @@ class ProcTrinket(Trinket):
     def reset(self):
         """Set trinket to fresh inactive state with no cooldown remaining."""
         Trinket.reset(self)
+        self.can_proc = self.icd_precombat > self.cooldown - 1e-9 if self.icd_precombat else True
+        self.activation_time = -self.icd_precombat if self.icd_precombat else -np.inf
         self.proc_happened = False
 
 
@@ -707,7 +714,7 @@ class InstantDamageProc(ProcTrinket):
 
     def __init__(
         self, proc_name, min_damage, damage_range, cooldown, chance_on_hit,
-        chance_on_crit, **kwargs
+        chance_on_crit, icd_precombat=0.0, **kwargs
     ):
         """Initialize Trinket object.
 
@@ -728,7 +735,8 @@ class InstantDamageProc(ProcTrinket):
             self, stat_name='attack_power', stat_increment=0,
             proc_name=proc_name, proc_duration=0, cooldown=cooldown,
             chance_on_hit=chance_on_hit, chance_on_crit=chance_on_crit,
-            periodic_only=kwargs.get('periodic_only', False)
+            periodic_only=kwargs.get('periodic_only', False), 
+            icd_precombat=icd_precombat
         )
         self.min_damage = min_damage
         self.damage_range = damage_range
