@@ -895,24 +895,18 @@ class Simulation():
     #     # after the current Rip.
     #     return (new_roar_end >= rip_end + self.strategy['min_roar_offset'])
 
-    def should_bearweave(self, time, rip_refresh_pending, ff_leeway=None):
+    def should_bearweave(self, time):
         """Determine whether the player should initiate a bearweave.
 
         Arguments:
             time (float): Current simulation time in seconds.
-            rip_refresh_pending (bool): Whether or not an existing Rip is
-                currently ticking and will need to be re-applied when it falls
-                off.
-            ff_leeway (float): Maximum tolerated delay on Faerie Fire when
-                trying to fit in a weave. Defaults to stored value in the
-                strategy dictionary.
 
         Returns:
             can_bearweave (float): Whether or not a a bearweave should be
                 initiated at the specified time.
         """
-        if ff_leeway is None:
-            ff_leeway = self.strategy['max_ff_delay']
+        rip_refresh_pending = self.rip_refresh_pending
+        ff_leeway = self.strategy['max_ff_delay']
 
         # First check basic conditions for any type of bearweave, and return
         # False if these are not met. All weave sequences involve 2 1.5 second
@@ -1249,12 +1243,12 @@ class Simulation():
         # First figure out how much Energy we must float in order to be able
         # to refresh our buffs/debuffs as soon as they fall off
         pending_actions = []
-        rip_refresh_pending = False
+        self.rip_refresh_pending = False
 
         if (self.rip_debuff and (cp == rip_cp) and (not block_rip_next)):
             rip_cost = self.player._rip_cost / 2 if self.berserk_expected_at(time, self.rip_end) else self.player._rip_cost
             pending_actions.append((self.rip_end, rip_cost))
-            rip_refresh_pending = True
+            self.rip_refresh_pending = True
         if self.rake_debuff and (self.rake_end < self.fight_length - 9):
             if self.berserk_expected_at(time, self.rake_end):
                 pending_actions.append((self.rake_end, 17.5 * pool_for_rake))
@@ -1276,7 +1270,7 @@ class Simulation():
 
         # Allow for bearweaving if the next pending action is >= 4.5s away
         furor_cap = min(20 * self.player.furor, 75)
-        bearweave_now = self.should_bearweave(time, rip_refresh_pending)
+        bearweave_now = self.should_bearweave(time)
 
         # If we're maintaining Lacerate, then allow for emergency bearweaves
         # if Lacerate is about to fall off even if the above conditions do not
@@ -1299,7 +1293,7 @@ class Simulation():
         flowershift_now = (
             self.strategy['flowershift'] and (energy <= flowershift_energy)
             and (not self.player.omen_proc)
-            and ((not rip_refresh_pending) or (self.rip_end >= flower_end))
+            and ((not self.rip_refresh_pending) or (self.rip_end >= flower_end))
             and (not self.player.berserk)
             and (not self.tf_expected_before(time, flower_end))
         )
@@ -1358,12 +1352,12 @@ class Simulation():
             # Energy leeway to spend an additional GCD in Dire Bear Form.
             shift_now = (
                 (energy + 15 + 10 * self.latency > furor_cap)
-                or (rip_refresh_pending and (self.rip_end < time + 3.0))
+                or (self.rip_refresh_pending and (self.rip_end < time + 3.0))
                 or self.player.berserk
             )
             shift_next = (
                 (energy + 30 + 10 * self.latency > furor_cap)
-                or (rip_refresh_pending and (self.rip_end < time + 4.5))
+                or (self.rip_refresh_pending and (self.rip_end < time + 4.5))
                 or self.player.berserk
             )
 
@@ -1417,7 +1411,7 @@ class Simulation():
                     self.swing_times[0] + 1.0 + 2 * self.latency
                 )
                 rip_conflict = (
-                    rip_refresh_pending
+                    self.rip_refresh_pending
                     and (self.rip_end < delayed_shift_time + 2.5)
                 )
                 max_ff_delay = self.strategy['max_ff_delay']
@@ -1439,7 +1433,7 @@ class Simulation():
                 # goes out in order to maximize the gains from the reset.
                 projected_delay = self.swing_times[0] + 2 * self.latency - time
                 rip_conflict = (
-                    rip_refresh_pending and
+                    self.rip_refresh_pending and
                     (self.rip_end < time + projected_delay + 1.5)
                 )
                 next_cat_swing = time + self.latency + self.swing_timer / 2.5
@@ -1792,6 +1786,7 @@ class Simulation():
         self.player.reset()
         self.mangle_debuff = False
         self.rip_debuff = False
+        self.rip_refresh_pending = False
         self.rake_debuff = False
         self.lacerate_debuff = False
         self.params['tigers_fury'] = False
@@ -2028,17 +2023,13 @@ class Simulation():
                     # will be left with enough Rage to cast Mangle or Lacerate
                     # on that global.
                     furor_cap = min(20 * self.player.furor, 75)
-                    rip_refresh_pending = (
-                        self.rip_debuff
-                        and (self.rip_end < self.fight_length - 10)
-                    )
                     energy_leeway = (
                         furor_cap - 15
                         - 10 * (self.player.gcd + self.latency)
                     )
                     shift_next = (self.player.energy > energy_leeway)
 
-                    if rip_refresh_pending:
+                    if self.rip_refresh_pending:
                         shift_next = shift_next or (
                             self.rip_end < time + self.player.gcd + 3.0
                         )
