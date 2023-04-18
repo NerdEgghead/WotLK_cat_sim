@@ -1002,9 +1002,9 @@ iteration_input = dbc.Col([
     ]),
     html.Div([
         dbc.Row([
-            dbc.Col(dcc.Markdown('Put trinket on ICD'), style={'marginTop': '1.5%', 'marginBottom': '-1.5%'}, id="trinket_icd_text_1"),
-            dbc.Col(dcc.Markdown('Put trinket on ICD'), style={'marginTop': '1.5%', 'marginBottom': '-1.5%'}, id="trinket_icd_text_2"),
-        ]),
+            dbc.Col(dcc.Markdown('Put trinket on ICD'), id="trinket_icd_text_1"),
+            dbc.Col(dcc.Markdown('Put trinket on ICD'), id="trinket_icd_text_2"),
+        ], style={'marginTop': '1.5%', 'marginBottom': '-2%'}),
         dbc.Row([
             dbc.Col(dbc.InputGroup(
                 [
@@ -1016,7 +1016,6 @@ iteration_input = dbc.Col([
                         'seconds before combat', addon_type='append'
                     ),
                 ],
-                style={'marginTop': '-1.5%'},
                 id="trinket_icd_group_1"
             )),
             dbc.Col(dbc.InputGroup(
@@ -1029,7 +1028,6 @@ iteration_input = dbc.Col([
                         'seconds before combat', addon_type='append'
                     ),
                 ],
-                style={'marginTop': '-1.5%'},
                 id="trinket_icd_group_2"
             )),
         ]),
@@ -2246,7 +2244,29 @@ def disable_options(
         bool(lacerate_prio), [bearweave_options], [lacerate_options],
         [flowershift_options], bool(flowershift), bool(daggerweave)
     )
-
+    
+#Callback for displaying trinket ICD options when appropriate
+@app.callback(
+    Output('trinket_icd_text_1', 'style'),
+    Output('trinket_icd_group_1', 'style'),
+    Output('trinket_icd_text_2', 'style'),
+    Output('trinket_icd_group_2', 'style'),
+    Output('trinket_icd_precombat_1', 'value'),
+    Output('trinket_icd_precombat_2', 'value'),
+    Input('trinket_1', 'value'),
+    Input('trinket_2', 'value'),
+    Input('trinket_icd_precombat_1', 'value'),
+    Input('trinket_icd_precombat_2', 'value'),)
+def show_trinket_ICD_options(trinket_1, trinket_2, trinket_icd_precombat_1, trinket_icd_precombat_2):
+    show_trinket_1_ICD = trinket_1 != 'none' and trinkets.trinket_library[trinket_1]['type'] in ['proc','instant_damage']
+    show_trinket_2_ICD = trinket_2 != 'none' and trinkets.trinket_library[trinket_2]['type'] in ['proc','instant_damage']
+    trinket_1_style = {} if show_trinket_1_ICD else {'visibility':'hidden'} 
+    trinket_2_style = {} if show_trinket_2_ICD else {'visibility':'hidden'}
+    if not show_trinket_1_ICD:
+        trinket_icd_precombat_1 = 0
+    if not show_trinket_2_ICD:
+        trinket_icd_precombat_2 = 0
+    return (trinket_1_style, trinket_1_style, trinket_2_style, trinket_2_style, trinket_icd_precombat_1, trinket_icd_precombat_2)
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
