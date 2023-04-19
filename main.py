@@ -997,7 +997,7 @@ iteration_input = dbc.Col([
                 {'label': 'Madness of the Betrayer', 'value': 'madness'},
                 {'label': 'Shard of Contempt', 'value': 'shard_of_contempt'},
             ],
-            value='comet_trail'
+            value='dark_matter'
         )),
     ]),
     html.Div([
