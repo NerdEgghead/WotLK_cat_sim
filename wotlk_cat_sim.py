@@ -1288,24 +1288,26 @@ class Simulation():
         # more available time/Energy leeway for the technique, since
         # flowershifts take only 3 seconds to execute.
         gcd = 1.5 if self.strategy['daggerweave'] else self.player.spell_gcd
-        flowershift_energy = min(furor_cap, 75) - 10 * gcd - 20 * self.latency
-        flower_end = time + gcd + 1.5 + 2 * self.latency
+        flowershift_energy = furor_cap - 10 * gcd - 20 * self.latency
+        flower_end = time + gcd + 2.5 + 2 * self.latency
+        flower_ff_delay = flower_end - (time + self.player.faerie_fire_cd)
         flowershift_now = (
             self.strategy['flowershift'] and (energy <= flowershift_energy)
             and (not self.player.omen_proc)
             and ((not self.rip_refresh_pending) or (self.rip_end >= flower_end))
             and (not self.player.berserk)
             and (not self.tf_expected_before(time, flower_end))
+            and (flower_ff_delay <= self.strategy['max_ff_delay'])
         )
 
         # Also add an end of fight condition to make sure we can spend down our
         # Energy post-flowershift before the encounter ends. Time to spend is
-        # given by flower_end plus 1 second for Clearcast Shred plus 1 second
-        # per 42 Energy that we have after that Clearcast Shred.
+        # given by flower_end plus 1 second per 42 Energy that we have after
+        # the Clearcast Shred.
         if flowershift_now:
-            energy_to_dump = energy + (flower_end + 1.0 - time) * 10
+            energy_to_dump = energy + (flower_end - time) * 10
             flowershift_now = (
-                flower_end + 1.0 + energy_to_dump // 42 < self.fight_length
+                flower_end + energy_to_dump // 42 < self.fight_length
             )
 
         floating_energy = 0
