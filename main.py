@@ -655,7 +655,7 @@ iteration_input = dbc.Col([
                 addon_type='prepend'
             ),
             dbc.Input(
-                value=0.7, min=0, step=0.1, type='number', id='max_ff_delay'
+                value=1.0, min=0, step=0.1, type='number', id='max_ff_delay'
             ),
             dbc.InputGroupAddon('seconds', addon_type='append')
         ],
@@ -2242,7 +2242,7 @@ def disable_options(
     # Disable Lacerateweave and flowershift in UI given recent Blizzard changes
     flowershift_options['disabled'] = bool(bearweave)
     bearweave_options['disabled'] = bool(flowershift)
-    lacerate_options['disabled'] = True
+    lacerate_options['disabled'] = False
 
     return (
         bool(bearweave), bool(biteweave), 'berserk' in binary_talents,

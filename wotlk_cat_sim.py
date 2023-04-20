@@ -914,7 +914,7 @@ class Simulation():
         # 1 Faerie Fire cast (either in cat or bear), and 1 Cat Form GCD to
         # spend the Omen proc, and therefore take 6.5 seconds + 2 * latency to
         # execute.
-        weave_end = time + 6.5 + 2 * self.latency
+        weave_end = time + 4.5 + 2 * self.latency
         can_weave = (
             self.strategy['bearweave'] and self.player.cat_form
             and (not self.player.omen_proc) and (not self.player.berserk)
@@ -946,28 +946,15 @@ class Simulation():
         # exiting the weave, so the maximum Energy cap is 65 when shifting back
         # into cat (15 for Cat Form GCD, 10 for FF GCD, 10 to spend the Omen).
         # The FF cast will happen 4.5 + 2 * latency seconds after initiation.
-        mangleweave_furor_cap = min(20 * self.player.furor, 65)
-        mangleweave_energy = mangleweave_furor_cap - 30 - 20 * self.latency
+        furor_cap = min(20 * self.player.furor, 85)
+        mangleweave_energy = furor_cap - 45 - 20 * self.latency
         ff_cd = self.player.faerie_fire_cd
         can_mangleweave = (
             (self.player.energy <= mangleweave_energy)
             and (ff_cd >= 4.5 + 2 * self.latency - ff_leeway)
         )
 
-        # Now check the "Manglefire" sequence. Here we FF in Dire Bear Form
-        # *before* exiting the weave, so the maximum Energy cap is 75 when
-        # shifting back into cat (15 for Cat Form GCD and 10 to spend the Omen
-        # proc).The FF cast will nominally happen 3 + latency seconds after
-        # initiation, with possible additional small delays to wait for a Maul
-        # before casting FF.
-        manglefire_furor_cap = min(20 * self.player.furor, 75)
-        manglefire_energy = manglefire_furor_cap - 40 - 20 * self.latency
-        can_manglefire = (
-            (self.player.energy <= manglefire_energy)
-            and (ff_cd >= 3.0 + self.latency - ff_leeway)
-        )
-
-        return (can_mangleweave or can_manglefire)
+        return can_mangleweave
 
     def execute_rotation(self, time):
         """Execute the next player action in the DPS rotation according to the
@@ -1198,12 +1185,12 @@ class Simulation():
         )
 
         # Faerie Fire on cooldown for Omen procs. Each second of FF delay is
-        # worth ~7 Energy, so it is okay to waste up to 7 Energy to cap when
+        # worth 4.2 Energy, so it is okay to waste up to 4.2 Energy to cap when
         # determining whether to cast it vs. dump Energy first. That puts the
-        # Energy threshold for FF usage as 107 minus 10 for the Clearcasted
-        # special minus 10 for the FF GCD = 87 Energy.
+        # Energy threshold for FF usage as 104.2 minus 10 for the Clearcasted
+        # special minus 10 for the FF GCD = 84.2 Energy.
         ff_energy_threshold = (
-            self.strategy['berserk_ff_thresh'] if self.player.berserk else 87
+            self.strategy['berserk_ff_thresh'] if self.player.berserk else 84.2
         )
         ff_now = (
             (self.player.faerie_fire_cd < 1e-9) and (not self.player.omen_proc)
@@ -1269,7 +1256,7 @@ class Simulation():
         pending_actions.sort()
 
         # Allow for bearweaving if the next pending action is >= 4.5s away
-        furor_cap = min(20 * self.player.furor, 75)
+        furor_cap = min(20 * self.player.furor, 85)
         bearweave_now = self.should_bearweave(time)
 
         # If we're maintaining Lacerate, then allow for emergency bearweaves
@@ -1288,7 +1275,7 @@ class Simulation():
         # more available time/Energy leeway for the technique, since
         # flowershifts take only 3 seconds to execute.
         gcd = 1.5 if self.strategy['daggerweave'] else self.player.spell_gcd
-        flowershift_energy = furor_cap - 10 * gcd - 20 * self.latency
+        flowershift_energy = min(furor_cap, 75) - 10 * gcd - 20 * self.latency
         flower_end = time + gcd + 2.5 + 2 * self.latency
         flower_ff_delay = flower_end - (time + self.player.faerie_fire_cd)
         flowershift_now = (
@@ -1352,15 +1339,18 @@ class Simulation():
             # Clearcasting, or (b) our first bear auto didn't generate enough
             # Rage to Mangle or Maul, or (c) we don't have enough time or
             # Energy leeway to spend an additional GCD in Dire Bear Form.
+            max_ff_delay = self.strategy['max_ff_delay']
             shift_now = (
                 (energy + 15 + 10 * self.latency > furor_cap)
                 or (self.rip_refresh_pending and (self.rip_end < time + 3.0))
                 or self.player.berserk
+                or (self.player.faerie_fire_cd < 3.0+self.latency-max_ff_delay)
             )
             shift_next = (
                 (energy + 30 + 10 * self.latency > furor_cap)
                 or (self.rip_refresh_pending and (self.rip_end < time + 4.5))
                 or self.player.berserk
+                or (self.player.faerie_fire_cd < 4.5+self.latency-max_ff_delay)
             )
 
             if self.strategy['powerbear']:
@@ -1401,33 +1391,8 @@ class Simulation():
                 time_to_dump = 3.0 + self.latency + energy_to_dump // 42
                 shift_now = (time + time_to_dump >= self.fight_length)
 
-            # Due to the new Feral changes, Faerie Fire takes priority over
-            # anything else in Dire Bear Form if it is off cooldown. The only
-            # exception is to wait slightly for an extra Maul before casting it
-            # to burn any remaining Rage, since we won't be able to Maul again
-            # once Omen is procced in order to save the proc for a Shred.
-            bearie_fire_now = ff_now
-
-            if bearie_fire_now and (self.player.rage >= 10):
-                delayed_shift_time = (
-                    self.swing_times[0] + 1.0 + 2 * self.latency
-                )
-                rip_conflict = (
-                    self.rip_refresh_pending
-                    and (self.rip_end < delayed_shift_time + 2.5)
-                )
-                max_ff_delay = self.strategy['max_ff_delay']
-                can_delay_ff = (
-                    (energy + 10 * (delayed_shift_time - time) <= furor_cap)
-                    and (not rip_conflict)
-                    and (self.swing_times[0]+self.latency-time < max_ff_delay)
-                )
-                bearie_fire_now = not can_delay_ff
-
             if emergency_lacerate and (self.player.rage >= 13):
                 return self.lacerate(time)
-            elif bearie_fire_now:
-                return self.player.faerie_fire()
             elif shift_now:
                 # If we are resetting our swing timer using Albino Snake or a
                 # duplicate weapon swap, then do an additional check here to
@@ -1456,8 +1421,8 @@ class Simulation():
                 return self.lacerate(time)
             elif (self.player.rage >= 15) and (self.player.mangle_cd < 1e-9):
                 return self.mangle(time)
-            #elif self.player.rage >= 13:  #We never lacerate anymore
-             #   return self.lacerate(time)
+            elif self.player.rage >= 13:  #We never lacerate anymore
+                return self.lacerate(time)
             else:
                 time_to_next_action = self.swing_times[0] - time
         elif emergency_bearweave:
@@ -2024,7 +1989,7 @@ class Simulation():
                     # Dire Bear Form once the GCD expires, then only Maul if we
                     # will be left with enough Rage to cast Mangle or Lacerate
                     # on that global.
-                    furor_cap = min(20 * self.player.furor, 75)
+                    furor_cap = min(20 * self.player.furor, 85)
                     energy_leeway = (
                         furor_cap - 15
                         - 10 * (self.player.gcd + self.latency)

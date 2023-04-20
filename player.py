@@ -1089,10 +1089,10 @@ class Player():
                 be modified to return non-zero damage for Dire Bear Form casts.
         """
         self.gcd = 1.0
-        self.omen_proc = True
-        self.faerie_fire_cd = 6.0
+        self.faerie_fire_cd = 10.0
 
         if self.cat_form:
+            self.omen_proc = True
             self.dmg_breakdown['Faerie Fire (Cat)']['casts'] += 1
             if self.log:
                 self.gen_log('Faerie Fire (Cat)', '', False, False, False)
