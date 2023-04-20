@@ -2240,8 +2240,8 @@ def disable_options(
     }
 
     # Disable Lacerateweave and flowershift in UI given recent Blizzard changes
-    flowershift_options['disabled'] = bool(bearweave)
-    bearweave_options['disabled'] = bool(flowershift)
+    flowershift_options['disabled'] = False
+    bearweave_options['disabled'] = False
     lacerate_options['disabled'] = True
 
     return (

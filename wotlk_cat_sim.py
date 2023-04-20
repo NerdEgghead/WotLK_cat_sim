@@ -1003,13 +1003,14 @@ class Simulation():
         # If we previously decided to shift, then execute the shift now once
         # the input delay is over.
         if self.player.ready_to_shift:
+            bear_to_cat = self.player.bear_form
             self.player.shift(time)
 
             if (self.player.mana < 0) and (not self.time_to_oom):
                 self.time_to_oom = time
 
             # Swing timer only updates on the next swing after we shift
-            if self.strategy['bearweave']:
+            if bear_to_cat or self.player.bear_form:
                 swing_fac = 1./2.5 if self.player.cat_form else 2.5
             else:
                 swing_fac = 1.
@@ -1332,7 +1333,7 @@ class Simulation():
         excess_e = energy - floating_energy
         time_to_next_action = 0.0
 
-        if (not self.player.cat_form) and self.strategy['flowershift']:
+        if (not self.player.cat_form) and (not self.player.bear_form):
             # If the previous GotW cast was unsuccessful and we still have
             # leeway available, then try again. Otherwise, shift back into Cat
             # Form.
@@ -1347,7 +1348,7 @@ class Simulation():
                 )
             else:
                 self.player.ready_to_shift = True
-        elif not self.player.cat_form:
+        elif self.player.bear_form:
             # Shift back into Cat Form if (a) our first bear auto procced
             # Clearcasting, or (b) our first bear auto didn't generate enough
             # Rage to Mangle or Maul, or (c) we don't have enough time or
@@ -1623,11 +1624,11 @@ class Simulation():
         """
         new_haste_rating = haste_rating_delta + sim_utils.calc_haste_rating(
             self.swing_timer, multiplier=self.haste_multiplier,
-            cat_form=self.player.cat_form or self.strategy['flowershift']
+            cat_form=not self.player.bear_form
         )
         new_swing_timer = sim_utils.calc_swing_timer(
             new_haste_rating, multiplier=self.haste_multiplier,
-            cat_form=self.player.cat_form or self.strategy['flowershift']
+            cat_form=not self.player.bear_form
         )
         self.update_swing_times(time, new_swing_timer)
         self.player.update_spell_gcd(new_haste_rating)
@@ -1991,8 +1992,7 @@ class Simulation():
                 dmg_done += trinket.update(time, self.player, self)
 
             # Use Enrage if appropriate
-            if (self.strategy['bearweave'] and (not self.player.cat_form)
-                    and (self.player.enrage_cd < 1e-9)
+            if (self.player.bear_form and (self.player.enrage_cd < 1e-9)
                     and (time < self.player.last_shift + 1.5 + 1e-9)):
                 self.player.rage = min(100, self.player.rage + 20)
                 self.player.enrage = True

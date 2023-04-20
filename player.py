@@ -439,6 +439,7 @@ class Player():
         self.rune_cd = 0.0
         self.five_second_rule = False
         self.cat_form = True
+        self.bear_form = False
         self.ready_to_shift = False
         self.ready_to_gift = False
         self.berserk = False
@@ -1019,6 +1020,7 @@ class Player():
 
         if self.cat_form:
             self.cat_form = False
+            self.bear_form = True
             self.rage = 10 * (np.random.rand() < 0.2 * self.furor)
             cast_name = 'Shift (Bear)'
 
@@ -1030,6 +1032,7 @@ class Player():
                 log_str = 'use Enrage'
         else:
             self.cat_form = True
+            self.bear_form = False
             self.energy = (
                 min(self.energy, 20 * self.furor) + 20 * self.wolfshead
             )
@@ -1065,6 +1068,7 @@ class Player():
         """
         # Execute the cast and perform related bookkeeping
         self.cat_form = False
+        self.bear_form = False
         self.gcd = self.spell_gcd
         self.dmg_breakdown['Gift of the Wild']['casts'] += 1
         self.mana -= 1119 # Glyph of the Wild assumed
