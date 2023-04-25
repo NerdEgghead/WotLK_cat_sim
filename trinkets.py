@@ -407,8 +407,8 @@ class ProcTrinket(Trinket):
     def __init__(
         self, stat_name, stat_increment, proc_name, chance_on_hit,
         proc_duration, cooldown, chance_on_crit=0.0, yellow_chance_on_hit=None,
-        mangle_only=False, cat_mangle_only=False, shred_only=False, periodic_only=False,
-        icd_precombat=0.0
+        mangle_only=False, cat_mangle_only=False, shred_only=False,
+        swipe_only=False, periodic_only=False, icd_precombat=0.0
     ):
         """Initialize a generic proc trinket with key parameters.
 
@@ -436,14 +436,17 @@ class ProcTrinket(Trinket):
                 again.
             mangle_only (bool): If True, then designate this trinket as being
                 able to proc exclusively on the Mangle ability. Defaults False.
-            cat_mangle_only (bool): If True, then designate this trinket as being
-                able to proc exclusively on the Cat Mangle ability. Defaults False.
+            cat_mangle_only (bool): If True, then designate this trinket as
+                being able to proc exclusively on the Cat Mangle ability.
+                Defaults False.
             shred_only (bool): If True, then designate this trinket as being
                 able to proc exclusively on the Shred ability. Defaults False.
+            swipe_only (bool): If True, then designate this trinket as being
+                able to proc exclusively on the Swipe ability. Defaults False.
             periodic_only (bool): If True, then designate this trinket as being
                 able to proc exclusively on periodic damage. Defaults False.
             icd_precombat (float): Optional time (in seconds) of resetting the
-                trinket's internal cooldown before the fight. For example, 
+                trinket's internal cooldown before the fight. For example,
                 equipping trinkets before pull. Defaults to 0.0.
         """
         self.icd_precombat = icd_precombat
@@ -465,9 +468,11 @@ class ProcTrinket(Trinket):
         self.mangle_only = mangle_only
         self.cat_mangle_only = cat_mangle_only
         self.shred_only = shred_only
+        self.swipe_only = swipe_only
         self.periodic_only = periodic_only
         self.special_proc_conditions = (
-            mangle_only or cat_mangle_only or shred_only or periodic_only
+            mangle_only or cat_mangle_only or shred_only or swipe_only
+            or periodic_only
         )
 
     def check_for_proc(self, crit, yellow):

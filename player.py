@@ -1147,6 +1147,12 @@ class Player():
             if not miss:
                 self.check_procs(yellow=True, crit=crit)
 
+                # Since a handful of proc effects trigger only on Swipe, we
+                # separately check for those procs here.
+                for trinket in self.proc_trinkets:
+                    if trinket.swipe_only:
+                        trinket.check_for_proc(False, True)
+
         num_hits = num_targets - num_misses - num_crits
 
         # Apply Savage Roar

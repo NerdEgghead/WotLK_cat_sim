@@ -2093,7 +2093,8 @@ def compute(
         idol = trinkets.ProcTrinket(
             chance_on_hit=0.75, stat_name='attack_power',
             stat_increment=2 * stat_mod * ap_mod * 61, proc_duration=10,
-            cooldown=10, proc_name='Snap and Snarl', shred_only=True
+            cooldown=10, proc_name='Snap and Snarl', shred_only=True,
+            swipe_only=True
         )
         trinket_list.append(idol)
         player.proc_trinkets.append(idol)
