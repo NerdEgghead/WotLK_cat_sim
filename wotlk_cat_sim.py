@@ -1195,8 +1195,8 @@ class Simulation():
         )
         berserk_now = (
             self.strategy['use_berserk'] and (self.player.berserk_cd < 1e-9)
-            and (not wait_for_tf) and self.rip_debuff
-            and (not self.player.omen_proc)
+            and (not wait_for_tf) and (not self.player.omen_proc)
+            and (self.rip_debuff or self.strategy['aoe'])
         )
 
         # Additionally, for Lacerateweave rotation, postpone the final Berserk
@@ -1292,14 +1292,16 @@ class Simulation():
 
             if self.player.savage_roar:
                 # First pool for the Roar itself
-                pending_actions.append((self.roar_end, 25))
+                pending_actions.append((self.roar_end, self.player.roar_cost))
 
                 # If we don't already have a Combo Point, then also pool for
                 # the Mangle or Rake cast to generate it.
                 if (cp == 0) and (self.roar_end - time > 1.0):
-                    builder_cost = (
-                        self.player._mangle_cost if self.mangle_idol else 35
-                    )
+                    if self.mangle_idol:
+                        builder_cost = self.player.mangle_cost
+                    else:
+                        builder_cost = self.player.rake_cost
+
                     refresh_time = self.roar_end - 1.0
 
                     if self.player.faerie_fire_cd > refresh_time - time:
