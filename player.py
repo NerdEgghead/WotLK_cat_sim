@@ -300,6 +300,8 @@ class Player():
         self.shred_high = 1.2 * (
             self.white_high * 2.25 + (666 + self.shred_bonus) * self.multiplier
         )
+        self.swipe_low = self.white_low * 2.5 * 1.3
+        self.swipe_high = self.white_high * 2.5 * 1.3
         self.bite_multiplier = (
             self.multiplier * (1 + 0.03 * self.feral_aggression)
             * (1 + 0.15 * self.t6_bonus)
@@ -457,9 +459,9 @@ class Player():
 
         for cast_type in [
             'Melee', 'Mangle (Cat)', 'Rake', 'Shred', 'Savage Roar', 'Rip',
-            'Ferocious Bite', 'Faerie Fire (Cat)', 'Shift (Bear)', 'Maul',
-            'Mangle (Bear)', 'Lacerate', 'Shift (Cat)', 'Gift of the Wild',
-            'Faerie Fire (Bear)'
+            'Ferocious Bite', 'Faerie Fire (Cat)', 'Swipe (Cat)',
+            'Shift (Bear)', 'Maul', 'Mangle (Bear)', 'Lacerate',
+            'Faerie Fire (Bear)', 'Shift (Cat)', 'Gift of the Wild',
         ]:
             self.dmg_breakdown[cast_type] = {'casts': 0, 'damage': 0.0}
 
@@ -472,6 +474,7 @@ class Player():
         self.bite_cost = 35. / (1 + self.berserk)
         self.rip_cost = self._rip_cost / (1 + self.berserk)
         self.roar_cost = 25. / (1 + self.berserk)
+        self.swipe_cost = 45. / (1 + self.berserk)
 
     def check_omen_proc(self, yellow=False):
         """Check for Omen of Clarity proc on a successful swing.
@@ -1114,3 +1117,68 @@ class Player():
         if self.log:
             self.gen_log('Faerie Fire (Bear)', damage_done, miss, crit, False)
         return damage_done
+
+    def swipe(self, num_targets):
+        """Cast Swipe (Cat) in an AoE rotation.
+
+        Arguments:
+            num_targets (int): Number of targets that will be hit by Swipe.
+
+        Returns:
+            damage_done (float): Total damage done by the Swipe cast summed
+                over all targets that are hit.
+        """
+        # Perform Monte Carlo for each target
+        num_misses = 0
+        num_crits = 0
+        total_damage = 0.0
+
+        for i in range(num_targets):
+            damage_done, miss, crit = sim_utils.calc_yellow_damage(
+                self.swipe_low, self.swipe_high, self.miss_chance,
+                self.crit_chance, crit_multiplier=self.calc_crit_multiplier()
+            )
+            num_misses += miss
+            num_crits += crit
+            total_damage += damage_done
+
+            # Check for JoW, iLotP, and trinket procs independently for each
+            # target.
+            if not miss:
+                self.check_procs(yellow=True, crit=crit)
+
+        num_hits = num_targets - num_misses - num_crits
+
+        # Apply Savage Roar
+        roar_damage = self.roar_fac * total_damage if self.savage_roar else 0.0
+
+        # Set GCD
+        self.gcd = 1.0
+
+        # Update Energy
+        clearcast = self.omen_proc
+
+        if clearcast:
+            self.omen_proc = False
+        else:
+            self.energy -= self.swipe_cost
+
+        # Log the cast
+        self.dmg_breakdown['Swipe (Cat)']['casts'] += 1
+        self.dmg_breakdown['Swipe (Cat)']['damage'] += total_damage
+        self.dmg_breakdown['Savage Roar']['damage'] += roar_damage
+
+        if self.log:
+            damage_str = '%d (%dx hit, %dx miss, %dx crit)' % (
+                total_damage + roar_damage, num_hits, num_misses, num_crits
+            )
+
+            if clearcast:
+                damage_str = damage_str[:-1] + ', clearcast)'
+
+            self.combat_log = [
+                'Swipe (Cat)', damage_str, '%.1f' % self.energy,
+                '%d' % self.combo_points, '%d' % self.mana, '%d' % self.rage
+            ]
+
+        return total_damage + roar_damage

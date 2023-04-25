@@ -479,7 +479,6 @@ class ProcTrinket(Trinket):
                 than a melee attack.
         """
         if not self.can_proc:
-            self.proc_happened = False
             return
 
         proc_roll = np.random.rand()
@@ -491,8 +490,6 @@ class ProcTrinket(Trinket):
 
         if proc_roll < rate:
             self.proc_happened = True
-        else:
-            self.proc_happened = False
 
     def apply_proc(self):
         """Determine whether or not the trinket is activated at the current

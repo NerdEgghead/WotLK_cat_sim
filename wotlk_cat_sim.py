@@ -185,6 +185,8 @@ class Simulation():
         'dagger_ep_loss': 1461,
         'mangle_idol_swap': False,
         'max_ff_delay': 1.0,
+        'num_targets': 1,
+        'aoe': False,
     }
 
     def __init__(
@@ -247,6 +249,9 @@ class Simulation():
         self.trinkets.append(RipTracker())
         self.trinkets.append(RoarTracker())
 
+        # Enable AoE rotation for 3+ targets
+        self.strategy['aoe'] = (self.strategy['num_targets'] >= 3)
+
         # Automatically detect an Idol swapping configuration
         self.shred_bonus = self.player.shred_bonus
         self.rip_bonus = self.player.rip_bonus
@@ -254,7 +259,8 @@ class Simulation():
         if (self.player.shred_bonus > 0) and (self.player.rip_bonus > 0):
             self.strategy['idol_swap'] = True
 
-        if self.mangle_idol and (self.shred_bonus or self.rip_bonus):
+        if (self.mangle_idol and (self.shred_bonus or self.rip_bonus)
+                and (not self.strategy['aoe'])):
             self.strategy['mangle_idol_swap'] = True
 
         # Calculate damage ranges for player abilities under the given
@@ -1099,7 +1105,13 @@ class Simulation():
         mangle_now = (
             (not rip_now) and (not self.mangle_debuff)
             # and (not self.player.omen_proc)
+            and (not self.strategy['aoe'])
         )
+        aoe_mangle = (
+            self.strategy['aoe'] and self.mangle_idol and (cp == 0) and
+            ((not self.player.savage_roar) or (self.roar_end - time <= 1.0))
+        )
+        mangle_now = mangle_now or aoe_mangle
         mangle_cost = self.player.mangle_cost
 
         bite_before_rip = (
@@ -1132,6 +1144,7 @@ class Simulation():
             (self.strategy['use_rake']) and (not self.rake_debuff)
             and (self.fight_length - time > 9)
             and (not self.player.omen_proc)
+            and (not self.strategy['aoe'])
         )
 
         # Additionally, don't Rake if the current Shred DPE is higher due to
@@ -1158,6 +1171,12 @@ class Simulation():
                 (remaining_extensions < 1e-9)
                 or (max_shreds_possible > remaining_extensions)
             )
+
+        aoe_rake = (
+            self.strategy['aoe'] and (not aoe_mangle) and (cp == 0) and
+            ((not self.player.savage_roar) or (self.roar_end - time <= 1.0))
+        )
+        rake_now = rake_now or aoe_rake
 
         # Disable Energy pooling for Rake in weaving rotations, since these
         # rotations prioritize weave cpm over Rake uptime.
@@ -1266,6 +1285,25 @@ class Simulation():
                 pending_actions.append((self.roar_end, 12.5))
             else:
                 pending_actions.append((self.roar_end, 25))
+
+        # Modify pooling logic for AoE rotation
+        if self.strategy['aoe']:
+            pending_actions = []
+
+            if self.player.savage_roar:
+                # First pool for the Roar itself
+                pending_actions.append((self.roar_end, 25))
+
+                # If we don't already have a Combo Point, then also pool for
+                # the Mangle or Rake cast to generate it.
+                if (cp == 0) and (self.roar_end - time > 1.0):
+                    builder_cost = (
+                        self.player._mangle_cost if self.mangle_idol else 35
+                    )
+                    refresh_time = self.roar_end - 1.0
+
+                    if self.player.faerie_fire_cd > refresh_time - time:
+                        pending_actions.append((refresh_time, builder_cost))
 
         pending_actions.sort()
 
@@ -1507,6 +1545,10 @@ class Simulation():
             self.player.ready_to_shift = True
         elif flowershift_now and (energy < 42):
             self.player.ready_to_gift = True
+        elif self.strategy['aoe']:
+            if (excess_e >= self.player.swipe_cost) or self.player.omen_proc:
+                return self.player.swipe(self.strategy['num_targets'])
+            time_to_next_action = (self.player.swipe_cost - excess_e) / 10.
         elif self.strategy['mangle_spam'] and (not self.player.omen_proc):
             if excess_e >= mangle_cost:
                 return self.mangle(time)

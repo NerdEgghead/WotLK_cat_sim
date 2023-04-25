@@ -254,6 +254,13 @@ encounter_details = dbc.Col(
          ],
          style={'width': '50%'}
      ),
+     dbc.InputGroup(
+         [
+             dbc.InputGroupAddon('Target Count:', addon_type='prepend'),
+             dbc.Input(value=1, type='number', id='num_targets')
+         ],
+         style={'width': '50%'}
+     ),
      html.Br(),
      html.H5('Damage Debuffs'),
      dbc.Checklist(
@@ -1889,6 +1896,7 @@ def plot_new_trajectory(sim, show_whites):
     State('ilotp', 'value'),
     State('fight_length', 'value'),
     State('boss_armor', 'value'),
+    State('num_targets', 'value'),
     State('boss_debuffs', 'value'),
     State('cooldowns', 'value'),
     State('rip_cp', 'value'),
@@ -1927,7 +1935,7 @@ def compute(
         weight_clicks, graph_clicks, hot_uptime, potion, bonuses,
         binary_talents, feral_aggression, savage_fury, potp,
         predatory_instincts, improved_mangle, furor, naturalist,
-        natural_shapeshifter, ilotp, fight_length, boss_armor,
+        natural_shapeshifter, ilotp, fight_length, boss_armor, num_targets,
         boss_debuffs, cooldowns, rip_cp, bite_cp, cd_delay,
         min_roar_offset, roar_clip_leeway, use_rake, mangle_spam,
         use_biteweave, bite_model, bite_time, bear_mangle, prepop_berserk,
@@ -2154,6 +2162,8 @@ def compute(
         trinket_list.append(mangle_idol)
         player.proc_trinkets.append(mangle_idol)
 
+    target_count = int(round(num_targets))
+    allow_bearweave = bool(bearweave) and (target_count < 3)
     sim = ccs.Simulation(
         player, fight_length + 1e-9, 0.001 * latency, boss_armor=boss_armor,
         min_combos_for_rip=rip_combos, min_combos_for_bite=int(bite_cp),
@@ -2161,15 +2171,15 @@ def compute(
         bite_time=bite_time, bear_mangle=bool(bear_mangle),
         use_berserk='berserk' in binary_talents,
         prepop_berserk=bool(prepop_berserk), preproc_omen=bool(preproc_omen),
-        bearweave=bool(bearweave), berserk_bite_thresh=berserk_bite_thresh,
+        bearweave=allow_bearweave, berserk_bite_thresh=berserk_bite_thresh,
         berserk_ff_thresh=berserk_ff_thresh, max_ff_delay=max_ff_delay,
         lacerate_prio=bool(lacerate_prio), lacerate_time=lacerate_time,
-        powerbear=bool(powerbear), snek=bool(snek) and bool(bearweave),
+        powerbear=bool(powerbear), snek=bool(snek) and allow_bearweave,
         flowershift=bool(flowershift), daggerweave=bool(daggerweave),
         dagger_ep_loss=dagger_ep_loss, min_roar_offset=min_roar_offset,
-        roar_clip_leeway=roar_clip_leeway, trinkets=trinket_list,
-        haste_multiplier=haste_multiplier, hot_uptime=hot_uptime / 100.,
-        mangle_idol=mangle_idol
+        roar_clip_leeway=roar_clip_leeway, num_targets=target_count,
+        trinkets=trinket_list, haste_multiplier=haste_multiplier,
+        hot_uptime=hot_uptime / 100., mangle_idol=mangle_idol
     )
     sim.set_active_debuffs(boss_debuffs)
     player.calc_damage_params(**sim.params)
@@ -2225,10 +2235,11 @@ def compute(
     Input('bite_model', 'value'),
     Input('lacerate_prio', 'value'),
     Input('daggerweave', 'value'),
-    Input('binary_talents', 'value'))
+    Input('binary_talents', 'value'),
+    Input('num_targets', 'value'))
 def disable_options(
     bearweave, flowershift, biteweave, bite_model, lacerate_prio, daggerweave,
-    binary_talents
+    binary_talents, num_targets
 ):
     bearweave_options = {'label': ' enable bearweaving', 'value': 'bearweave'}
     flowershift_options = {
@@ -2241,7 +2252,7 @@ def disable_options(
 
     # Disable Lacerateweave and flowershift in UI given recent Blizzard changes
     flowershift_options['disabled'] = False
-    bearweave_options['disabled'] = False
+    bearweave_options['disabled'] = (int(round(num_targets)) > 2)
     lacerate_options['disabled'] = True
 
     return (
