@@ -244,3 +244,44 @@ def gen_import_link(
     link += '&74=%.2f&75=%.2f&76=%.2f' % (gem_weight, gem_weight, gem_weight)
 
     return link
+
+
+def calc_ep_increment(
+    base_dps_vals, incremented_dps_vals, test_increment, final_iteration_count,
+    desired_ep_precision
+):
+    """Use the bootstrap method to estimate the stat increment to use for a
+    production run of an EP calculation based on a test sample.
+
+    Arguments:
+        base_dps_vals (np.ndarray): Sample of reference DPS values.
+        incremented_dps_vals (np.ndarray): Sample of augmented DPS values with
+            a given stat augmented by test_increment.
+        test_increment (float): Amount by which the stat was incremented in the
+            test sample.
+        final_iteration_count (int): Total iteration count for the production
+            run.
+        desired_ep_precision (float): Target standard deviation of the
+            calculated EP (DPS gain divided by increment) assuming perfect
+            linearity of the stat.
+
+    Returns:
+        target_increment (float): Amount by which to increment the stat in the
+            production run to achieve the desired EP precision.
+    """
+    test_iteration_count = len(incremented_dps_vals)
+    bootstrap_ep_vals = np.zeros_like(final_iteration_count)
+
+    for i in range(final_iteration_count):
+        reference_sample = np.random.choice(
+            base_dps_vals, size=final_iteration_count
+        )
+        augmented_sample = np.random.choice(
+            incremented_dps_vals, size=final_iteration_count
+        )
+        bootstrap_ep_vals[i] = (
+            (np.mean(augmented_sample) - np.mean(reference_sample))
+            / test_increment
+        )
+
+    return test_increment * np.std(bootstrap_ep_vals) / desired_ep_precision
