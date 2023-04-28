@@ -191,7 +191,7 @@ class Simulation():
 
     def __init__(
         self, player, fight_length, latency, trinkets=[], haste_multiplier=1.0,
-        hot_uptime=0.0, mangle_idol=None, **kwargs
+        hot_uptime=0.0, mangle_idol=None, rake_idol=None, **kwargs
     ):
         """Initialize simulation.
 
@@ -213,6 +213,8 @@ class Simulation():
             mangle_idol (trinkets.ProcTrinket): Optional Mangle proc Idol to
                 use. If supplied, then Mangle Idol swaps will be configured
                 automatically if appropriate.
+            rake_idol (trinkets.ProcTrinket): Optional Rake/Lacerate proc Idol
+                to use.
             kwargs (dict): Key, value pairs for all other encounter parameters,
                 including boss armor, relevant debuffs, and player stregy
                 specification. An error will be thrown if the parameter is not
@@ -224,6 +226,7 @@ class Simulation():
         self.latency = latency
         self.trinkets = trinkets
         self.mangle_idol = mangle_idol
+        self.rake_idol = rake_idol
         self.params = copy.deepcopy(self.default_params)
         self.strategy = copy.deepcopy(self.default_strategy)
 
@@ -1199,6 +1202,7 @@ class Simulation():
         # rotations prioritize weave cpm over Rake uptime.
         pool_for_rake = (
             not (self.strategy['bearweave'] or self.strategy['flowershift'])
+            or self.player.t10_4p_bonus
         )
 
         # Berserk algorithm: time Berserk for just after a Tiger's Fury
@@ -2005,6 +2009,10 @@ class Simulation():
                 )
                 self.rake_ticks.pop(0)
 
+                if self.rake_idol:
+                    self.rake_idol.check_for_proc(False, True)
+                    self.rake_idol.update(time, self.player, self)
+
             # Check if Rake fell off
             if self.rake_debuff and (time > self.rake_end - 1e-9):
                 self.rake_debuff = False
@@ -2023,6 +2031,10 @@ class Simulation():
                     'Lacerate', False, time
                 )
                 self.lacerate_ticks.pop(0)
+
+                if self.rake_idol:
+                    self.rake_idol.check_for_proc(False, True)
+                    self.rake_idol.update(time, self.player, self)
 
             # Check if Lacerate fell off
             if self.lacerate_debuff and (time > self.lacerate_end - 1e-9):

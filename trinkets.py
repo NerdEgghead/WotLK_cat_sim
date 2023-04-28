@@ -564,6 +564,52 @@ class IdolOfTheCorruptor(ProcTrinket):
         return ProcTrinket.update(self, time, player, sim)
 
 
+class DeathbringersWill(ProcTrinket):
+    """Custom class to model the random transformations from DBW procs."""
+
+    def __init__(self, stat_mod, ap_mod, **kwargs):
+        """Initialize trinket with static parameters that won't change.
+
+        Arguments:
+            stat_mod (float): Multiplicative scaling factor for primary stats
+                from talents and raid buffs.
+            ap_mod (float): Multiplicative scaling factor for Attack Power in
+                Cat Form from talents and raid buffs.
+            kwargs (dict): Standard arguments to pass to ProcTrinket.
+        """
+        self.stat_mod = stat_mod
+        self.ap_mod = ap_mod
+        ProcTrinket.__init__(self, **kwargs)
+
+    def activate(self, time, player, sim):
+        """Roll for which transformation will be applied, then call normal
+        trinket activation loop."""
+        roll = np.random.rand()
+
+        if roll < 1.0/3.0:
+            self.proc_name = 'Strength of the Vrykul'
+            self.stat_name = 'attack_power'
+            self.stat_increment = 2 * self.stat_mod * self.ap_mod * 700
+        elif roll < 2.0/3.0:
+            self.proc_name = 'Agility of the Wolvar'
+            self.stat_name = ['agility', 'attack_power', 'crit_chance']
+            self.stat_increment = np.array([
+                self.stat_mod * 700, self.stat_mod * 700 * self.ap_mod,
+                self.stat_mod * 700 / 83.33 / 100.
+            ])
+        else:
+            self.proc_name = 'Speed of the Gurloc'
+            self.stat_name = 'haste_rating'
+            self.stat_increment = 700
+
+        return ProcTrinket.activate(self, time, player, sim)
+
+    def deactivate(self, player, sim, time=None):
+        """Call normal trinket deactivation loop, then reset proc name."""
+        ProcTrinket.deactivate(self, player, sim, time=time)
+        self.proc_name = "Deathbringer's Will"
+
+
 class StackingProcTrinket(ProcTrinket):
     """Models trinkets that provide temporary stacking buffs to the player
     after an initial proc or activation."""
@@ -607,6 +653,7 @@ class StackingProcTrinket(ProcTrinket):
                 when aura_type is "proc".
         """
         self.stack_increment = stat_increment
+        self.default_increment = np.zeros_like(stat_name, dtype=int)
         self.max_stacks = max_stacks
         self.aura_name = aura_name
         self.stack_name = stack_name
@@ -616,9 +663,9 @@ class StackingProcTrinket(ProcTrinket):
         self.activated_aura = (aura_type == 'activated')
         self.aura_proc_rates = aura_proc_rates
         ProcTrinket.__init__(
-            self, stat_name=stat_name, stat_increment=0, proc_name=aura_name,
-            proc_duration=aura_duration, cooldown=cooldown,
-            chance_on_hit=self.stack_proc_rates['white'],
+            self, stat_name=stat_name, stat_increment=self.default_increment,
+            proc_name=aura_name, proc_duration=aura_duration,
+            cooldown=cooldown, chance_on_hit=self.stack_proc_rates['white'],
             yellow_chance_on_hit=self.stack_proc_rates['yellow']
         )
 
@@ -626,7 +673,7 @@ class StackingProcTrinket(ProcTrinket):
         """Full reset of the trinket at the start of a fight."""
         self.activation_time = -np.inf
         self._reset()
-        self.stat_increment = 0
+        self.stat_increment = self.default_increment
         self.num_procs = 0
         self.uptime = 0.0
         self.last_update = 0.0
@@ -659,7 +706,7 @@ class StackingProcTrinket(ProcTrinket):
         # Reset trinket to inactive state
         self._reset()
         Trinket.deactivate(self, player, sim, time=time)
-        self.stat_increment = 0
+        self.stat_increment = self.default_increment
 
     def apply_proc(self):
         """Determine whether a new trinket activation takes place, or whether
@@ -667,7 +714,7 @@ class StackingProcTrinket(ProcTrinket):
         # If can_proc is True but the stat increment is 0, it means that the
         # last event was a trinket deactivation, so we activate the trinket.
         if (self.activated_aura and (not self.active) and self.can_proc
-                and (self.stat_increment == 0)):
+                and (np.sum(self.stat_increment) == 0)):
             return True
 
         # Ignore procs when at max stacks, and prevent future proc checks
@@ -1201,6 +1248,22 @@ trinket_library = {
             'proc_rate': 0.15,
         },
     },
+    'whispering_fanged_skull': {
+        'type': 'proc',
+        'passive_stats':{
+            'crit_chance': 148./45.91/100,
+            'spell_crit_chance': 148./45.91/100,
+        },
+        'active_stats': {
+            'stat_name': 'attack_power',
+            'stat_increment': 1250,
+            'proc_name': 'Icy Rage',
+            'proc_duration': 15,
+            'cooldown': 45,
+            'proc_type': 'chance_on_hit',
+            'proc_rate': 0.35,
+        },
+    },
     'mjolnir_runestone': {
         'type': 'proc',
         'passive_stats': {
@@ -1289,6 +1352,21 @@ trinket_library = {
             'proc_name': 'Death\'s Verdict normal',
             'proc_duration': 15,
             'cooldown': 45,
+            'proc_type': 'chance_on_hit',
+            'proc_rate': 0.35,
+        },
+    },
+    'dbw': {
+        'type': 'proc',
+        'passive_stats': {
+            'armor_pen_rating': 167,
+        },
+        'active_stats': {
+            'stat_name': None,
+            'stat_increment': None,
+            'proc_name': "Deathbringer's Will",
+            'proc_duration': 30,
+            'cooldown': 105,
             'proc_type': 'chance_on_hit',
             'proc_rate': 0.35,
         },
