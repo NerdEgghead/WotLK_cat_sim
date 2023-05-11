@@ -2177,10 +2177,13 @@ def compute(
             delay=cd_delay
         ))
     if 'ap_cloak' in bonuses:
-        trinket_list.append(trinkets.ActivatedTrinket(
-            'attack_power', 400, 'Swordguard Embroidery', 15, 60,
-            delay=cd_delay
-        ))
+        swordguard_embroidery = trinkets.ProcTrinket(
+            stat_name='attack_power', stat_increment=400 * ap_mod,
+            proc_name='Swordguard Embroidery', chance_on_hit=0.20,
+            proc_duration=15, cooldown=55
+        )
+        trinket_list.append(swordguard_embroidery)
+        player.proc_trinkets.append(swordguard_embroidery)
 
     if potion == 'haste':
         trinket_list.append(trinkets.HastePotion(delay=cd_delay))
