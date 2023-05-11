@@ -1307,7 +1307,7 @@ weights_section = dbc.Col([
                             [
                                 dbc.Checkbox(
                                     id='epic_gems',
-                                    className='form-check-input', checked=False
+                                    className='form-check-input', checked=True
                                 ),
                                 dbc.Label(
                                     'Assume Epic gems',
@@ -1773,13 +1773,13 @@ def run_sim(sim, num_replicates):
         ]))
 
     return (
-        avg_dps,
+        dps_vals,
         (mean_dps_str, median_dps_str, oom_time_str, dps_table, aura_table),
     )
 
 
 def calc_weights(
-        sim, num_replicates, avg_dps, time_to_oom, kings, unleashed_rage,
+        sim, num_replicates, dps_vals, time_to_oom, kings, unleashed_rage,
         epic_gems, imp_motw
 ):
     # Check that sufficient iterations are used for convergence.
@@ -1796,12 +1796,12 @@ def calc_weights(
     # Calculate DPS increases and weights
     stat_multiplier = (1 + 0.1 * kings) * 1.06 * (1 + 0.01 * imp_motw)
     dps_deltas, stat_weights = sim.calc_stat_weights(
-        num_replicates, base_dps=avg_dps, agi_mod=stat_multiplier
+        num_replicates, base_dps_sample=dps_vals, agi_mod=stat_multiplier
     )
 
     # Parse results
     for stat in dps_deltas:
-        if stat == '1 AP':
+        if stat == 'Attack Power':
             weight = 1.0
             dps_per_AP = dps_deltas[stat]
         else:
@@ -1815,7 +1815,7 @@ def calc_weights(
 
     # Generate 80upgrades import link for raw stats
     url = sim_utils.gen_import_link(
-        stat_weights, multiplier=stat_multiplier, epic_gems=epic_gems
+        dps_deltas, multiplier=stat_multiplier, epic_gems=epic_gems
     )
     link = html.A('Eighty Upgrades Import Link', href=url, target='_blank')
 
@@ -2229,7 +2229,7 @@ def compute(
     if (ctx.triggered and
             (ctx.triggered[0]['prop_id'] in
              ['run_button.n_clicks', 'weight_button.n_clicks'])):
-        avg_dps, dps_output = run_sim(sim, num_replicates)
+        dps_vals, dps_output = run_sim(sim, num_replicates)
     else:
         dps_output = ('', '', '', [], [])
 
@@ -2237,7 +2237,7 @@ def compute(
     if (ctx.triggered and
             (ctx.triggered[0]['prop_id'] == 'weight_button.n_clicks')):
         weights_output = calc_weights(
-            sim, num_replicates, avg_dps, dps_output[2], kings, unleashed_rage,
+            sim, num_replicates, dps_vals, dps_output[2], kings, unleashed_rage,
             epic_gems, imp_motw
         )
     else:

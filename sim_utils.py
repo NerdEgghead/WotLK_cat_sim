@@ -205,83 +205,91 @@ def gen_import_link(
     link += urllib.parse.quote(EP_name)
 
     # Attack Power and Strength
-    link += '&31=1&33=1.2&4=%.3f' % (2 * multiplier)
+    ap_weight = stat_weights['Attack Power']
+    fap_weight = 1.2 * ap_weight
+    str_weight = 2 * multiplier * ap_weight
+    link += '&31=%.2f&33=%.2f&4=%.2f' % (ap_weight, fap_weight, str_weight)
 
     # Agility
     # Due to bear weaving, agi is no longer directly derived from
     # AP and crit.
-    agi_weight = stat_weights['1 Agility']
+    agi_weight = stat_weights['Agility']
     link += '&0=%.2f' % agi_weight
 
     # Hit Rating and Expertise Rating
-    hit_weight = stat_weights['1% hit'] / 32.79
+    hit_weight = stat_weights['Hit Rating']
     link += '&35=%.2f' % (hit_weight)
 
     # Expertise Rating
-    expertise_weight = stat_weights['1% expertise'] / 32.79
+    expertise_weight = stat_weights['Expertise Rating']
     link += '&46=%.2f' % (expertise_weight)
 
     # Critical Strike Rating
-    crit_weight = stat_weights['1% crit'] / 45.91
+    crit_weight = stat_weights['Critical Strike Rating']
     link += '&41=%.2f' % (crit_weight)
 
     # Haste Rating
-    haste_weight = stat_weights['1% haste'] / 25.21
+    haste_weight = stat_weights['Haste Rating']
     link += '&43=%.2f' % (haste_weight)
 
     # Armor Penetration
-    link += '&87=%.2f' % stat_weights['1 Armor Pen Rating']
+    arp_weight = stat_weights['Armor Pen Rating']
+    link += '&87=%.2f' % arp_weight
 
     # Weapon Damage
-    link += '&51=%.2f' % stat_weights['1 Weapon Damage']
+    link += '&51=%.2f' % stat_weights['Weapon Damage']
 
     # Gems
     gem_size = 20 if epic_gems else 16
-    gem_weight = (
-        max(agi_weight, crit_weight, haste_weight,
-        stat_weights["1 Armor Pen Rating"]) * gem_size
+    gem_weight = gem_size * max(
+        str_weight, agi_weight, crit_weight, haste_weight, arp_weight
     )
-    link += '&74=%.2f&75=%.2f&76=%.2f' % (gem_weight, gem_weight, gem_weight)
+    link += '&74=%.1f&75=%.1f&76=%.1f' % (gem_weight, gem_weight, gem_weight)
 
     return link
 
 
-def calc_ep_increment(
-    base_dps_vals, incremented_dps_vals, test_increment, final_iteration_count,
-    desired_ep_precision
+def calc_ep_variance(
+        base_dps_vals, incremented_dps_vals, final_iteration_count,
+        bootstrap=True
 ):
-    """Use the bootstrap method to estimate the stat increment to use for a
-    production run of an EP calculation based on a test sample.
+    """Use the bootstrap method to estimate the error bar for a production run
+    of an EP calculation based on a test sample.
 
     Arguments:
         base_dps_vals (np.ndarray): Sample of reference DPS values.
         incremented_dps_vals (np.ndarray): Sample of augmented DPS values with
-            a given stat augmented by test_increment.
-        test_increment (float): Amount by which the stat was incremented in the
-            test sample.
+            a given stat incremented.
         final_iteration_count (int): Total iteration count for the production
             run.
-        desired_ep_precision (float): Target standard deviation of the
-            calculated EP (DPS gain divided by increment) assuming perfect
-            linearity of the stat.
+        bootstrap (bool): If True, do a full bootstrap resampling calculation
+            for the most accurate variance estimate, which can be expensive.
+            If False, use normal approximations for the two distributions.
+            Defaults True.
 
     Returns:
-        target_increment (float): Amount by which to increment the stat in the
-            production run to achieve the desired EP precision.
+        ep_error_bar (float): Predicted standard error on EP estimate in the
+            production run if the current increment is used.
     """
-    test_iteration_count = len(incremented_dps_vals)
-    bootstrap_ep_vals = np.zeros_like(final_iteration_count)
+    if not bootstrap:
+        return np.sqrt(
+            (np.std(base_dps_vals)**2 + np.std(incremented_dps_vals)**2)
+            / final_iteration_count
+        )
 
-    for i in range(final_iteration_count):
+    num_bootstrap_iterations = max(final_iteration_count, 100000)
+    bootstrap_ep_vals = np.zeros(num_bootstrap_iterations)
+
+    for i in range(num_bootstrap_iterations):
         reference_sample = np.random.choice(
-            base_dps_vals, size=final_iteration_count
+            base_dps_vals, size=final_iteration_count, replace=True
         )
         augmented_sample = np.random.choice(
-            incremented_dps_vals, size=final_iteration_count
+            incremented_dps_vals, size=final_iteration_count, replace=True
         )
         bootstrap_ep_vals[i] = (
-            (np.mean(augmented_sample) - np.mean(reference_sample))
-            / test_increment
+            np.mean(augmented_sample) - np.mean(reference_sample)
         )
 
-    return test_increment * np.std(bootstrap_ep_vals) / desired_ep_precision
+    ep_error_bar = np.std(bootstrap_ep_vals)
+    return ep_error_bar

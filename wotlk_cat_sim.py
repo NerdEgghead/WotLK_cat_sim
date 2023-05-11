@@ -8,6 +8,7 @@ import multiprocessing
 import psutil
 import sim_utils
 import player as player_class
+import time
 
 
 class ArmorDebuffs():
@@ -2415,19 +2416,22 @@ class Simulation():
 
         return dps_vals, cast_sum, aura_sum, oom_times
 
-    def calc_deriv(self, num_replicates, param, increment, base_dps):
+    def calc_deriv(self, num_replicates, param, increment, base_dps_sample):
         """Calculate DPS increase after incrementing a player stat.
 
         Arguments:
             num_replicates (int): Number of replicates to run.
             param (str): Player attribute to increment.
             increment (float): Magnitude of stat increment.
-            base_dps (float): Pre-calculated base DPS before stat increments.
+            base_dps_sample (np.ndarray): Pre-calculated statistical sample of
+                base DPS before stat increments.
 
         Returns:
             dps_delta (float): Average DPS increase after the stat increment.
                 The Player attribute will be reset to its original value once
                 the calculation is finished.
+            error_bar (float): Bootstrapped standard deviation of the DPS
+                increase.
         """
         # Increment the stat
         original_value = getattr(self.player, param)
@@ -2442,7 +2446,7 @@ class Simulation():
         if param == 'agility':
             self.player.attack_power += self.player.ap_mod * increment
             self.player.crit_chance += increment / 83.33 / 100.
-        
+
         # For Hit chance increments, also augment Spell Hit chance
         if param == 'hit_chance':
             self.player.spell_hit_chance += increment * 32.79 / 26.23
@@ -2471,18 +2475,24 @@ class Simulation():
         if param == 'crit_chance':
             self.player.spell_crit_chance -= increment
 
-        return avg_dps - base_dps
+        # Error analysis
+        dps_delta = np.mean(dps_vals) - np.mean(base_dps_sample)
+        error_bar = sim_utils.calc_ep_variance(
+            base_dps_sample, dps_vals, num_replicates, bootstrap=False
+        )
+
+        return np.array([dps_delta, error_bar])
 
     def calc_stat_weights(
-            self, num_replicates, base_dps=None, agi_mod=1.0
+            self, num_replicates, base_dps_sample=None, agi_mod=1.0
     ):
         """Calculate performance derivatives for AP, hit, crit, and haste.
 
         Arguments:
             num_replicates (int): Number of replicates to run.
-            base_dps (float): If provided, use a pre-calculated value for the
-                base DPS before stat increments. Defaults to calculating base
-                DPS from scratch.
+            base_dps_sample (np.ndarray): If provided, use a pre-calculated
+                statistical sample for the base DPS before stat increments.
+                Defaults to calculating base DPS from scratch.
             agi_mod (float): Multiplier for primary attributes to use for
                 determining Agility weight. Defaults to 1.0
 
@@ -2495,11 +2505,14 @@ class Simulation():
                 Pen Rating, and 1 Weapon Damage relative to 1 AP.
         """
         # First store base DPS and deltas after each stat increment
+        start_time = time.time()
+        print('\n')
         dps_deltas = {}
 
-        if base_dps is None:
-            dps_vals = self.run_replicates(num_replicates)
-            base_dps = np.mean(dps_vals)
+        if base_dps_sample is None:
+            base_dps_sample = self.run_replicates(num_replicates)
+
+        base_dps = np.mean(base_dps_sample)
 
         # For all stats, we will use a much larger increment than +1 in order
         # to see sufficient DPS increases above the simulation noise. We will
@@ -2509,8 +2522,9 @@ class Simulation():
 
         # For AP, we will use an increment of +80 AP. We also scale the
         # increase by a factor of 1.1 to account for HotW
-        dps_deltas['1 AP'] = 1.0/80.0 * self.calc_deriv(
-            num_replicates, 'attack_power', 80 * self.player.ap_mod, base_dps
+        dps_deltas['Attack Power'] = 1.0/80.0 * self.calc_deriv(
+            num_replicates, 'attack_power', 80 * self.player.ap_mod,
+            base_dps_sample
         )
 
         # For hit and crit, we will use an increment of 2%.
@@ -2522,19 +2536,19 @@ class Simulation():
         sign = 1 - 2 * int(
             self.player.miss_chance - self.player.dodge_chance > 0.02
         )
-        dps_deltas['1% hit'] = -0.5 * sign * self.calc_deriv(
-            num_replicates, 'miss_chance', sign * 0.02, base_dps
+        dps_deltas['Hit Rating'] = -0.5 / 32.79 * sign * self.calc_deriv(
+            num_replicates, 'miss_chance', sign * 0.02, base_dps_sample
         )
 
         # For expertise, we mimic hit, except with dodge.
         sign = 1 - 2 * int(self.player.dodge_chance > 0.02)
-        dps_deltas['1% expertise'] = -0.5 * sign * self.calc_deriv(
-            num_replicates, 'dodge_chance', sign * 0.02, base_dps
+        dps_deltas['Expertise Rating'] = -0.5 / 32.79 * sign * self.calc_deriv(
+            num_replicates, 'dodge_chance', sign * 0.02, base_dps_sample
         )
 
         # Crit is a simple increment
-        dps_deltas['1% crit'] = 0.5 * self.calc_deriv(
-            num_replicates, 'crit_chance', 0.02, base_dps
+        dps_deltas['Critical Strike Rating'] = 0.5 / 45.91 * self.calc_deriv(
+            num_replicates, 'crit_chance', 0.02, base_dps_sample
         )
 
         # For haste we will use an increment of 4%. (Note that this is 4% in
@@ -2546,32 +2560,45 @@ class Simulation():
         swing_delta = self.player.swing_timer - sim_utils.calc_swing_timer(
             base_haste_rating + 100.84, multiplier=self.haste_multiplier
         )
-        dps_deltas['1% haste'] = 0.25 * self.calc_deriv(
-            num_replicates, 'swing_timer', -swing_delta, base_dps
+        dps_deltas['Haste Rating'] = 0.25 / 25.21 * self.calc_deriv(
+            num_replicates, 'swing_timer', -swing_delta, base_dps_sample
         )
 
         # Due to bearweaving, separate Agility weight calculation is needed
-        dps_deltas['1 Agility'] = 1.0/40.0 * self.calc_deriv(
-            num_replicates, 'agility', 40 * agi_mod, base_dps
+        dps_deltas['Agility'] = 1.0/65.0 * self.calc_deriv(
+            num_replicates, 'agility', 65 * agi_mod, base_dps_sample
         )
 
-        # For armor pen, we use an increment of 50 Rating. Similar to hit,
-        # the sign of the delta depends on if we're near the 1400 cap.
-        sign = 1 - 2 * int(self.player.armor_pen_rating > 1350)
-        dps_deltas['1 Armor Pen Rating'] = 1./50. * sign * self.calc_deriv(
-            num_replicates, 'armor_pen_rating', sign * 50, base_dps
+        # For armor pen, we use an increment of 65 Rating. Similar to hit,
+        # the sign of the delta depends on if we're near the 1399 cap.
+        sign = 1 - 2 * int(self.player.armor_pen_rating > 1334)
+        dps_deltas['Armor Pen Rating'] = 1./65. * sign * self.calc_deriv(
+            num_replicates, 'armor_pen_rating', sign * 65, base_dps_sample
         )
 
-        # For weapon damage, we use an increment of 12
-        dps_deltas['1 Weapon Damage'] = 1./12. * self.calc_deriv(
-            num_replicates, 'bonus_damage', 12, base_dps
+        # For weapon damage, we use an increment of 65
+        dps_deltas['Weapon Damage'] = 1./65. * self.calc_deriv(
+            num_replicates, 'bonus_damage', 65, base_dps_sample
         )
 
         # Calculate normalized stat weights
         stat_weights = {}
 
         for stat in dps_deltas:
-            if stat != '1 AP':
-                stat_weights[stat] = dps_deltas[stat] / dps_deltas['1 AP']
+            # Print results of error analysis
+            ep, std = dps_deltas[stat]
+            diag_str = (
+                '%s: EP = %.2f +/- %.2f, scale up increment by %.2fx for '
+                'better results'
+            ) % (stat, ep, 2 * abs(std), abs(std) / 0.005)
+            print(diag_str)
+            dps_deltas[stat] = ep
 
+            if stat != 'Attack Power':
+                stat_weights[stat] = (
+                    dps_deltas[stat] / dps_deltas['Attack Power']
+                )
+
+        calculation_time = (time.time() - start_time) / 60.
+        print('Total calculation time: %.1f minutes' % calculation_time)
         return dps_deltas, stat_weights
