@@ -2180,7 +2180,7 @@ def compute(
         swordguard_embroidery = trinkets.ProcTrinket(
             stat_name='attack_power', stat_increment=400 * ap_mod,
             proc_name='Swordguard Embroidery', chance_on_hit=0.20,
-            proc_duration=15, cooldown=55
+            proc_duration=15, cooldown=55, chance_on_crit=0.2
         )
         trinket_list.append(swordguard_embroidery)
         player.proc_trinkets.append(swordguard_embroidery)
