@@ -25,36 +25,35 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
 server = app.server
 
 default_input_stats = {
-        "agility": 1456,
-        "armor": 6675,
-        "armorPen": 43,
-        "armorPenRating": 602,
-        "attackPower": 8543,
-        "crit": 53.34,
-        "critRating": 615,
+        "agility": 1690,
+        "armor": 7288,
+        "armorPen": 43.21,
+        "armorPenRating": 605,
+        "attackPower": 9050,
+        "crit": 59.96,
+        "critRating": 790,
         "critReduction": 6,
         "defense": 400,
-        "dodge": 40,
-        "expertise": 25,
-        "expertiseRating": 126,
-        "feralAttackPower": 3001,
-        "haste": 10.94,
-        "hasteRating": 276,
-        "health": 21517,
-        "hit": 6.89,
-        "hitRating": 226,
-        "intellect": 206,
-        "mainHandSpeed": 2.4,
-        "mana": 6306,
-        "natureResist": 10,
+        "dodge": 44.88,
+        "expertise": 26,
+        "expertiseRating": 139,
+        "feralAttackPower": 3175,
+        "haste": 18.2,
+        "hasteRating": 459,
+        "health": 23837,
+        "hit": 7.01,
+        "hitRating": 230,
+        "intellect": 211,
+        "mainHandSpeed": 3.5,
+        "mana": 6381,
         "parry": 5,
-        "spellCrit": 16.48,
-        "spellCritRating": 615,
-        "spellHaste": 8.42,
-        "spellHit": 8.62,
-        "spirit": 189,
-        "stamina": 1428,
-        "strength": 251
+        "spellCrit": 20.33,
+        "spellCritRating": 790,
+        "spellHaste": 14,
+        "spellHit": 8.77,
+        "spirit": 193,
+        "stamina": 1660,
+        "strength": 189
 }
 
 stat_input = dbc.Col([
@@ -137,8 +136,8 @@ stat_input = dbc.Col([
             {'label': 'Hyperspeed Accelerators', 'value': 'engi_gloves'},
         ],
         value=[
-            'shred_idol', 'mangle_idol', 'rip_glyph', 'shred_glyph',
-            'roar_glyph', 't8_2p', 'meta', 'berserking', 'engi_gloves'
+            'idol_of_mutilation', 'shred_glyph', 'roar_glyph', 't9_2p',
+            't9_4p', 'meta', 'berserking', 'engi_gloves'
         ],
         id='bonuses'
     ),
@@ -308,7 +307,7 @@ encounter_details = dbc.Col(
              {'label': 'Unholy Frenzy', 'value': 'unholy_frenzy'},
              {'label': 'Shattering Throw', 'value': 'shattering_throw'},
          ],
-         value=['lust', 'shattering_throw'], id='cooldowns',
+         value=['lust'], id='cooldowns',
      ),
      dbc.InputGroup(
          [
@@ -626,7 +625,7 @@ iteration_input = dbc.Col([
                 'Targeted offset in Rip/Roar timings:', addon_type='prepend'
             ),
             dbc.Input(
-                value=24, min=0, step=1, type='number', id='min_roar_offset'
+                value=25, min=0, step=1, type='number', id='min_roar_offset'
             ),
             dbc.InputGroupAddon('seconds', addon_type='append')
         ],
@@ -638,7 +637,7 @@ iteration_input = dbc.Col([
                 'Rip leeway for determining Roar clips:', addon_type='prepend'
             ),
             dbc.Input(
-                value=3, min=0, step=1, type='number', id='roar_clip_leeway'
+                value=4, min=0, step=1, type='number', id='roar_clip_leeway'
             ),
             dbc.InputGroupAddon('seconds', addon_type='append')
         ],
@@ -663,7 +662,7 @@ iteration_input = dbc.Col([
                 addon_type='prepend'
             ),
             dbc.Input(
-                value=0.7, min=0, step=0.1, type='number', id='max_ff_delay'
+                value=0.1, min=0, step=0.1, type='number', id='max_ff_delay'
             ),
             dbc.InputGroupAddon('seconds', addon_type='append')
         ],
@@ -1015,7 +1014,7 @@ iteration_input = dbc.Col([
                 {'label': 'Madness of the Betrayer', 'value': 'madness'},
                 {'label': 'Shard of Contempt', 'value': 'shard_of_contempt'},
             ],
-            value='dark_matter'
+            value='deaths_verdict_heroic'
         )),
     ]),
     html.Div([
