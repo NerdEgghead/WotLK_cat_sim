@@ -135,6 +135,7 @@ stat_input = dbc.Col([
             {'label': 'Enchant Weapon: Executioner', 'value': 'executioner'},
             {'label': 'Enchant Weapon: Berserking', 'value': 'berserking'},
             {'label': 'Hyperspeed Accelerators', 'value': 'engi_gloves'},
+            {'label': 'Swordguard Embroidery', 'value': 'ap_cloak'},
         ],
         value=[
             'shred_idol', 'mangle_idol', 'rip_glyph', 'shred_glyph',
@@ -2173,6 +2174,11 @@ def compute(
     if 'engi_gloves' in bonuses:
         trinket_list.append(trinkets.ActivatedTrinket(
             'haste_rating', 340, 'Hyperspeed Acceleration', 12, 60,
+            delay=cd_delay
+        ))
+    if 'ap_cloak' in bonuses:
+        trinket_list.append(trinkets.ActivatedTrinket(
+            'attack_power', 400, 'Swordguard Embroidery', 15, 60,
             delay=cd_delay
         ))
 
