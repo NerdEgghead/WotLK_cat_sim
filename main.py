@@ -134,6 +134,7 @@ stat_input = dbc.Col([
             {'label': 'Enchant Weapon: Executioner', 'value': 'executioner'},
             {'label': 'Enchant Weapon: Berserking', 'value': 'berserking'},
             {'label': 'Hyperspeed Accelerators', 'value': 'engi_gloves'},
+            {'label': 'Swordguard Embroidery', 'value': 'ap_cloak'},
         ],
         value=[
             'idol_of_mutilation', 'shred_glyph', 'roar_glyph', 't9_2p',
@@ -2174,6 +2175,14 @@ def compute(
             'haste_rating', 340, 'Hyperspeed Acceleration', 12, 60,
             delay=cd_delay
         ))
+    if 'ap_cloak' in bonuses:
+        swordguard_embroidery = trinkets.ProcTrinket(
+            stat_name='attack_power', stat_increment=400 * ap_mod,
+            proc_name='Swordguard Embroidery', chance_on_hit=0.20,
+            proc_duration=15, cooldown=55, chance_on_crit=0.2
+        )
+        trinket_list.append(swordguard_embroidery)
+        player.proc_trinkets.append(swordguard_embroidery)
 
     if potion == 'haste':
         trinket_list.append(trinkets.HastePotion(delay=cd_delay))
