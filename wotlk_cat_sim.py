@@ -1263,15 +1263,23 @@ class Simulation():
         # given by 1 second for FF GCD  plus 1 second for Clearcast Shred plus
         # 1 second per 42 Energy that we have after that Clearcast Shred.
         if ff_now:
+            # Same end of fight logic can be applied for end of Berserk also,
+            # as we don't want to cast even a low Energy FF if it will result
+            # in ending Berserk with > 21 Energy and missing a discounted Shred
+            if False: # if self.player.berserk:
+                boundary_condition = min(self.berserk_end, self.fight_length)
+            else:
+                boundary_condition = self.fight_length
+
             max_shreds_without_ff = (
-                (energy + (self.fight_length - time) * 10)
+                (energy + (boundary_condition - time) * 10)
                 // self.player.shred_cost # floored integer division here
             )
             num_shreds_without_ff = min(
-                max_shreds_without_ff, int(self.fight_length - time) + 1
+                max_shreds_without_ff, int(boundary_condition - time) + 1
             )
             num_shreds_with_ff = min(
-                max_shreds_without_ff + 1, int(self.fight_length - time)
+                max_shreds_without_ff + 1, int(boundary_condition - time)
             )
             ff_now = (num_shreds_with_ff > num_shreds_without_ff)
 
