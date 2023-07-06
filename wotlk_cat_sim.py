@@ -1098,9 +1098,22 @@ class Simulation():
         self.block_rip_now = (cp < rip_cp) or self.bite_over_rip(time)
         rip_now = (
             (cp >= rip_cp) and (not self.rip_debuff)
-            and (not self.player.omen_proc)
+            # and (not self.player.omen_proc)
             and (not self.block_rip_now)
         )
+
+        # Do not spend Clearcasting on Rip *unless* we are in an edge case
+        # where Roar is nearly about to expire.
+        if rip_now and self.player.omen_proc:
+            # Determine the earliest we could cast Rip if we do *not* use our
+            # Omen proc on it, and instead spend it on Shred first.
+            rip_cast_time = time + max(
+                1.0, (self.player.rip_cost - energy) / 10. + self.latency
+            )
+            rip_now = (
+                self.player.savage_roar and (rip_cast_time >= self.roar_end)
+            )
+
         # Likewise, block_rip_next prios Bite usage if the *current* Rip will
         # expire too close to fight end.
         self.block_rip_next = self.rip_debuff and (
