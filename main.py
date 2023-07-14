@@ -2121,8 +2121,11 @@ def compute(
         )
         trinket_list.append(idol)
         player.proc_trinkets.append(idol)
+
+    mutilation_idol = None
+
     if 'idol_of_mutilation' in bonuses:
-        idol = trinkets.RefreshingProcTrinket(
+        mutilation_idol = trinkets.RefreshingProcTrinket(
             chance_on_hit=0.70,
             stat_name=['agility', 'attack_power', 'crit_chance'],
             stat_increment=np.array([
@@ -2134,8 +2137,8 @@ def compute(
             cat_mangle_only=True,
             shred_only=True
         )
-        trinket_list.append(idol)
-        player.proc_trinkets.append(idol)
+        trinket_list.append(mutilation_idol)
+        player.proc_trinkets.append(mutilation_idol)
     if 'mongoose' in bonuses:
         mongoose_ppm = 0.73
         mongoose_enchant = trinkets.RefreshingProcTrinket(
@@ -2228,7 +2231,7 @@ def compute(
         roar_clip_leeway=roar_clip_leeway, num_targets=target_count,
         trinkets=trinket_list, haste_multiplier=haste_multiplier,
         hot_uptime=hot_uptime / 100., mangle_idol=mangle_idol,
-        rake_idol=rake_idol
+        rake_idol=rake_idol, mutilation_idol=mutilation_idol
     )
     sim.set_active_debuffs(boss_debuffs)
     player.calc_damage_params(**sim.params)

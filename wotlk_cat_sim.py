@@ -192,7 +192,7 @@ class Simulation():
 
     def __init__(
         self, player, fight_length, latency, trinkets=[], haste_multiplier=1.0,
-        hot_uptime=0.0, mangle_idol=None, rake_idol=None, **kwargs
+        hot_uptime=0.0, mangle_idol=None, rake_idol=None, mutilation_idol=None, **kwargs
     ):
         """Initialize simulation.
 
@@ -216,6 +216,8 @@ class Simulation():
                 automatically if appropriate.
             rake_idol (trinkets.ProcTrinket): Optional Rake/Lacerate proc Idol
                 to use.
+            mutilation_idol (trinkets.RefreshingProcTrinket): Optional Mangle/
+                Shred proc idol to use.
             kwargs (dict): Key, value pairs for all other encounter parameters,
                 including boss armor, relevant debuffs, and player stregy
                 specification. An error will be thrown if the parameter is not
@@ -228,6 +230,7 @@ class Simulation():
         self.trinkets = trinkets
         self.mangle_idol = mangle_idol
         self.rake_idol = rake_idol
+        self.mutilation_idol = mutilation_idol
         self.params = copy.deepcopy(self.default_params)
         self.strategy = copy.deepcopy(self.default_strategy)
 
@@ -1146,7 +1149,7 @@ class Simulation():
             # and (not self.player.omen_proc)
         )
         aoe_mangle = (
-            self.strategy['aoe'] and self.mangle_idol and (cp == 0) and
+            self.strategy['aoe'] and (self.mangle_idol or self.mutilation_idol) and (cp == 0) and
             ((not self.player.savage_roar) or (self.roar_end - time <= 1.0))
         )
         mangle_now = mangle_now or aoe_mangle
