@@ -516,6 +516,29 @@ class ProcTrinket(Trinket):
         self.activation_time = -self.icd_precombat if self.icd_precombat else -np.inf
         self.proc_happened = False
 
+    def activate(self, time, player, sim):
+        """Perform normal trinket activation, but then additionally schedule a
+        rotation action in case the agent was pooling Energy in anticipation of
+        a proc.
+
+        Arguments:
+            time (float): Simulation time, in seconds, of activation.
+            player (wotlk_cat_sim.Player): Player object whose attributes will
+                be modified by the trinket proc.
+            sim (wotlk_cat_sim.Simulation): Simulation object controlling the
+                fight execution.
+
+        Returns:
+            damage_done (float): Any instant damage that is dealt when the
+                trinket is activated. Defaults to 0 for standard trinkets, but
+                custom subclasses can implement fixed damage procs that would
+                be calculated in this method.
+        """
+        if not self.special_proc_conditions:
+            sim.next_action = min(sim.next_action, time + sim.latency)
+
+        return Trinket.activate(self, time, player, sim)
+
 
 class IdolOfTheCorruptor(ProcTrinket):
     """Custom class to model the Mangle proc from Idol of the Corruptor, which

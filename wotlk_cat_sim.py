@@ -1402,6 +1402,7 @@ class Simulation():
                 flower_end + energy_to_dump // 42 < self.fight_length
             )
 
+        # Pooling logic section
         floating_energy = 0
         previous_time = time
         tf_pending = False
@@ -1420,6 +1421,23 @@ class Simulation():
                 previous_time = refresh_time
             else:
                 previous_time += refresh_cost / 10.
+
+        # If any proc trinkets are due to come off ICD soon, then force pool up
+        # to the Energy cap in order to maximize special ability casts with the
+        # proc active.
+        time_to_cap = time + (100. - energy) / 10.
+
+        for trinket in self.player.proc_trinkets:
+            if trinket.special_proc_conditions or (trinket.cooldown == 0):
+                continue
+            if trinket.active or (not self.rip_debuff):
+                break
+
+            earliest_proc = trinket.activation_time + trinket.cooldown
+
+            if earliest_proc < time_to_cap:
+                floating_energy = max(floating_energy, 100)
+                break
 
         excess_e = energy - floating_energy
         time_to_next_action = 0.0
@@ -1612,7 +1630,9 @@ class Simulation():
 
             # Also Shred if we're about to cap on Energy. Catches some edge
             # cases where floating_energy > 100 due to too many synced timers.
-            if energy > 100 - self.latency:
+            energy_cap = 77. if self.player.faerie_fire_cd <= 1.0 else 100.
+
+            if energy > energy_cap - self.latency:
                 return self.shred()
 
             time_to_next_action = (self.player.shred_cost - excess_e) / 10.
@@ -1672,6 +1692,13 @@ class Simulation():
 
         # Schedule an action when Faerie Fire (Feral) is off cooldown next.
         next_action = min(next_action, time + self.player.faerie_fire_cd)
+
+        # If nearing Energy cap, then also schedule an action 1 GCD beforehand.
+        if ((energy + 10 * (self.player.faerie_fire_cd + self.latency) >= 87)
+                and (self.player.faerie_fire_cd >= 1.0)):
+            next_action = min(
+                next_action, time + self.player.faerie_fire_cd - 1.0
+            )
 
         self.next_action = next_action + self.latency
 
