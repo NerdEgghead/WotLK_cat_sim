@@ -1259,6 +1259,9 @@ class Simulation():
             (not self.player.savage_roar) or self.clip_roar(time)
             # or self.emergency_roar(time)
         )
+        self.roar_refresh_pending = (
+            self.player.savage_roar and (self.roar_end < self.fight_length)
+        )
 
         # Faerie Fire on cooldown for Omen procs. Each second of FF delay is
         # worth ~7 Energy, so it is okay to waste up to 7 Energy to cap when
@@ -1426,12 +1429,14 @@ class Simulation():
         # to the Energy cap in order to maximize special ability casts with the
         # proc active.
         time_to_cap = time + (100. - energy) / 10.
+        trinket_active = False
         pool_for_trinket = False
 
         for trinket in self.player.proc_trinkets:
             if trinket.special_proc_conditions or (trinket.cooldown == 0):
                 continue
             if trinket.active or (not self.rip_debuff):
+                trinket_active = True
                 pool_for_trinket = False
                 break
 
@@ -1443,6 +1448,14 @@ class Simulation():
                 pool_for_trinket = True
 
         if pool_for_trinket:
+            floating_energy = max(floating_energy, 100)
+
+        # Another scenario to force pool is when we have 5 CP, have a pending
+        # Roar or Rip refresh soon, and cannot fit in a Bite.
+        if ((cp == 5) and (not (bite_before_rip or bite_at_end))
+                and (not trinket_active) and self.roar_refresh_pending
+                and self.rip_refresh_pending
+                and (min(self.roar_end, self.rip_end) < time_to_cap)):
             floating_energy = max(floating_energy, 100)
 
         excess_e = energy - floating_energy
