@@ -1426,18 +1426,24 @@ class Simulation():
         # to the Energy cap in order to maximize special ability casts with the
         # proc active.
         time_to_cap = time + (100. - energy) / 10.
+        pool_for_trinket = False
 
         for trinket in self.player.proc_trinkets:
             if trinket.special_proc_conditions or (trinket.cooldown == 0):
                 continue
             if trinket.active or (not self.rip_debuff):
+                pool_for_trinket = False
                 break
 
             earliest_proc = trinket.activation_time + trinket.cooldown
+            earliest_proc_end = earliest_proc + trinket.proc_duration
 
-            if earliest_proc < time_to_cap:
-                floating_energy = max(floating_energy, 100)
-                break
+            if ((earliest_proc < time_to_cap)
+                    and (earliest_proc_end < self.fight_length)):
+                pool_for_trinket = True
+
+        if pool_for_trinket:
+            floating_energy = max(floating_energy, 100)
 
         excess_e = energy - floating_energy
         time_to_next_action = 0.0
