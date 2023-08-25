@@ -217,7 +217,7 @@ class Player():
         or Expertise Rating occurs."""
         miss_reduction = min(self._hit_chance * 100, 8.)
         dodge_reduction = min(
-            6.5, (10 + np.floor(self._expertise_rating / 8.1974973675)) * 0.25
+            6.5, (10 + self._expertise_rating / 8.1974973675) * 0.25
         )
         self.miss_chance = 0.01 * (
             (8. - miss_reduction) + (6.5 - dodge_reduction)
